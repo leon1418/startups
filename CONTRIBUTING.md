@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for your interest in contributing to `awslabs/startups`. This repository is owned and operated by the AWS Startups Build & Migrate team. It hosts developer plugins, MCPs, and tools for early-stage startup customers, distributed across marketplaces including Kiro, Claude, and Cursor.
+Thank you for your interest in contributing to `awslabs/startups`. This repository is owned and operated by the AWS Startups Build & Migrate team. It hosts developer plugins, MCPs, and tools for startup customers, distributed across marketplaces including Kiro, Claude, and Cursor.
 
 Please read through this document before submitting issues or pull requests.
 

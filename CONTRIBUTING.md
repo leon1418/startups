@@ -85,15 +85,7 @@ To send a pull request:
 
 All PRs require at least one approval from a reviewer listed in `CODEOWNERS`. Security-sensitive changes — data handling, authentication, IAM permissions, external API calls — require a second review. Squash merges are preferred.
 
-### Automated Guardrails
 
-Every pull request runs:
-
-- Automated security scans (ASH, Semgrep, Bandit, Grype)
-- Secrets scanning (git-secrets, TruffleHog)
-- Dependabot with enforced CVE SLAs (Critical: 7 days, High: 14 days, Medium: 30 days)
-- License scanning on new dependencies
-- Deployment validation in a shared test environment
 
 ---
 

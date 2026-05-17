@@ -1,4 +1,4 @@
-# Sample Agent Skills for AWS Migration
+# Agent Skills for AWS Migration
 
 AI agent skills for migrating workloads to AWS, built for [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) and [Cursor](https://www.cursor.com/).
 

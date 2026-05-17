@@ -12,8 +12,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - "features/migration-to-aws/skills/gcp-to-aws/references/**/*.md"
-      - "features/migration-to-aws/skills/gcp-to-aws/SKILL.md"
+      - "migrate/plugins/migration-to-aws/skills/gcp-to-aws/references/**/*.md"
+      - "migrate/plugins/migration-to-aws/skills/gcp-to-aws/SKILL.md"
 
 permissions:
   pull-requests: write
@@ -58,8 +58,8 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            features/migration-to-aws/skills/gcp-to-aws/references/**/*.md
-            features/migration-to-aws/skills/gcp-to-aws/SKILL.md
+            migrate/plugins/migration-to-aws/skills/gcp-to-aws/references/**/*.md
+            migrate/plugins/migration-to-aws/skills/gcp-to-aws/SKILL.md
 
       - name: Skip if no Reference_Files changed
         if: steps.changed-files.outputs.any_changed != 'true'

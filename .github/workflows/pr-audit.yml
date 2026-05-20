@@ -112,6 +112,7 @@ jobs:
           PR_HTML_URL: ${{ github.event.pull_request.html_url }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
           AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: python -m migration_watchdog.main
 
       - name: Apply CI pass/fail policy

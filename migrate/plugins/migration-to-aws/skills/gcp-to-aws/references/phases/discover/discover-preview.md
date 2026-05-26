@@ -1,5 +1,4 @@
 # Migration Preview Heuristic
-
 > Loaded by `discover.md` Step 3 to compute a lightweight preview signal and rough cost
 > estimate from discovery artifacts alone — before Clarify, Design, or Estimate run.
 > This is NOT the full complexity tier (that lives in `migration-complexity.md` and requires
@@ -24,20 +23,18 @@ Read from available discovery artifacts:
 
 ```
 IF has_bigquery
-   OR is_agentic == true
-   OR primary_resource_count > 8
-   OR (billing_monthly_usd != null AND billing_monthly_usd > 10000)
+OR is_agentic == true
+OR primary_resource_count > 8
+OR (billing_monthly_usd != null AND billing_monthly_usd > 10000)
 THEN complexity_signal = "complex"
-
 ELSE IF primary_resource_count <= 3
-   AND has_database == false
-   AND has_bigquery == false
-   AND is_agentic != true
-   AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
+AND has_database == false
+AND has_bigquery == false
+AND is_agentic != true
+AND (billing_monthly_usd == null OR billing_monthly_usd < 1000)
 THEN complexity_signal = "likely_simple"
-
 ELSE
-   complexity_signal = "standard"
+complexity_signal = "standard"
 END
 ```
 
@@ -45,8 +42,8 @@ END
 
 ```
 eligible_for_clarify_fast_path =
-   complexity_signal == "likely_simple"
-   AND has_ai_profile == false // any AI profile -> full Clarify, even non-agentic
+complexity_signal == "likely_simple"
+AND has_ai_profile == false   // any AI profile -> full Clarify, even non-agentic
 ```
 
 ---
@@ -118,7 +115,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
 ```json
 {
   "preview_version": 1,
-  "computed_at": "<ISO timestamp>",
+  "computed_at": "<ISO 8601 UTC>",
   "primary_resource_count": 3,
   "complexity_signal": "likely_simple",
   "eligible_for_clarify_fast_path": true,
@@ -166,6 +163,7 @@ Output this block as part of `discover.md` Step 3's user message (chat only -- n
 | **Decisions ahead** | [key_decisions_ahead joined by "; "] |
 
 *Full cost breakdown in Estimate; runnable Terraform in Generate.*
+
 [if eligible_for_clarify_fast_path: "Your stack looks straightforward -- next step is 3 quick questions."]
 [if ai_detected and not eligible_for_clarify_fast_path: "AI workload detected -- full Clarify recommended for best results."]
 ```

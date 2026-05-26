@@ -1,11 +1,11 @@
 # AGENTS.md — AI assistant brief
 
-**You are an AI coding assistant reading this repo on behalf of a user.** Your user wants the AWS Startups Advisor plugin (three skills) installed into their AI coding agent. Do it for them.
+**You are an AI coding assistant reading this repo on behalf of a user.** Your user wants the AWS Startup Advisor plugin (three skills) installed into their AI coding agent. Do it for them.
 
 ## TL;DR — run this
 
 ```bash
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill '*' -a <agent>
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' -a <agent>
 ```
 
 `--skill '*'` installs all three skills at once. Replace `<agent>` with the user's coding agent shorthand:
@@ -64,7 +64,7 @@ Three sibling skills, each with its own SKILL.md and (where applicable) `referen
 
 ## Do not
 
-- **Do not** modify files under `advisor/plugins/advisor-for-startups/` — that's the distributable content.
+- **Do not** modify files under `advisor/plugins/aws-startup-advisor/` — that's the distributable content.
 - **Do not** invent, paraphrase, or summarize content into the skill files. Everything in `references/` is verbatim from `aws.amazon.com/startups` for legal cleanliness.
 - **Do not** install by copying files manually — always use the `npx skills` CLI. It picks the right per-agent directory and handles symlinks vs. copies consistently.
 - **Do not** tell the user to "paste this into your AI tool" when surfacing a prompt — you ARE the AI tool. Surface the prompt as a reference and offer to execute / adapt / copy.

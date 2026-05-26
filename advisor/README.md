@@ -1,4 +1,4 @@
-# AWS Startups Advisor — three-skill plugin
+# AWS Startup Advisor — three-skill plugin
 
 A plugin of three sibling skills that work alongside each other in any modern AI coding agent (Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and 50+ others):
 
@@ -17,43 +17,43 @@ The three skills are designed to be cross-aware — `start-building-for-startups
 Install all three skills at once into a single agent:
 
 ```bash
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill '*' --agent <agent>
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent <agent>
 ```
 
 `--skill '*'` selects every skill in the plugin; pair it with `--agent <agent>` to scope the install to a single coding agent. The CLI writes each skill into the right per-agent folder; restart your agent afterward to pick them up.
 
-> **Always pass `--agent`.** If you omit it and select an agent from the interactive prompt, the CLI currently writes the skills into `.agents/skills/` instead of the agent-specific folder (`.claude/skills/` for Claude Code, `.kiro/skills/` for Kiro, etc.). Most agents won't discover skills under `.agents/skills/`, so your agent ends up empty-handed. Pass `--agent <agent>` explicitly to avoid this.
+> **If you omit `--agent`, the CLI shows an interactive picker.** Use the **space bar** to select your agent (e.g. Claude Code, Kiro), then press **Enter** to confirm. If you press Enter without selecting, nothing gets selected and the CLI falls back to writing the skills into `.agents/skills/` — which most agents won't discover, so your agent ends up empty-handed. Either select with space, or pass `--agent <agent>` explicitly to skip the picker.
 
 ### Examples
 
 ```bash
 # Kiro
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill '*' --agent kiro-cli
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent kiro-cli
 
 # Claude Code
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill '*' --agent claude-code
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent claude-code
 
 # Cursor
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill '*' --agent cursor
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent cursor
 
 # Install all skills into all auto-detected agents on your machine
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill '*' --agent '*'
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent '*'
 
 # Install globally (cross-project)
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill '*' --agent kiro-cli --global
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent kiro-cli --global
 ```
 
 ### Install only one of the three skills
 
 ```bash
 # Just the knowledge base
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill knowledge-base-for-startups --agent <agent>
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill knowledge-base-for-startups --agent <agent>
 
 # Just the prompt library
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill prompt-library-for-startups --agent <agent>
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill prompt-library-for-startups --agent <agent>
 
 # Just the build workflow
-npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/advisor-for-startups --skill start-building-for-startups --agent <agent>
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill start-building-for-startups --agent <agent>
 ```
 
 ### Supported `--agent` values

@@ -3,7 +3,7 @@ name: knowledge-base-for-startups
 description: "AWS Startups reference content — Activate FAQ, credits guide, programs, partner offers, sample architectures, and 277 learn articles spanning generative AI, cloud architecture, cost optimization, security, fundraising, go-to-market, and real-world startup case studies. Use when the user asks factual questions about AWS Activate (eligibility, credits, programs, providers), wants a sample architecture or solution guide, or needs an AWS-curated learn article on a specific startup topic. For copy-paste AI prompts (RAG chatbot, MVP scaffold, security baseline, GPU quota, etc.), see the prompt-library-for-startups skill. Do not use for: account-specific lookups (credits balance, Activate membership status, application status), real-time event listings beyond the events stub, or content not present in the bundled `references/` tree."
 ---
 
-# AWS Startups Advisor — Knowledge Base
+# AWS Startup Advisor — Knowledge Base
 
 Reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups) for AWS Activate programs, credits, partner offers, sample build architectures, and a large learn-article corpus covering technical guides, business strategy, and real-world case studies.
 

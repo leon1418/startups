@@ -24,7 +24,7 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 - `"gemini"` → load `references/design-refs/ai-gemini-to-bedrock.md`
 - `"openai"` → load `references/design-refs/ai-openai-to-bedrock.md`
-- `"anthropic"` → load `references/design-refs/ai-openai-to-bedrock.md` (Anthropic SDK users are migrating to Bedrock-hosted Claude — the Converse API target and model mapping process is identical to the OpenAI path; the source model IDs differ but the Bedrock destination is the same Claude family)
+- `"anthropic"` → load `references/design-refs/ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use ai-openai-to-bedrock.md for Anthropic SDK users)
 - `"both"` → load both `ai-gemini-to-bedrock.md` and `ai-openai-to-bedrock.md`
 - `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
 

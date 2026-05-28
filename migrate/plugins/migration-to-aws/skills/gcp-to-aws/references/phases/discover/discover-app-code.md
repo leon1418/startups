@@ -543,7 +543,7 @@ After generating the output file, the parent `discover.md` handles the phase sta
 
 The Design phase (`references/phases/design/design.md`) uses `ai-workload-profile.json`:
 
-1. **`summary.ai_source`** — Routes to the correct design reference: `"gemini"` → `ai-gemini-to-bedrock.md`, `"openai"` → `ai-openai-to-bedrock.md`, `"anthropic"` → `ai-openai-to-bedrock.md` (Bedrock Claude migration path — same Converse API target), `"both"` → load both Gemini and OpenAI refs, `"other"` → `ai.md` (traditional ML / Vision API / Speech API only)
+1. **`summary.ai_source`** — Routes to the correct design reference: `"gemini"` → `ai-gemini-to-bedrock.md`, `"openai"` → `ai-openai-to-bedrock.md`, `"anthropic"` → `ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap), `"both"` → load both Gemini and OpenAI refs, `"other"` → `ai.md` (traditional ML / Vision API / Speech API only)
 2. **`models`** — Determines which Bedrock models to recommend via the model selection decision tree
 3. **`integration.capabilities_summary`** — Validates Bedrock feature parity (e.g., if `function_calling` is `true`, selected Bedrock model must support tool use)
 4. **`integration.pattern`** and **`integration.primary_sdk`** — Determines code migration guidance (direct SDK swap vs framework provider swap vs REST endpoint change)

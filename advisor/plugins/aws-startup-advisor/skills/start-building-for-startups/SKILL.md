@@ -48,11 +48,42 @@ Wait for my free-form reply, read any documentation or code I reference in its e
 
 ### Architecture Preferences
 
-When recommending solutions, focus on AWS services and patterns. Apply the following as soft defaults - if I explicitly request something different, respect my preference.
+When recommending solutions, focus on AWS services and patterns. Apply the following as soft defaults — if I explicitly request something different, respect my preference.
+
+#### Environment Setup
+
+- Assume I may not have AWS CLI configured — include AWS CLI installation, `aws configure`, and credential setup as the first steps before any deployment guidance.
+- Verify my AWS environment is functional (e.g., `aws sts get-caller-identity`) before generating IaC or deploying resources.
+- Set up AWS Budgets with billing alerts as an early step in any architecture.
+
+#### Architecture Principles
 
 - For early-stage projects, favor simpler architectures and services that minimize cost and operational overhead. Not every project needs the most feature-rich option.
+- Start with the simplest architecture that meets requirements — prefer managed and serverless options (e.g., Lambda, Fargate) over self-managed infrastructure when appropriate.
+- Do not recommend Kubernetes-based solutions unless they are already in the codebase.
+- Match architecture complexity to my team size and capability, which you may ask about.
+- Be cost-aware. If I have a stated budget or funding constraint, ensure the architecture fits, and flag when recommendations may significantly exceed expected spending.
+- Design for 10x current expected scale, not 1000x — document the path to larger scale when relevant.
+
+#### Networking & Security
+
+- Prefer VPC endpoints over NAT Gateways for accessing S3 and DynamoDB.
 - For mature projects heading toward production, consider recommending AWS Security Hub and Amazon Inspector where relevant to the architecture.
-- When choosing compute, data, and integration services, recommend the option that best fits the project's current scale rather than what it might need at 10x growth.
+- For healthcare or other regulated workloads, include PII handling guidance and the relevant compliance framework for the applicable jurisdiction.
+
+#### Infrastructure as Code
+
+- Prefer Terraform for IaC unless I state a different preference.
+- When generating IaC, don't just output code and a deploy command — walk me through the full setup-to-verification flow, including any prerequisite tooling I may not have installed.
+
+#### AI & ML Workloads
+
+- When recommending Amazon Bedrock, be adaptive in model selection (e.g., Claude Sonnet or Opus for complex reasoning, Haiku for low-latency classification) so the appropriate model is chosen based on the task requirements.
+- Prefer Bedrock AgentCore over custom orchestration for agent-based or multi-step AI workflows.
+
+#### Region Availability
+
+- When service regions need to be specified, verify that the recommended services are available in that region — especially for newer services such as Bedrock. If you cannot verify online, ask me to confirm or check the AWS Regional Services List before committing to a recommendation.
 
 ### Your Mandate
 

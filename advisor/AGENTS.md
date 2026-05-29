@@ -34,7 +34,7 @@ Three sibling skills, each with its own SKILL.md and (where applicable) `referen
 
 - **1 landing page**: `references/home.md` — for broad "what is AWS Startups" questions.
 - **3 searchable indexes** (consult these before opening individual articles):
-  - `references/learn.md` — 277 articles across 8 categories, with keywords.
+  - `references/learn.md` — 277+ articles across 8 categories, with keywords.
   - `references/offers.md` — 13 publicly-viewable AWS Activate partner offers, with keywords.
   - `references/build.md` — 22 sample architectures / solution guides; split into publicly-viewable and sign-in-required sections.
 - **5 reference pages**: `references/faq.md` (111 Q&A), `references/credits.md`, `references/programs.md`, `references/providers.md`, `references/contact-us.md`.
@@ -42,8 +42,8 @@ Three sibling skills, each with its own SKILL.md and (where applicable) `referen
 
 ### `prompt-library-for-startups` — copy-paste prompts + downloadable agents
 
-- **1 searchable index**: `references/prompt-library.md` (30 prompts, 4 downloadable agents, plus a Q&A FAQ section on prompt usage / cost / safety).
-- **30 prompt detail files** under `references/prompt-library/<slug>.md` — each with the verbatim System Prompt and a "How to use?" section where available.
+- **1 searchable index**: `references/prompt-library.md` (29+ prompts, 4 downloadable agents, plus a Q&A FAQ section on prompt usage / cost / safety).
+- **29+ prompt detail files** under `references/prompt-library/<slug>.md` — each with the verbatim System Prompt and a "How to use?" section where available.
 - **4 downloadable agents** documented inline in the index — recommend by use case, hand over the GitHub repo link.
 
 ### `start-building-for-startups` — discovery + implementation workflow

@@ -1,11 +1,11 @@
 ---
 name: prompt-library-for-startups
-description: "30 AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus 4 downloadable installable agents (AWS Migration Agent, Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent). Use when the user asks for a prompt to do X on AWS, wants an installable agent for migration / multi-account / cost monitoring / quota management, or asks how to use AWS prompts. Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
+description: "29+ AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus 4 downloadable installable agents (AWS Migration Agent, Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent). Use when the user asks for a prompt to do X on AWS, wants an installable agent for migration / multi-account / cost monitoring / quota management, or asks how to use AWS prompts. Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
 ---
 
 # AWS Startups Prompt & Agent Library
 
-Searchable index of 30 AWS-curated prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.) plus 4 downloadable installable agents. Content is verbatim from [aws.amazon.com/startups/prompt-library](https://aws.amazon.com/startups/prompt-library).
+Searchable index of 29+ AWS-curated prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.) plus 4 downloadable installable agents. Content is verbatim from [aws.amazon.com/startups/prompt-library](https://aws.amazon.com/startups/prompt-library).
 
 **Last updated:** 2026-05-12
 
@@ -17,7 +17,7 @@ Open [`references/prompt-library.md`](references/prompt-library.md) — it's the
 
 The index has three sections:
 
-1. **Prompts — searchable index** (30 entries) — copy-paste prompts.
+1. **Prompts — searchable index** (29+ entries) — copy-paste prompts.
 2. **Downloadable agents** (4 entries) — installable agents that clone from a GitHub repo.
 3. **Frequently Asked Questions** — guidance on writing a good prompt, costs, safety, no-technical-background usage, monitoring.
 
@@ -64,7 +64,6 @@ When the user's intent matches one of these — _"help me migrate to AWS"_, _"se
 | _"Cost anomaly / spend monitoring"_                  | `cost-anomaly-detection.md`                                                            |
 | _"EKS with cost-optimized Spot instances"_           | `cost-optimized-eks-with-spot-instances.md`                                            |
 | _"Open-source LLM inference"_                        | `open-source-llm-inference.md`                                                         |
-| _"OWASP / web app vulnerability scan"_               | `owasp-zap-vulnerability-scanner.md`                                                   |
 | _"Well-Architected Review"_                          | `well-architecture-review.md`                                                          |
 | _"Multi-region security assessment"_                 | `multi-region-assessment.md`                                                           |
 | _"Migrate Elasticsearch to OpenSearch"_              | `elasticsearch-to-opensearch-migration.md`                                             |
@@ -81,7 +80,7 @@ For anything else, filter `references/prompt-library.md` by keyword.
 
 This skill is **prompts and installable agents only**. Two sibling skills cover adjacent jobs:
 
-- **`knowledge-base-for-startups`** — AWS Startups knowledge base (Activate FAQ, credits, programs, partner offers, sample architectures, 277 learn articles). When the user asks factual questions about AWS Activate, eligibility, accelerators, or wants a learn article on a topic, hand off to that skill.
+- **`knowledge-base-for-startups`** — AWS Startups knowledge base (Activate FAQ, credits, programs, partner offers, sample architectures, 277+ learn articles). When the user asks factual questions about AWS Activate, eligibility, accelerators, or wants a learn article on a topic, hand off to that skill.
 - **`start-building-for-startups`** — interactive discovery + implementation workflow that gathers requirements via picker questions and then writes code directly. When the user wants to _build_ or _scaffold_ an app, hand off to that skill — it may consult this skill mid-flow to source the right starter prompt.
 
 Boundary cases — invoke both. Example: _"how do I start with RAG on Bedrock?"_ → this skill for the starter prompt (`rag-chatbot-with-claude.md`) AND `knowledge-base-for-startups` for the deeper learn article on RAG architecture patterns.

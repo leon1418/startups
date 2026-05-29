@@ -2,8 +2,8 @@
 
 A plugin of three sibling skills that work alongside each other in any modern AI coding agent (Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and 50+ others):
 
-- **`knowledge-base-for-startups`** — AWS Startups knowledge base. Activate FAQ, credits guide, programs, partner offers, sample architectures, and 277 learn articles. Read-only reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups), all searchable and offline after install.
-- **`prompt-library-for-startups`** — 30 AWS-curated copy-paste prompts plus 4 downloadable installable agents (Migration, Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota).
+- **`knowledge-base-for-startups`** — AWS Startups knowledge base. Activate FAQ, credits guide, programs, partner offers, sample architectures, and 277+ learn articles. Read-only reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups), all searchable and offline after install.
+- **`prompt-library-for-startups`** — 29+ AWS-curated copy-paste prompts plus 4 downloadable installable agents (Migration, Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota).
 - **`start-building-for-startups`** — interactive discovery workflow that gathers requirements via picker questions and writes an AWS architectural scaffold directly into the user's codebase.
 
 The three skills are designed to be cross-aware — `start-building-for-startups` consults `knowledge-base-for-startups` and `prompt-library-for-startups` mid-flow; `knowledge-base-for-startups` and `prompt-library-for-startups` defer to each other on boundary queries.
@@ -20,7 +20,7 @@ Install all three skills at once into a single agent:
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent <agent>
 ```
 
-`--skill '*'` selects every skill in the plugin; pair it with `--agent <agent>` to scope the install to a single coding agent. The CLI writes each skill into the right per-agent folder; restart your agent afterward to pick them up.
+`--skill '*'` selects every skill in the plugin; pair it with `--agent <agent>` to scope the installation to a single coding agent. The CLI writes each skill into the right per-agent folder; restart your agent afterward to pick them up.
 
 > **If you omit `--agent`, the CLI shows an interactive picker.** Use the **space bar** to select your agent (e.g. Claude Code, Kiro), then press **Enter** to confirm. If you press Enter without selecting, nothing gets selected and the CLI falls back to writing the skills into `.agents/skills/` — which most agents won't discover, so your agent ends up empty-handed. Either select with space, or pass `--agent <agent>` explicitly to skip the picker.
 

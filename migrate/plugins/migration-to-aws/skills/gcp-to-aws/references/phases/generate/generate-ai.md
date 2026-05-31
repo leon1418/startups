@@ -163,3 +163,65 @@ The parent orchestrator (`generate.md`) uses `generation-ai.json` to:
 1. Gate Stage 2 artifact generation — `generate-artifacts-ai.md` requires this file
 2. Provide AI migration context to `generate-artifacts-docs.md` for MIGRATION_GUIDE.md
 3. Set phase completion status in `.phase-status.json`
+
+## Part 7: Generate STARTUP_PROGRAMS.md
+
+Always generate `$MIGRATION_DIR/STARTUP_PROGRAMS.md` when `preferences.json` contains `ai_monthly_spend` or `startup_program_status`. This artifact summarizes applicable AWS startup programs based on the user's detected spend and workload type.
+
+**Content rules (all amounts from AWS official sources only):**
+
+```markdown
+# AWS Startup Programs for Your Migration
+
+Based on your migration profile, here are the AWS programs most relevant to you.
+Credits apply to Bedrock usage (Claude, Llama, Nova, and other third-party models).
+
+## AWS Activate Credits
+
+AWS Activate provides promotional credits to offset AWS costs including Amazon Bedrock.
+Apply at: https://aws.amazon.com/activate/
+
+### Which tier applies to you
+
+| Your situation | Package | Credits | How to apply |
+|---|---|---|---|
+| Self-funded, no VC/accelerator | Founders | $1,000 | Apply directly at aws.amazon.com/activate — no Org ID needed |
+| VC or accelerator-backed (pre-Series B) | Portfolio | Up to $100,000 | Get your Activate Provider Org ID from your VC/accelerator, then apply |
+
+**Eligibility (both tiers):** Pre-Series B, founded within 10 years, active AWS account, functioning company website.
+Credits expire within 1–2 years. Apply when you're ready to ramp up AWS usage.
+
+[Conditional — only if ai_monthly_spend is "$2K-$10K" or ">$10K" AND agentic_profile.is_agentic == true:]
+
+## AWS Generative AI Accelerator
+
+For agentic AI startups ready to scale. Highly selective (~2% acceptance rate).
+
+- **Credits:** Up to $1,000,000 in AWS credits
+- **Program:** 8-week cohort with mentorship, technical support, and go-to-market resources
+- **Best for:** Startups with production agentic workloads and significant AI spend
+- **Apply:** https://aws.amazon.com/startups/generative-ai/accelerator/
+
+[End conditional]
+
+## How to use credits during this migration
+
+1. Apply for AWS Activate **before** running `terraform apply` — credits apply automatically to new charges
+2. Credits cover: Fargate, Aurora, S3, CloudWatch, and all Bedrock third-party models
+3. Monitor your balance: AWS Console → Billing → Credits
+4. Credits do not apply retroactively — apply before incurring costs
+
+## Next steps
+
+- [ ] Apply for AWS Activate at https://aws.amazon.com/activate/
+- [ ] If VC/accelerator-backed: get your Activate Provider Org ID from your investor
+- [ ] Apply credits before running terraform apply
+[- [ ] Apply for AWS Generative AI Accelerator: https://aws.amazon.com/startups/generative-ai/accelerator/ (if agentic and high spend)]
+```
+
+**Generation rules:**
+- Always include the Activate section
+- Only include the Generative AI Accelerator section when `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`
+- If `startup_program_status == "has_credits"`: replace the "Apply for AWS Activate" steps with "You already have AWS Activate credits — ensure they are applied to your account before running terraform apply"
+- Do NOT include any credit amounts not sourced from official AWS pages (aws.amazon.com)
+- Do NOT reference MAP, IW Migrate, or ISV Workload Migration Program — these are enterprise/partner programs, not startup self-service paths

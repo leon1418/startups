@@ -207,9 +207,10 @@ For agentic AI startups ready to scale. Highly selective (~2% acceptance rate).
 ## How to use credits during this migration
 
 1. Apply for AWS Activate **before** running `terraform apply` — credits apply automatically to new charges
-2. Credits cover: Fargate, Aurora, S3, CloudWatch, and all Bedrock third-party models
-3. Monitor your balance: AWS Console → Billing → Credits
-4. Credits do not apply retroactively — apply before incurring costs
+2. Credits cover eligible AWS services including Fargate, Aurora, S3, CloudWatch, and Bedrock models (both Amazon first-party and third-party foundation models)
+3. **Credits do NOT cover upfront Savings Plans or Reserved Instance fees.** If the Estimate phase recommended Savings Plans for cost optimization, those commitments must be paid separately — credits apply to on-demand usage only.
+4. Monitor your balance: AWS Console → Billing → Credits
+5. Credits do not apply retroactively — apply before incurring costs
 
 ## Next steps
 

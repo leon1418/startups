@@ -1,0 +1,44 @@
+{
+  "name": "aws-startup-advisor",
+  "version": "1.4.0",
+  "description": "AI-powered build and migrate guidance from AWS, built for startups at any stage.",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://aws.amazon.com"
+  },
+  "homepage": "https://github.com/awslabs/startups/tree/main/advisor",
+  "repository": "https://github.com/awslabs/startups",
+  "license": "MIT-0",
+  "keywords": [
+    "aws",
+    "startups",
+    "activate",
+    "knowledge-base",
+    "prompt-library",
+    "migration",
+    "gcp",
+    "cloud-migration",
+    "terraform",
+    "bedrock",
+    "ai-migration",
+    "cost-estimation"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "AWS Startup Advisor",
+    "shortDescription": "Build and migrate on AWS with startup-focused architecture, cost, and security guidance plus a GCP-to-AWS migration workflow.",
+    "longDescription": "AWS Startup Advisor brings four sibling skills together for startups building and migrating on AWS.\n\nknowledge-base-for-startups is an AWS Startups reference base (Activate FAQ, credits, programs, partner offers, sample architectures, and 277+ learn articles). prompt-library-for-startups offers 29+ copy-paste prompts plus downloadable installable agents. start-building-for-startups runs an interactive discovery workflow that scaffolds an AWS architecture into your codebase.\n\nmigration-to-aws runs a structured 6-phase GCP-to-AWS migration assessment — discovering what you have, clarifying requirements, designing the AWS architecture, estimating costs with real pricing data, and generating runnable migration artifacts. It also migrates AI and agentic workloads (OpenAI/Gemini to Amazon Bedrock, LangChain/CrewAI/AutoGen to AWS-native frameworks).",
+    "developerName": "Amazon Web Services",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/awslabs/startups/tree/main/advisor",
+    "defaultPrompt": [
+      "Help me build an MVP on AWS",
+      "Find AWS Startups articles on cost optimization",
+      "Migrate my GCP infrastructure to AWS",
+      "Migrate my OpenAI app to Amazon Bedrock",
+      "Estimate AWS costs for my GCP workload"
+    ]
+  }
+}

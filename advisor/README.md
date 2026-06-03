@@ -1,12 +1,22 @@
-# AWS Startup Advisor — three-skill plugin
+# AWS Startup Advisor — four-skill plugin
 
-A plugin of three sibling skills that work alongside each other in any modern AI coding agent (Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and 50+ others):
+A plugin of four sibling skills that work alongside each other in any modern AI coding agent (Kiro, Claude Code, Cursor, Codex, GitHub Copilot, and 50+ others):
 
 - **`knowledge-base-for-startups`** — AWS Startups knowledge base. Activate FAQ, credits guide, programs, partner offers, sample architectures, and 277+ learn articles. Read-only reference content from [aws.amazon.com/startups](https://aws.amazon.com/startups), all searchable and offline after install.
-- **`prompt-library-for-startups`** — 29+ AWS-curated copy-paste prompts plus 4 downloadable installable agents (Migration, Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota).
+- **`prompt-library-for-startups`** — 29+ AWS-curated copy-paste prompts plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota).
 - **`start-building-for-startups`** — interactive discovery workflow that gathers requirements via picker questions and writes an AWS architectural scaffold directly into the user's codebase.
+- **`migration-to-aws`** — structured 6-phase GCP-to-AWS migration workflow: discover resources from Terraform / app code / billing exports, clarify requirements, design the AWS architecture, estimate costs with live pricing, and generate runnable migration artifacts. Also migrates AI and agentic workloads (OpenAI / Gemini → Amazon Bedrock; LangChain / CrewAI / AutoGen → AWS-native frameworks). Requires MCP servers (see below).
 
-The three skills are designed to be cross-aware — `start-building-for-startups` consults `knowledge-base-for-startups` and `prompt-library-for-startups` mid-flow; `knowledge-base-for-startups` and `prompt-library-for-startups` defer to each other on boundary queries.
+The skills are designed to be cross-aware — `start-building-for-startups` consults `knowledge-base-for-startups` and `prompt-library-for-startups` mid-flow; `knowledge-base-for-startups` and `prompt-library-for-startups` defer to each other on boundary queries; and migration intent routes to `migration-to-aws`.
+
+## MCP servers
+
+The `migration-to-aws` skill depends on two MCP servers, declared in `advisor/plugins/aws-startup-advisor/.mcp.json` and provisioned automatically when the plugin is installed:
+
+- **AWS Knowledge** (`awsknowledge`, HTTP) — current AWS documentation lookups.
+- **AWS Pricing** (`awspricing`, stdio via `uvx awslabs.aws-pricing-mcp-server`) — live pricing data for cost estimates. Requires [`uv`/`uvx`](https://docs.astral.sh/uv/) on the user's machine.
+
+The other three skills do not require MCP servers.
 
 ---
 
@@ -14,7 +24,7 @@ The three skills are designed to be cross-aware — `start-building-for-startups
 
 **Prerequisite:** Node.js 18+ (ships with `npx`). Grab the LTS or current release for your OS from [nodejs.org/en/download](https://nodejs.org/en/download). Verify with `node -v && npx -v`.
 
-Install all three skills at once into a single agent:
+Install all four skills at once into a single agent:
 
 ```bash
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent <agent>
@@ -43,7 +53,7 @@ npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill '*' --agent kiro-cli --global
 ```
 
-### Install only one of the three skills
+### Install only one of the four skills
 
 ```bash
 # Just the knowledge base
@@ -54,6 +64,9 @@ npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws
 
 # Just the build workflow
 npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill start-building-for-startups --agent <agent>
+
+# Just the migration workflow
+npx skills add https://github.com/awslabs/startups/tree/main/advisor/plugins/aws-startup-advisor --skill migration-to-aws --agent <agent>
 ```
 
 ### Supported `--agent` values
@@ -86,7 +99,7 @@ Once installed, ask your agent:
 | _"Show me a sample architecture for RAG on Bedrock"_            | `knowledge-base-for-startups` → `references/build.md`                                                           |
 | _"Give me a prompt for an MVP on AWS"_                          | `prompt-library-for-startups` → `awsome-mvp-builder.md`                                                         |
 | _"Prompt for a RAG chatbot using Claude on Bedrock"_            | `prompt-library-for-startups` → `rag-chatbot-with-claude.md`                                                    |
-| _"Help me migrate workloads from GCP to AWS"_                   | `prompt-library-for-startups` → AWS Migration Agent (downloadable)                                              |
+| _"Help me migrate workloads from GCP to AWS"_                   | `migration-to-aws` → 6-phase migration workflow                                                                 |
 | _"Help me build a SaaS app on AWS"_                             | `start-building-for-startups` → discovery workflow → scaffolded code                                            |
 | _"How do I start with RAG?"_                                    | `knowledge-base-for-startups` (learn article) + `prompt-library-for-startups` (starter prompt) — boundary query |
 

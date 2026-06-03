@@ -1,12 +1,25 @@
 {
   "name": "aws-startup-advisor",
   "displayName": "AWS Startup Advisor",
-  "description": "AWS Startup Advisor delivers personalized architecture, cost, and security guidance with expertise from AWS Startup Solutions Architects.",
-  "version": "1.3.1",
+  "description": "AI-powered build and migrate guidance from AWS, built for startups at any stage.",
+  "version": "1.4.0",
   "author": {
     "name": "Amazon Web Services"
   },
   "license": "MIT-0",
-  "keywords": ["aws", "startups", "activate", "knowledge-base", "prompt-library"],
+  "keywords": [
+    "aws",
+    "startups",
+    "activate",
+    "knowledge-base",
+    "prompt-library",
+    "migration",
+    "gcp",
+    "cloud-migration",
+    "terraform",
+    "bedrock",
+    "ai-migration",
+    "cost-estimation"
+  ],
   "skills": "./skills/"
 }

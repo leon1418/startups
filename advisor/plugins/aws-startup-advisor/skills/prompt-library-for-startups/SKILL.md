@@ -1,11 +1,11 @@
 ---
 name: prompt-library-for-startups
-description: "29+ AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus 4 downloadable installable agents (AWS Migration Agent, Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent). Use when the user asks for a prompt to do X on AWS, wants an installable agent for migration / multi-account / cost monitoring / quota management, or asks how to use AWS prompts. Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
+description: "29+ AWS-curated copy-paste prompts for AI coding agents (MVP scaffolding, RAG chatbot with Claude on Bedrock, security baseline evaluation, cost anomaly detection, GPU quota requests, EKS deployment, Well-Architected review, etc.) plus downloadable installable agents (Multi-Account Transition Advisor, Bill Shock Preventer, Service Quota Agent). Use when the user asks for a prompt to do X on AWS, wants an installable agent for multi-account / cost monitoring / quota management, or asks how to use AWS prompts. For migration intent (GCP to AWS, OpenAI/Gemini to Bedrock), route to the migration-to-aws skill. Do not use for: factual AWS Activate / programs / credits questions, learn articles, sample architectures, or for prompts that are not in the bundled `references/prompt-library/` tree."
 ---
 
 # AWS Startups Prompt & Agent Library
 
-Searchable index of 29+ AWS-curated prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.) plus 4 downloadable installable agents. Content is verbatim from [aws.amazon.com/startups/prompt-library](https://aws.amazon.com/startups/prompt-library).
+Searchable index of 29+ AWS-curated prompts for AI coding tools (Kiro, Claude Code, Cursor, etc.) plus downloadable installable agents. Content is verbatim from [aws.amazon.com/startups/prompt-library](https://aws.amazon.com/startups/prompt-library).
 
 **Last updated:** 2026-05-12
 
@@ -42,14 +42,15 @@ When the user asks for a prompt:
 
 ## Downloadable agents — different surface from prompts
 
-The 4 entries in the **Downloadable agents** section of `references/prompt-library.md` are **installable agents**, not copy-paste prompts:
+The **Downloadable agents** section of `references/prompt-library.md` lists **installable agents**, not copy-paste prompts:
 
-- **AWS Migration Agent** — Terraform-based discovery + migration of GCP / OpenAI / Gemini workloads to AWS. Repo: https://github.com/aws-samples/sample-agent-skills-for-aws-migration
 - **AWS Multi-Account Transition Advisor** — guides single-account → multi-account (AWS Organizations + OUs).
 - **AWS Bill Shock Preventer** — proactive cost-spike detection and alerting.
 - **AWS Service Quota Agent** — auditing and requesting quota increases.
 
-When the user's intent matches one of these — _"help me migrate to AWS"_, _"set up multi-account"_, _"prevent bill shock"_, _"audit service quotas"_ — recommend the matching agent **by title and use-case**, then hand over the GitHub repo / install link from the index file. Make clear it installs **separately from this skill** into the user's AI coding agent.
+When the user's intent matches one of these — _"set up multi-account"_, _"prevent bill shock"_, _"audit service quotas"_ — recommend the matching agent **by title and use-case**, then hand over the GitHub repo / install link from the index file. Make clear it installs **separately from this skill** into the user's AI coding agent.
+
+For migration intent — _"help me migrate to AWS"_, _"GCP to AWS"_, _"move off OpenAI to Bedrock"_ — route to the **`migration-to-aws`** skill in the `aws-startup-advisor` plugin.
 
 ## Routing hints — common queries → which entry
 
@@ -69,7 +70,7 @@ When the user's intent matches one of these — _"help me migrate to AWS"_, _"se
 | _"Migrate Elasticsearch to OpenSearch"_              | `elasticsearch-to-opensearch-migration.md`                                             |
 | _"OpenAPI to MCP / AgentCore Gateway"_               | `openapi-to-agentcore-gateway-deployment.md`                                           |
 | _"Deploy a GitHub repo to AWS"_                      | `deploy-github-repo.md`                                                                |
-| _"Help me migrate workloads to AWS"_                 | Downloadable: AWS Migration Agent                                                      |
+| _"Help me migrate workloads to AWS"_                 | `migration-to-aws` skill (sibling in this plugin)                                      |
 | _"Set up multi-account on AWS Organizations"_        | Downloadable: Multi-Account Transition Advisor                                         |
 | _"Stop bill shock / detect cost spikes proactively"_ | Downloadable: AWS Bill Shock Preventer                                                 |
 | _"Manage / request service quotas"_                  | Downloadable: Service Quota Agent                                                      |

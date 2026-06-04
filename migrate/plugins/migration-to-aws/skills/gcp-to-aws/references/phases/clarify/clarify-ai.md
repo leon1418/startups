@@ -91,12 +91,14 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 > D) > $10,000/month
 > E) I don't know
 
-| Answer               | Recommendation Impact                                                                                                                                                                                                      |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| < $500/month         | **AWS Activate Founders** ($1K credits, self-service, no VC needed — apply at aws.amazon.com/activate); Bedrock free tier covers initial testing; Bedrock cost comparison shows modest savings                             |
-| $500–$2,000/month    | **AWS Activate Portfolio** (up to $100K credits for VC/accelerator-backed startups — requires Activate Provider Org ID); Bedrock cost comparison highlighted; credits apply to Bedrock third-party models including Claude |
-| $2,000–$10,000/month | **AWS Activate Portfolio** (up to $100K); Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (up to $1M credits, cohort-based)       |
-| > $10,000/month      | **AWS Generative AI Accelerator** (up to $1M credits, 8-week program, ~2% acceptance — aws.amazon.com/startups/generative-ai/accelerator); dedicated AI migration support; Bedrock provisioned throughput analysis        |
+| Answer               | Recommendation Impact |
+| -------------------- | --------------------- |
+| < $500/month         | **AWS Activate Founders** (up to $5,000 credits, self-service, no VC needed — apply at aws.amazon.com/startups/credits); Bedrock free tier covers initial testing; Bedrock cost comparison shows modest savings |
+| $500–$2,000/month    | **AWS Activate Portfolio** (up to $200,000 credits for VC/accelerator-backed startups — requires Activate Provider Org ID); Bedrock cost comparison highlighted; credits apply to Bedrock third-party models including Claude |
+| $2,000–$10,000/month | **AWS Activate Portfolio** (up to $200,000); Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (up to $1M credits, cohort-based, adjacent to the credits-hub funnel) |
+| > $10,000/month      | **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; see aws.amazon.com/startups/credits); dedicated AI migration support; Bedrock provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (up to $1M credits, ~2% acceptance, 8-week cohort — aws.amazon.com/startups/generative-ai/accelerator) |
+
+**Activate eligibility (Founders & Portfolio):** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
 
 Interpret → `ai_monthly_spend`. Default: B → `"$500-$2K"`.
 
@@ -398,9 +400,11 @@ _Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). Ask
 
 ## Q27 — Have you applied for AWS Activate credits?
 
-**Rationale:** AWS Activate credits apply directly to Bedrock usage (including Claude, Llama, Nova, and other third-party models). Surfacing eligibility at the migration decision moment helps startups reduce the cost of the migration itself. This takes 30 seconds to answer and can unlock $1K–$100K in credits.
+**Rationale:** AWS Activate credits apply directly to Bedrock usage (including Claude, Llama, Nova, and other third-party models). Surfacing eligibility at the migration decision moment helps startups reduce the cost of the migration itself. This takes 30 seconds to answer and can unlock $5K–$200K in credits.
 
-> AWS Activate credits offset Bedrock costs during and after migration — including Claude, Llama, and Nova models. Eligible startups can get $1K–$100K depending on funding stage.
+**Activate eligibility:** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
+
+> AWS Activate credits offset Bedrock costs during and after migration — including Claude, Llama, and Nova models. Eligible startups can get $5K–$200K depending on funding stage.
 >
 > A) Yes — already have AWS Activate credits
 > B) No — haven't applied yet (self-funded or pre-VC)
@@ -410,11 +414,13 @@ _Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). Ask
 | Answer | Recommendation Impact |
 |---|---|
 | Already have credits | Note credit balance in migration plan; flag Bedrock usage as credit-eligible |
-| No — self-funded | Flag **AWS Activate Founders** ($1K, self-service): aws.amazon.com/activate — apply before starting migration to offset Bedrock testing costs |
-| No — VC/accelerator-backed | Flag **AWS Activate Portfolio** (up to $100K): requires Activate Provider Org ID from your VC/accelerator — contact them for the Org ID before applying |
+| No — self-funded | Flag **AWS Activate Founders** (up to $5,000, self-service): aws.amazon.com/startups/credits — apply before starting migration to offset Bedrock testing costs |
+| No — VC/accelerator-backed | Flag **AWS Activate Portfolio** (up to $200,000): requires Activate Provider Org ID from your VC/accelerator — contact them for the Org ID before applying |
 | Don't know | Surface both tiers; recommend checking with investors/accelerator for Org ID |
 
-If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`: also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort, ~2% acceptance rate): aws.amazon.com/startups/generative-ai/accelerator
+If `ai_monthly_spend` is `">$10K"`: also flag **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; aws.amazon.com/startups/credits).
+
+If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`: also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort, ~2% acceptance rate — adjacent cohort program, distinct from the credits-hub funnel): aws.amazon.com/startups/generative-ai/accelerator
 
 Interpret → `startup_program_status`: A → `"has_credits"`, B → `"eligible_founders"`, C → `"eligible_portfolio"`, D → `"unknown"`. Default: D → `"unknown"`.
 

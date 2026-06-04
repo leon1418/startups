@@ -179,23 +179,24 @@ Credits apply to Bedrock usage (Claude, Llama, Nova, and other third-party model
 ## AWS Activate Credits
 
 AWS Activate provides promotional credits to offset AWS costs including Amazon Bedrock.
-Apply at: https://aws.amazon.com/activate/
+Apply at: https://aws.amazon.com/startups/credits/
 
 ### Which tier applies to you
 
 | Your situation | Package | Credits | How to apply |
 |---|---|---|---|
-| Self-funded, no VC/accelerator | Founders | $1,000 | Apply directly at aws.amazon.com/activate — no Org ID needed |
-| VC or accelerator-backed (pre-Series B) | Portfolio | Up to $100,000 | Get your Activate Provider Org ID from your VC/accelerator, then apply |
+| Self-funded, no VC/accelerator | Activate Founders | Up to $5,000 | Apply directly at aws.amazon.com/startups/credits — no Org ID needed |
+| VC or accelerator-backed (pre-Series B) | Activate Portfolio | Up to $200,000 | Get your Activate Provider Org ID from your VC/accelerator, then apply |
+| Ready to scale post-Activate-Portfolio | AWS Credits for AI Startups | $200,000+ | Invite-only — talk with your AWS Account Manager |
 
-**Eligibility (both tiers):** Pre-Series B, founded within 10 years, active AWS account, functioning company website.
+**Activate eligibility (Founders & Portfolio):** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
 Credits expire within 1–2 years. Apply when you're ready to ramp up AWS usage.
 
 [Conditional — only if ai_monthly_spend is "$2K-$10K" or ">$10K" AND agentic_profile.is_agentic == true:]
 
 ## AWS Generative AI Accelerator
 
-For agentic AI startups ready to scale. Highly selective (~2% acceptance rate).
+An adjacent cohort program for agentic AI startups, distinct from the AWS Activate credits-hub funnel above. Highly selective (~2% acceptance rate). The 2025 global cohort selected 40 startups; consult the program page for the next cohort cycle.
 
 - **Credits:** Up to $1,000,000 in AWS credits
 - **Program:** 8-week cohort with mentorship, technical support, and go-to-market resources
@@ -214,7 +215,7 @@ For agentic AI startups ready to scale. Highly selective (~2% acceptance rate).
 
 ## Next steps
 
-- [ ] Apply for AWS Activate at https://aws.amazon.com/activate/
+- [ ] Apply for AWS Activate at https://aws.amazon.com/startups/credits/
 - [ ] If VC/accelerator-backed: get your Activate Provider Org ID from your investor
 - [ ] Apply credits before running terraform apply
 [- [ ] Apply for AWS Generative AI Accelerator: https://aws.amazon.com/startups/generative-ai/accelerator/ (if agentic and high spend)]

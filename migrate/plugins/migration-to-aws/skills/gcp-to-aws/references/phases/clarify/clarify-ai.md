@@ -23,6 +23,61 @@ Before presenting questions, show:
 
 **Auto-detect signals** — scan IaC and application code before asking:
 
+---
+
+## Multi-Workload Confirmation Table (if `workloads[]` has ≥ 2 entries)
+
+**Fire when:** `ai-workload-profile.json` contains a non-empty `workloads[]` array with 2 or more entries. This replaces the per-workload Q16–Q22 loop with a single confirmation table.
+
+Before presenting Q16–Q22, show the detected workloads and proposed Bedrock targets:
+
+> **Detected AI Workloads:**
+>
+> | # | Model | SDK Method | Capability | Confidence | Proposed Bedrock Target |
+> |---|---|---|---|---|---|
+> | 1 | gemini-2.5-flash | generateContent | text_generation | medium | Claude Sonnet 4.6 |
+> | 2 | gemini-2.5-flash | generateContent (structured) | structured_output | high | Claude Sonnet 4.6 |
+> | 3 | imagen-3.0-generate-001 | generateImages | image_generation | high | Amazon Nova Canvas |
+>
+> **For each row, you can:**
+> - **Accept** — keep the proposed mapping
+> - **Edit** — change the Bedrock target
+> - **Drop** — this isn't an AI workload (false positive)
+>
+> _Do you accept all mappings? Or type the row number to edit._
+
+**Behavior:**
+
+1. **High-confidence rows (confidence = `high`):** Pre-fill Bedrock target from `capability → Bedrock model` mapping. Do NOT ask Q16–Q22 for these rows unless the user edits.
+
+2. **Medium/low-confidence rows:** Ask at most 2 questions per row:
+   - "Is the detected capability correct?" (confirm or select from: text_generation, structured_output, image_generation, embedding, speech_to_text, text_to_speech, unknown)
+   - "What matters most for this workload?" (Q16 priority: quality/speed/cost/balanced)
+
+3. **Target mapping** (default, overridden by user edits):
+
+   | Capability | Default Bedrock Target |
+   |---|---|
+   | text_generation | Apply Q16–Q19 override hierarchy (existing logic) |
+   | structured_output | Same as text_generation target (structured output is a mode, not a different model) |
+   | image_generation | Amazon Nova Canvas |
+   | embedding | Amazon Titan Embed Text v2 |
+   | speech_to_text | Amazon Transcribe |
+   | text_to_speech | Amazon Polly |
+   | unknown | Ask Q16–Q22 for this workload |
+
+4. **After confirmation:** Write one entry per accepted workload to `preferences.json` under a new `workloads[]` field alongside the existing scalar fields. Downstream phases (Design, Estimate) iterate `workloads[]` when present.
+
+5. **Question budget:** 4 global questions (Q14, Q15, framework, spend) + at most 2 per medium/low workload. For an app with 3 high-confidence workloads: 4 questions total, 0 per-workload. For an app with 2 high + 1 medium: 4 + 2 = 6 questions max.
+
+**Single-workload fallback:** If `workloads[]` has exactly 1 entry or is empty, skip the confirmation table and proceed with the existing Q16–Q22 flow below.
+
+---
+
+## Q14 — What AI framework or orchestration layer are you using? (select all that apply)
+
+**Auto-detect signals** — scan IaC and application code before asking:
+
 - No AI framework imports, raw HTTP calls to OpenAI/Gemini endpoints → A
 - LiteLLM imports or config files → B
 - OpenRouter base URL in code/config → B

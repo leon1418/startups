@@ -72,6 +72,52 @@ If `agentic_profile.is_agentic == true`:
 
 ## Part 1: Bedrock Model Selection
 
+**Multi-workload iteration (when `workloads[]` is present):**
+
+If `ai-workload-profile.json` contains a non-empty `workloads[]` array, iterate per workload instead of per model. For each `workloads[]` entry:
+
+1. **Use the workload's `capability` to select the Bedrock target class:**
+
+   | Capability | Target Class | Default Model |
+   |---|---|---|
+   | `text_generation` | Text/reasoning | Apply override hierarchy below |
+   | `structured_output` | Text/reasoning (same models support structured output) | Apply override hierarchy below |
+   | `image_generation` | Image generation | Amazon Nova Canvas |
+   | `embedding` | Embedding | Amazon Titan Embed Text v2 |
+   | `speech_to_text` | Speech-to-text | Amazon Transcribe |
+   | `text_to_speech` | Text-to-speech | Amazon Polly |
+   | `unknown` | Text/reasoning (default) | Apply override hierarchy below |
+
+2. **For text/reasoning capabilities:** Apply the existing override hierarchy from `ai_constraints`:
+   - Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > source model baseline
+   - This ensures single-workload sophistication is preserved per workload
+
+3. **Emit one `design_block` per workload** in `aws-design-ai.json`:
+
+   ```json
+   "design_blocks": [
+     {
+       "workload_id": "wl_3a1f2c",
+       "model_id": "gemini-2.5-flash",
+       "target_bedrock_model": "amazon.nova-lite-v1:0",
+       "capability": "text_generation",
+       "capability_confidence": "medium",
+       "rationale": "text_generation + medium confidence + balanced priority → Nova Lite",
+       "confidence_warning": null
+     }
+   ]
+   ```
+
+4. **Confidence warning:** Set `confidence_warning` to a non-null string (identifying the workload and noting manual review required) when `capability_confidence == "low"`. Null for `high` and `medium`.
+
+5. **Preserve input order:** `design_blocks[]` order matches `workloads[]` order.
+
+6. **Empty workloads:** If `workloads[]` is empty, emit `aws-design-ai.json` with `"design_blocks": []` and proceed with the existing `models[]` path below as fallback.
+
+**Fallback (no `workloads[]` or single entry):** If `workloads[]` is absent or has exactly one entry, fall through to the existing per-model logic below (backward compatible).
+
+---
+
 For each model in `models[]`, select the best-fit Bedrock model using the loaded design reference mapping tables. Do NOT use a hardcoded mapping — the design-ref files contain tier-organized tables with pricing and competitive analysis.
 
 Treat model mapping as compatibility-guided, not 1:1 parity. Before cutover, require validation of prompts, tool-calling behavior, and eval metrics for the selected Bedrock model.

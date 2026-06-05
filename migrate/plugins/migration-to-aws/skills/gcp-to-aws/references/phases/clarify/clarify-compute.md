@@ -87,7 +87,9 @@ E -> same as default — see IaC-signal default rule below
 
 _Fire when:_ Compute resources present AND WebSocket usage cannot be determined from inventory.
 
-**Rationale:** WebSocket support affects load balancer configuration. App Runner is no longer recommended for any workload — this question confirms whether ALB WebSocket configuration is needed in templates.
+**Auto-extract signal:** Only when application code was analyzed (see Clarify Step 2 item 14). If code was scanned and no WebSocket patterns found, extract `websocket: false` and skip. **If no code was analyzed** (Terraform-only), always ask Q9 — do not infer absence of WebSockets.
+
+**Rationale:** WebSocket support affects load balancer configuration.
 
 > WebSocket support affects load balancer configuration. This confirms whether ALB WebSocket configuration is needed in the migration templates.
 >

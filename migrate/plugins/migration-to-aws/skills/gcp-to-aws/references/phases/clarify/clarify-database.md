@@ -31,7 +31,7 @@ If the engine is not PostgreSQL or MySQL, note the appropriate RDS or DynamoDB t
 
 _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL.
 
-**Auto-extract signal (dev-tier):** When Cloud SQL tier matches dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract `database_traffic: "steady"` with `chosen_by: "extracted"` and **skip Q12**.
+**Auto-extract signal (dev-tier):** When **all** Cloud SQL instances match dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract `database_traffic: "steady"` with `chosen_by: "extracted"` and **skip Q12**. When instances mix dev and prod tiers, ask Q12.
 
 **Rationale:** Traffic pattern informs capacity planning on the target **already chosen by Q6**.
 
@@ -77,7 +77,7 @@ Default: A — `database_traffic: "steady"`.
 
 _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL.
 
-**Auto-extract signal (dev-tier):** Same dev-tier pattern as Q12 — extract `db_io_workload: "low"` with `chosen_by: "extracted"` and **skip Q13**.
+**Auto-extract signal (dev-tier):** Same dev-tier pattern as Q12 — extract `db_io_workload: "low"` with `chosen_by: "extracted"` and **skip Q13** only when **all** instances are dev-tier. When instances mix dev and prod tiers, ask Q13.
 
 **Rationale:** On AWS, storage and I/O billing differ between RDS and Aurora. This captures how disk-heavy the workload is. **Q6 still governs RDS vs Aurora** — this question only selects storage/I/O options within that family.
 

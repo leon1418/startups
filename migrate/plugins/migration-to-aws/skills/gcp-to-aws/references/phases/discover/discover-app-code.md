@@ -113,7 +113,9 @@ Record in discovery metadata (do not write a separate file):
 - `websocket_signals_found`: `true` if any pattern matches active (non-commented) code
 - `websocket_signal_files`: array of file paths where matches were found
 
-If **no matches**, set `websocket_signals_found: false`. Clarify Step 2 uses this to skip Q9 with `websocket: false` extracted.
+If **no matches**, set `websocket_signals_found: false`. Clarify Step 2 uses this to skip Q9 with `websocket: false` extracted **only when this step ran** (source files were found).
+
+If **no source code files were found** (Step 0 exit gate), do **not** set `websocket_signals_found` — Clarify must ask Q9; absence of a scan is not evidence of no WebSockets.
 
 ---
 

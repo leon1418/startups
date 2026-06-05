@@ -217,7 +217,7 @@ Default: B — no constraint, evaluate full compute options.
 | `ZONAL`   | `"single-az"`            | Yes — `chosen_by: "extracted"` |
 | `REGIONAL`| `"multi-az"`             | Yes — `chosen_by: "extracted"` |
 
-**Do not** infer Mission-Critical or Catastrophic from IaC — those require user input when HA needs exceed Multi-AZ RDS. When Cloud SQL is present but `availability_type` is missing or mixed across instances, ask Q6.
+**Never auto-extract:** `multi-az-ha` and `multi-region` require Q6 user answers (Mission-Critical / Catastrophic) — IaC cannot infer these. Cloud SQL `REGIONAL` is RDS Multi-AZ (`multi-az`), not Aurora (`multi-az-ha`). Skip Q6 only when **all** instances agree. When instances disagree or `availability_type` is missing on any instance, ask Q6.
 
 **Rationale:** Availability requirements drive database engine selection, deployment topology, and whether multi-AZ is mandatory. Aurora Global Database and multi-region compute are only recommended when Catastrophic is selected AND Q1 confirms global users — both signals are required.
 

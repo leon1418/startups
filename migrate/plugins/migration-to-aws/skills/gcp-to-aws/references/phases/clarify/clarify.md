@@ -140,8 +140,8 @@ ELSE skip to Step 2 (full Clarify)
    - **Q21** (AI latency) — from `clarify-ai.md`
    - **Q3** (GCP spend) — only if billing did not extract it
    - **Q1** (region) — only if region extraction ambiguous (multiple GCP regions)
-3. Apply documented defaults for all other unanswered questions. Record in `metadata.questions_defaulted`.
-4. Write `preferences.json` with `metadata.clarify_mode: "simple_hybrid"`. Skip Step 4 batch loop — go to Category E opt-in (if applicable) then Step 5.
+4. Apply documented defaults for all other unanswered questions. Record in `metadata.questions_defaulted`.
+5. Write `preferences.json` with `metadata.clarify_mode: "simple_hybrid"`. Skip Step 4 batch loop — go to Category E opt-in (if applicable) then Step 5.
 
 **Agentic hard block:** If `agentic_profile.is_agentic == true`, **never offer** infra fast-path or simple hybrid path. Agentic workloads require Q23–Q26.
 
@@ -170,16 +170,16 @@ Before generating questions, scan the inventory to extract values that are alrea
 
 If multiple instances disagree, ask Q13b. Record in `metadata.inventory_clarifications.db_size_gb` when extracted.
 
-8. **Q6 from Cloud SQL HA** — For `google_sql_database_instance`, read `availability_type` (or `config.availability_type`):
+8. **Q6 from Cloud SQL HA** — For each `google_sql_database_instance`, read `availability_type` (or `config.availability_type`):
 
 | GCP value | `availability` extracted |
 | --------- | ------------------------ |
 | `ZONAL`   | `"single-az"`            |
 | `REGIONAL`| `"multi-az"`             |
 
-Skip Q6 when Cloud SQL PostgreSQL/MySQL is present and `availability_type` is unambiguous. Record in `metadata.inventory_clarifications.cloud_sql_ha`. **Do not** infer Mission-Critical/Catastrophic from IaC — those remain user questions when HA needs exceed Multi-AZ RDS.
+Skip Q6 only when **all** Cloud SQL PostgreSQL/MySQL instances agree on the same mapped value. **`multi-az-ha` and `multi-region` are never auto-extracted** — those require Q6 user answers (Mission-Critical / Catastrophic). Cloud SQL `REGIONAL` maps to `multi-az` (RDS Multi-AZ), not `multi-az-ha` (Aurora). Record in `metadata.inventory_clarifications.cloud_sql_ha`. When `availability_type` is missing on any instance, or instances disagree, ask Q6.
 
-9. **Q12/Q13 dev-tier defaults** — When Cloud SQL tier matches dev pattern (`db-f1-micro`, `db-g1-small`, `db-f1-micro` shared-core, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract and **skip Q12 and Q13**:
+9. **Q12/Q13 dev-tier defaults** — When **all** Cloud SQL instances match dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract and **skip Q12 and Q13**. When instances mix dev and prod tiers, do not extract — ask Q12 and Q13.
 
 ```
 database_traffic: "steady" — chosen_by: "extracted"
@@ -210,9 +210,16 @@ db_io_workload: "low" — chosen_by: "extracted"
 
 When `image_generation: true` and `vision: false`, set `ai_capabilities_required` derived from profile and skip Q20 (image output is not vision *input*).
 
-14. **Q9 WebSocket scan** — If application code was analyzed (companion app or `ai-workload-profile.json` metadata includes app directory), scan for WebSocket usage: `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI WebSocket, `ws` package imports. If **no matches**, extract `websocket: false` and **skip Q9**. If matches found, ask Q9.
+14. **Q9 WebSocket scan** — Only when application code was **actually analyzed**. Treat code as analyzed when **any** of: (a) `discover-app-code.md` ran and found source files; (b) `ai-workload-profile.json` → `metadata.sources_analyzed.application_code == true`; (c) a companion app directory was scanned. Scan for WebSocket usage: `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI WebSocket, `ws` package imports. If code was analyzed and **no matches**, extract `websocket: false` and **skip Q9**. If matches found, ask Q9 to confirm.
+    **If no application code was available** (Terraform-only workspace, no code discovery), do **NOT** extract Q9 — leave Q9 in the question flow. Absence of a code scan is not evidence of no WebSockets.
 
 15. **Q10 Cloud Run traffic** — If Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` and skip Q10. Otherwise ask Q10.
+
+16. **Multi-instance Cloud SQL conflicts** — When multiple `google_sql_database_instance` resources **disagree** on values used for Q6, Q12/Q13, or Q13b (e.g. one ZONAL and one REGIONAL; mixed dev/prod tiers; different disk sizes):
+    - Do **not** extract a single global value or skip the affected question(s)
+    - Record per-instance values in `metadata.inventory_clarifications.cloud_sql_instances[]` (address, `availability_type`, `tier`, `disk_size_gb`)
+    - In Step 2.5, show a **per-instance breakdown** (see below) instead of a single summary row
+    - Ask the affected question(s), or let the user pick a global posture during Step 2.5 confirmation
 
 Record all extracted values in `metadata.inventory_clarifications` where applicable. Questions fully resolved by extraction are **skipped** (not asked) with `chosen_by: "extracted"` and listed in `metadata.questions_skipped_extracted`.
 
@@ -241,7 +248,7 @@ Present a structured table (omit rows for settings not extracted):
 | Database size | 10–100 GB (allocated disk: 10 GB) | Terraform `disk_size` | Q13b |
 | DB traffic / I/O | Steady / Low (dev-tier `db-f1-micro`) | Terraform tier + ZONAL | Q12, Q13 |
 | Cloud Run traffic | Constant 24/7 (`min_instances > 0`) | Terraform | Q10 |
-| WebSockets | None detected | application code scan | Q9 |
+| WebSockets | None detected (code scanned) | application code scan | Q9 |
 | AI framework | Direct SDK (no gateway) | ai-workload-profile.json | Q14 |
 | AI model | gemini-2.5-flash | ai-workload-profile.json | Q19 |
 | Input modalities | Text only | ai-workload-profile.json | Q20 |
@@ -251,6 +258,18 @@ Does this look correct?
 - Reply **"looks good"** or **"correct"** to proceed — I'll only ask about what we couldn't infer.
 - To fix something, name the setting and the correct value, e.g. **"availability: mission-critical"**, **"db size: 100-500GB"**, **"region: eu-central-1"**, **"model: gpt-4o"**. I'll update that setting; if the correction is ambiguous I'll ask the full question for that item.
 - Reply **"ask me everything"** to discard all extractions and run the full question flow (clear `questions_skipped_extracted`; set all previously extracted constraints to pending).
+```
+
+**Multi-instance Cloud SQL conflicts:** When instances disagree, replace the single-row summary with a per-instance table and do **not** skip the conflicting question until resolved:
+
+```
+| Instance | availability_type | tier | disk_size (GB) |
+| -------- | ----------------- | ---- | -------------- |
+| google_sql_database_instance.main | ZONAL | db-f1-micro | 10 |
+| google_sql_database_instance.analytics | REGIONAL | db-n1-standard-4 | 100 |
+
+These instances disagree on availability. Which posture should we use for the migration design?
+A) Most conservative (highest HA) | B) Use [instance name] as primary | C) Ask me the full Q6 question
 ```
 
 **Override handling** — when the user corrects a detected value:
@@ -342,7 +361,7 @@ Apply these before presenting questions:
 - **Q13b extracted** — Unambiguous disk size from inventory (Step 2 item 7), skip Q13b.
 - **Q3 extracted** — Billing band mapped (Step 2 item 10), skip Q3.
 - **Q1 extracted** — Single-region inventory (Step 2 item 11), skip Q1.
-- **Q9 extracted** — No WebSocket signals in code scan (Step 2 item 14), skip Q9.
+- **Q9 extracted** — No WebSocket signals in a completed code scan (Step 2 item 14), skip Q9. **Do not extract** when no code was analyzed.
 - **Q14 auto-detected** — If `integration.gateway_type` is non-null OR `integration.frameworks` is non-empty in `ai-workload-profile.json`, skip Q14. Set `ai_framework` with `chosen_by: "extracted"`.
 - **Q19 auto-detected** — Primary model from `ai-workload-profile.json` (Step 2 item 12), skip Q19.
 - **Q20 auto-detected** — Modalities from `capabilities_summary` (Step 2 item 13), skip Q20.
@@ -685,7 +704,7 @@ Before handing off to Design:
 - [ ] If `bigquery_present` was **true**, the Step 4 BigQuery specialist advisory was shown before questions — **or**, if Step 0 option A (reuse preferences), the same advisory was shown after BigQuery detection
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
 - [ ] `design_constraints.target_region` is populated with `value` and `chosen_by`
-- [ ] `design_constraints.availability` is populated (if Q6 was asked or defaulted)
+- [ ] `design_constraints.availability` is populated when Cloud SQL PostgreSQL/MySQL is in inventory (asked, extracted, or defaulted — Design must not run with absent/null availability)
 - [ ] Only keys with non-null values are present in `design_constraints`
 - [ ] Every entry in `design_constraints` and `ai_constraints` has `value` and `chosen_by` fields
 - [ ] Config gap answers recorded in `metadata.inventory_clarifications` (billing mode only)

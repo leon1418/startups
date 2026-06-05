@@ -132,7 +132,8 @@ ELSE skip to Step 2 (full Clarify)
 **If user chooses Yes:**
 
 1. Run **Step 2 extraction** (mandatory — do not skip).
-2. Ask only questions **not** resolved by extraction:
+2. Run **Step 2.5 Detected Settings Confirmation** (mandatory — wait for user response).
+3. Ask only questions **not** resolved by extraction (after any user corrections):
    - **Q2** (compliance) — always ask
    - **Q7** (maintenance window) — always ask
    - **Q16** (AI priority) — from `clarify-ai.md`
@@ -214,6 +215,76 @@ When `image_generation: true` and `vision: false`, set `ai_capabilities_required
 15. **Q10 Cloud Run traffic** — If Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` and skip Q10. Otherwise ask Q10.
 
 Record all extracted values in `metadata.inventory_clarifications` where applicable. Questions fully resolved by extraction are **skipped** (not asked) with `chosen_by: "extracted"` and listed in `metadata.questions_skipped_extracted`.
+
+**After Step 2 completes, proceed to Step 2.5 before Step 3 or any questions.**
+
+---
+
+## Step 2.5: Confirm Detected Settings (Mandatory Gate)
+
+**When to run:** After Step 2 whenever any setting was extracted (i.e., `questions_skipped_extracted` would be non-empty, or any constraint was populated with `chosen_by: "extracted"` in working memory).
+
+**Skip Step 2.5 only when** Step 2 produced zero extractions — nothing inferred from IaC, billing, or code. Proceed directly to Step 3.
+
+**HARD GATE — do NOT present question batches or ask individual questions until the user responds to this summary.**
+
+Present a structured table (omit rows for settings not extracted):
+
+```
+### What we detected from your Terraform, billing, and code
+
+| Setting | Detected value | Source | Question skipped |
+| ------- | -------------- | ------ | ---------------- |
+| Region | us-west-2 (GCP us-west1) | gcp-resource-inventory.json | Q1 |
+| GCP monthly spend | $1K–$5K (~$2,400/mo) | billing-profile.json | Q3 |
+| Database availability | Single-AZ (Cloud SQL `ZONAL`) | Terraform `availability_type` | Q6 |
+| Database size | 10–100 GB (allocated disk: 10 GB) | Terraform `disk_size` | Q13b |
+| DB traffic / I/O | Steady / Low (dev-tier `db-f1-micro`) | Terraform tier + ZONAL | Q12, Q13 |
+| Cloud Run traffic | Constant 24/7 (`min_instances > 0`) | Terraform | Q10 |
+| WebSockets | None detected | application code scan | Q9 |
+| AI framework | Direct SDK (no gateway) | ai-workload-profile.json | Q14 |
+| AI model | gemini-2.5-flash | ai-workload-profile.json | Q19 |
+| Input modalities | Text only | ai-workload-profile.json | Q20 |
+
+Does this look correct?
+
+- Reply **"looks good"** or **"correct"** to proceed — I'll only ask about what we couldn't infer.
+- To fix something, name the setting and the correct value, e.g. **"availability: mission-critical"**, **"db size: 100-500GB"**, **"region: eu-central-1"**, **"model: gpt-4o"**. I'll update that setting; if the correction is ambiguous I'll ask the full question for that item.
+- Reply **"ask me everything"** to discard all extractions and run the full question flow (clear `questions_skipped_extracted`; set all previously extracted constraints to pending).
+```
+
+**Override handling** — when the user corrects a detected value:
+
+| User correction (examples) | Update constraint | Re-ask? |
+| -------------------------- | ----------------- | ------- |
+| `availability: mission-critical` / `multi-az-ha` | `availability: "multi-az-ha"`, `chosen_by: "user"` | No — value is explicit |
+| `availability: significant` / `multi-az` | `availability: "multi-az"`, `chosen_by: "user"` | No |
+| `availability: dev` / `single-az` | `availability: "single-az"`, `chosen_by: "user"` | No |
+| `db size: <10GB` / `10-100GB` / etc. | Set `db_size` to stated band, `chosen_by: "user"` | No if band is explicit |
+| `region: [AWS region]` | Set `target_region`, `chosen_by: "user"` | No |
+| `model: [model name]` | Set `ai_model_baseline`, `chosen_by: "user"` | No if maps cleanly to Q19 |
+| `websockets: yes` | Set `websocket: "required"`, `chosen_by: "user"` | No |
+| `spend: $5K-$20K` | Set `gcp_monthly_spend`, `chosen_by: "user"` | No if band is explicit |
+| Vague correction ("that's wrong") | Remove that item from skipped list | Yes — ask full question |
+
+For each override: remove the associated question ID(s) from `metadata.questions_skipped_extracted`, set `chosen_by: "user"`, and record in `metadata.detected_settings` with `"confirmed": false` and `"corrected_by_user": true`.
+
+When user confirms: mark all rows `"confirmed": true` in `metadata.detected_settings`.
+
+**`metadata.detected_settings` schema** (write to `preferences.json` at Step 5):
+
+```json
+"detected_settings": [
+  {
+    "key": "availability",
+    "value": "single-az",
+    "source": "terraform:availability_type=ZONAL",
+    "questions_skipped": ["Q6"],
+    "confirmed": true,
+    "corrected_by_user": false
+  }
+]
+```
 
 ---
 
@@ -321,11 +392,7 @@ Interpret → `right_sizing`: A → `true`, B → `false`. Default: B → `false
 
 ## Step 4: Present Questions in Progressive Batches
 
-**Detected settings summary (when Step 2 extracted values):** Before Batch 1, if any questions were skipped via extraction, present a one-line confirmation block:
-
-> **From your Terraform and discovery:** [list extracted settings, e.g., "Region: us-west-1 (from us-west1), Cloud SQL: single-AZ ZONAL, DB size: <10GB (10GB disk), AI model: gemini-2.5-flash, WebSockets: none detected"]. I'll only ask about what we couldn't infer. Say **"correct"** to proceed or **"change [setting]"** to override any value.
-
-If the user overrides a value, update the extracted constraint with `chosen_by: "user"` and remove that question ID from `metadata.questions_skipped_extracted`.
+**Prerequisite:** Step 2.5 confirmation must be complete (user said "looks good" or finished correcting) before presenting Batch 1. Do not re-show the full detected-settings table here unless the user asks for a recap.
 
 **BigQuery / deferred analytics (mandatory callout):** If Step 2 set `bigquery_present` to **true**, output this block **once**, **before** any questions (same turn as Batch 1), then continue with the question flow:
 
@@ -516,6 +583,16 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
     "questions_skipped_extracted": ["Q14"],
     "questions_skipped_early_exit": ["Q8"],
     "questions_skipped_not_applicable": ["Q4", "Q10", "Q11", "Q12", "Q13", "Q13b"],
+    "detected_settings": [
+      {
+        "key": "availability",
+        "value": "multi-az",
+        "source": "terraform:availability_type=REGIONAL",
+        "questions_skipped": ["Q6"],
+        "confirmed": true,
+        "corrected_by_user": false
+      }
+    ],
     "category_e_enabled": false,
     "clarify_mode": "full",
     "inventory_clarifications": {}
@@ -559,10 +636,11 @@ Assemble all interpreted answers from the completed batches into the final `$MIG
 5. For billing-source inventories, `metadata.inventory_clarifications` records Category B answers.
 6. `metadata.questions_skipped_early_exit` records questions skipped due to early-exit logic (e.g., Q8 skipped because Q5=multi-cloud).
 7. `metadata.questions_skipped_extracted` records questions skipped because inventory already provided the answer.
-8. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory.
-9. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
-10. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
-11. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"`.
+8. `metadata.detected_settings` records each auto-detected setting with source, confirmation status, and whether the user corrected it in Step 2.5.
+9. `metadata.questions_skipped_not_applicable` records questions skipped because the relevant service wasn't in the inventory.
+10. `ai_constraints` section is present ONLY if Category F fired. Omit entirely if no AI artifacts exist.
+11. `ai_constraints.ai_capabilities_required` is the UNION of detected capabilities from `ai-workload-profile.json` + critical feature from Q17 + vision from Q20. `chosen_by` is `"derived"`.
+12. `ai_constraints.ai_framework` is an array (Q14 is select-all-that-apply). If auto-detected, `chosen_by` is `"extracted"`.
 
 After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json` if it exists.
 
@@ -602,6 +680,8 @@ After writing `preferences.json`, delete `$MIGRATION_DIR/preferences-draft.json`
 
 Before handing off to Design:
 
+- [ ] If extractions were made, Step 2.5 detected-settings confirmation was shown and user responded before questions
+- [ ] If extractions were made, `metadata.detected_settings` records each inferred value with `confirmed` status
 - [ ] If `bigquery_present` was **true**, the Step 4 BigQuery specialist advisory was shown before questions — **or**, if Step 0 option A (reuse preferences), the same advisory was shown after BigQuery detection
 - [ ] `preferences.json` written to `$MIGRATION_DIR/`
 - [ ] `design_constraints.target_region` is populated with `value` and `chosen_by`

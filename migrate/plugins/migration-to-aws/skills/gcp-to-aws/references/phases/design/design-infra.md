@@ -73,6 +73,9 @@ For resources not covered by fast-path:
 | `multi-az`         | `RDS PostgreSQL` or `RDS MySQL` + `multi_az: true` |
 | `multi-az-ha`      | `Aurora PostgreSQL` or `Aurora MySQL`           |
 | `multi-region`     | `Aurora PostgreSQL` or `Aurora MySQL` Global Database |
+| absent / null / missing | **Do not proceed** — Cloud SQL PostgreSQL/MySQL is present but Q6 was not answered. Return to Clarify to ask Q6 (or apply the documented Q6 default) before assigning RDS/Aurora topology. Do not infer Aurora from the rubric alone. |
+
+**IaC extraction note:** Only `single-az` and `multi-az` can be auto-extracted from Terraform (`ZONAL` / `REGIONAL`). **`multi-az-ha` and `multi-region` are never inferred from IaC** — they require explicit user intent via Q6 (Mission-Critical / Catastrophic). Cloud SQL `REGIONAL` maps to `multi-az` (RDS Multi-AZ), not `multi-az-ha` (Aurora).
 
 If rubric or fast-path would select Aurora when `availability` is `single-az` or `multi-az`, **replace with RDS**. If rubric would select RDS when `availability` is `multi-az-ha` or `multi-region`, **replace with Aurora**. Add `"User Preference: availability=<value>"` to `rubric_applied`. Q12/Q13 must not override this gate.
 

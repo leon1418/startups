@@ -41,8 +41,8 @@ For each billing service, attempt lookup in order:
 1. Look up `gcp_service_type` in `design-refs/fast-path.md` → Direct Mappings table
 2. If found: assign AWS service
 3. Enrich with SKU hints:
-   - If `top_skus` mention "PostgreSQL" → **RDS PostgreSQL** or **Aurora PostgreSQL** per `design_constraints.availability` in `preferences.json` (same Q6 gate as `design-infra.md` step 7b). Default to **RDS PostgreSQL Multi-AZ** when availability unknown.
-   - If `top_skus` mention "MySQL" → **RDS MySQL** or **Aurora MySQL** per Q6 gate. Default to **RDS MySQL Multi-AZ** when availability unknown.
+   - If `top_skus` mention "PostgreSQL" → **RDS PostgreSQL** or **Aurora PostgreSQL** per `design_constraints.availability` in `preferences.json` (same Q6 gate as `design-infra.md` step 7b). Default to **RDS PostgreSQL single-AZ** when availability unknown (billing-only path has no HA signal — do not assume Multi-AZ).
+   - If `top_skus` mention "MySQL" → **RDS MySQL** or **Aurora MySQL** per Q6 gate. Default to **RDS MySQL single-AZ** when availability unknown.
    - If `top_skus` mention "CPU Allocation" → indicates compute (Fargate)
    - If `top_skus` mention "Storage" → check if object storage (S3) or block storage (EBS)
 

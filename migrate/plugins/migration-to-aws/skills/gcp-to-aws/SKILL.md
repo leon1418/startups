@@ -201,7 +201,7 @@ gcp-to-aws/
 │   │   │   ├── clarify.md                     # Phase 2: Clarify orchestrator
 │   │   │   ├── clarify-global.md              # Category A: Global/Strategic (Q1-Q7)
 │   │   │   ├── clarify-compute.md             # Categories B+C: Config Gaps + Compute (Q8-Q11)
-│   │   │   ├── clarify-database.md            # Category D: Database (Q12-Q13)
+│   │   │   ├── clarify-database.md            # Category D: Database (Q12–Q13b)
 │   │   │   ├── clarify-ai.md                  # Category F: AI/Bedrock (Q14-Q22)
 │   │   │   └── clarify-ai-only.md             # Standalone AI-only migration flow
 │   │   ├── design/

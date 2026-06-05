@@ -8,7 +8,7 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 
 **For infrastructure migrations:**
 
-- **Maps your GCP resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → Aurora, GKE → EKS, Cloud Storage → S3, VPC → VPC, and more
+- **Maps your GCP resources to AWS equivalents** — Cloud Run → Fargate, Cloud SQL → RDS or Aurora (based on availability requirements), GKE → EKS, Cloud Storage → S3, VPC → VPC, and more
 - **Generates production-ready Terraform** — `vpc.tf`, `compute.tf`, `database.tf`, `security.tf`, `baseline.tf` with security controls (GuardDuty, CloudTrail, IMDSv2, ECR scanning), and a full `terraform/README.md`
 - **Selects the right database migration tool** — pg_dump for small databases, pgcopydb for parallel copy at scale, AWS DMS for zero-downtime migrations — based on your actual database size
 - **Produces numbered migration scripts** — prerequisites validation, data migration, container image migration (GCR → ECR), secrets migration (GCP Secret Manager → AWS Secrets Manager), and post-migration validation
@@ -62,7 +62,7 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Containers           | Cloud Run → Fargate, GKE → EKS                                                                                                              |
 | Serverless           | Cloud Functions → Lambda                                                                                                                    |
-| Databases            | Cloud SQL (PostgreSQL/MySQL) → Aurora, Cloud SQL (SQL Server) → RDS, Firestore → DynamoDB, Memorystore → ElastiCache, Spanner → Aurora DSQL |
+| Databases            | Cloud SQL (PostgreSQL/MySQL) → RDS or Aurora (Q6), Cloud SQL (SQL Server) → RDS, Firestore → DynamoDB, Memorystore → ElastiCache, Spanner → Aurora DSQL |
 | Storage              | Cloud Storage → S3, Filestore → EFS                                                                                                         |
 | Networking           | VPC → VPC, Cloud Load Balancing → ALB/NLB, Cloud DNS → Route 53, Cloud Armor → WAF + Shield                                                 |
 | Secrets              | Secret Manager → Secrets Manager                                                                                                            |
@@ -100,7 +100,7 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 
 | Agent Skill    | Triggers                                                                                                                                                                                                                                          |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gcp-to-aws** | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
+| **gcp-to-aws** | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
 
 ## MCP Servers
 

@@ -116,7 +116,9 @@ Default: B — no constraint.
 
 _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 
-**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage. If traffic is constant, that advantage disappears and AWS becomes cost-competitive or cheaper. This drives whether we recommend migrating Cloud Run at all.
+**Auto-extract signal:** When Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` with `chosen_by: "extracted"` and **skip Q10**.
+
+**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage.
 
 > Cloud Run's scale-to-zero is its primary cost advantage. Understanding your traffic pattern helps me determine whether migrating Cloud Run to AWS makes financial sense.
 >

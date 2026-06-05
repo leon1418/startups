@@ -173,6 +173,10 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 
 ## Q19 — Which Gemini or OpenAI model are you currently using?
 
+**Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19.
+
+_Skip when:_ Primary model fully resolved from discovery. Use detected value with `chosen_by: "extracted"`.
+
 Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > Q19 source model (baseline only).
 
 > A) Gemini 2.5 Flash (standard, no thinking budget)
@@ -220,6 +224,17 @@ Interpret → `ai_model_baseline`. Default: auto-detect from code, fallback Q16 
 ---
 
 ## Q20 — What input types must the model accept: text only, images (vision), or audio/video?
+
+**Auto-detect signal:** Read `integration.capabilities_summary`:
+
+| Signal | Extract | Skip Q20? |
+| ------ | ------- | --------- |
+| `vision: true` | `ai_vision: "vision-required"` | Yes — `chosen_by: "extracted"` |
+| `speech_to_text: true` or `text_to_speech: true` | `ai_vision: "audio-video"` | Yes |
+| all false / text only | `ai_vision: "text-only"` | Yes |
+| `image_generation: true` and `vision: false` | note in `ai_capabilities_required`; skip Q20 (image output ≠ vision input) | Yes |
+
+_Skip when:_ Modalities fully resolved from `capabilities_summary`. Use detected value with `chosen_by: "extracted"`.
 
 > A) Text only
 > B) Vision required — model must process images

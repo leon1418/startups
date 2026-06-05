@@ -89,18 +89,22 @@ Present a discovery summary:
 
 ---
 
-## Step 1.5: Fast-Path Gate (Simple Infra Only)
+## Step 1.5: Fast-Path Gate (Simple Stacks)
 
 **After presenting the Discovery Summary**, check `$MIGRATION_DIR/migration-preview.json` for fast-path eligibility:
 
 ```
 IF migration-preview.json exists
    AND eligible_for_clarify_fast_path == true
-THEN offer fast-path
+THEN offer infra fast-path (3 questions)
+ELSE IF eligible_for_clarify_simple_path == true
+THEN offer simple hybrid path (~6 questions)
 ELSE skip to Step 2 (full Clarify)
 ```
 
-**If eligible**, present this offer before any questions:
+### Infra fast-path (no AI)
+
+**If `eligible_for_clarify_fast_path`**, present this offer before any questions:
 
 > "Your stack looks straightforward — [primary_resource_count] resource(s), no database, no AI detected.
 >
@@ -108,22 +112,39 @@ ELSE skip to Step 2 (full Clarify)
 >
 > **[Yes — 3 questions]** / **[No — ask me everything]**"
 
-**If user chooses Yes (fast-path):**
+**If user chooses Yes:**
 
-1. Ask only these three questions (load exact wording from their respective category files):
-   - **Q1** (target region) — from `clarify-global.md`
-   - **Q2** (compliance) — from `clarify-global.md`, presented as a one-liner: "Any compliance requirements? (A) None (B) SOC2 (C) PCI (D) HIPAA (E) FedRAMP (F) GDPR/CCPA"
-   - **Q7** (maintenance window / cutover strategy) — from `clarify-global.md`
-
+1. Ask only: **Q1** (region), **Q2** (compliance), **Q7** (maintenance window) — from `clarify-global.md`.
 2. Apply documented defaults for ALL other questions. Record each in `metadata.questions_defaulted`.
+3. Still run the BigQuery advisory if `bigquery_present` is true.
+4. Write `preferences.json` with `metadata.clarify_mode: "fast_path"`. Skip Steps 2–4.
 
-3. Still run the BigQuery advisory if `bigquery_present` is true (Step 4 mandatory callout).
+### Simple hybrid path (simple infra + lightweight AI)
 
-4. Write `preferences.json` with `metadata.clarify_mode: "fast_path"` and proceed to Step 5. Skip Steps 2–4 entirely.
+**If `eligible_for_clarify_simple_path`**, present:
 
-**Agentic hard block:** Even if `eligible_for_clarify_fast_path` is true in `migration-preview.json`, if `ai-workload-profile.json` exists with `agentic_profile.is_agentic == true`, **never offer fast-path**. Agentic workloads require Q23–Q26 (Category G) which have mandatory questions that cannot be defaulted.
+> "Your stack looks straightforward with lightweight AI ([model IDs from profile]) — no agentic framework detected.
+>
+> Want a short question set (~6 questions) instead of the full flow? I'll use discovery for region, database sizing, and model detection.
+>
+> **[Yes — short path]** / **[No — ask me everything]**"
 
-**If user chooses No, or fast-path is not eligible:** Continue to Step 2 (full Clarify).
+**If user chooses Yes:**
+
+1. Run **Step 2 extraction** (mandatory — do not skip).
+2. Ask only questions **not** resolved by extraction:
+   - **Q2** (compliance) — always ask
+   - **Q7** (maintenance window) — always ask
+   - **Q16** (AI priority) — from `clarify-ai.md`
+   - **Q21** (AI latency) — from `clarify-ai.md`
+   - **Q3** (GCP spend) — only if billing did not extract it
+   - **Q1** (region) — only if region extraction ambiguous (multiple GCP regions)
+3. Apply documented defaults for all other unanswered questions. Record in `metadata.questions_defaulted`.
+4. Write `preferences.json` with `metadata.clarify_mode: "simple_hybrid"`. Skip Step 4 batch loop — go to Category E opt-in (if applicable) then Step 5.
+
+**Agentic hard block:** If `agentic_profile.is_agentic == true`, **never offer** infra fast-path or simple hybrid path. Agentic workloads require Q23–Q26.
+
+**If user chooses No, or neither path is eligible:** Continue to Step 2 (full Clarify).
 
 ---
 
@@ -137,9 +158,62 @@ Before generating questions, scan the inventory to extract values that are alrea
 4. **Billing-only mode** — If `billing-profile.json` exists and `gcp-resource-inventory.json` does NOT exist, check `billing-profile.json → services[]` for Category B question matching.
 5. **AI framework detection** — If `ai-workload-profile.json` exists, check `integration.gateway_type` and `integration.frameworks` for auto-detection of Q14 answer.
 6. **BigQuery / analytics warehouse** — Set `bigquery_present` to **true** if **any** of: (a) a resource in `gcp-resource-inventory.json` has `gcp_type` (or equivalent type field) starting with `google_bigquery_`; (b) `billing-profile.json` lists a service/SKU that clearly indicates **BigQuery** (e.g., service name or SKU contains `BigQuery`). Otherwise `bigquery_present` is **false**.
-7. **Database size auto-detect** — If `gcp-resource-inventory.json` exists and any `google_sql_database_instance` resource has `gcp_config.disk_size_gb`, record that value as the default for Q13b and confirm with the user rather than asking from scratch. Set `chosen_by: "extracted"` if confirmed unchanged.
+7. **Database size auto-detect (Q13b)** — For each `google_sql_database_instance`, read `config.disk_size`, `config.disk_size_gb`, or `gcp_config.disk_size_gb`. Map to Q13b band and **skip Q13b** when unambiguous:
 
-Record extracted values. Questions whose answers are fully determined by extraction will be skipped and the extracted value used directly with `chosen_by: "extracted"`.
+| Disk size (GB) | `db_size` value | Skip Q13b? |
+| -------------- | --------------- | ---------- |
+| < 10           | `"<10GB"`       | Yes — `chosen_by: "extracted"` |
+| 10 – 99        | `"10-100GB"`    | Yes — `chosen_by: "extracted"` |
+| 100 – 499      | `"100-500GB"`   | Yes — `chosen_by: "extracted"` |
+| ≥ 500          | `">500GB"`      | Yes — `chosen_by: "extracted"` |
+
+If multiple instances disagree, ask Q13b. Record in `metadata.inventory_clarifications.db_size_gb` when extracted.
+
+8. **Q6 from Cloud SQL HA** — For `google_sql_database_instance`, read `availability_type` (or `config.availability_type`):
+
+| GCP value | `availability` extracted |
+| --------- | ------------------------ |
+| `ZONAL`   | `"single-az"`            |
+| `REGIONAL`| `"multi-az"`             |
+
+Skip Q6 when Cloud SQL PostgreSQL/MySQL is present and `availability_type` is unambiguous. Record in `metadata.inventory_clarifications.cloud_sql_ha`. **Do not** infer Mission-Critical/Catastrophic from IaC — those remain user questions when HA needs exceed Multi-AZ RDS.
+
+9. **Q12/Q13 dev-tier defaults** — When Cloud SQL tier matches dev pattern (`db-f1-micro`, `db-g1-small`, `db-f1-micro` shared-core, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract and **skip Q12 and Q13**:
+
+```
+database_traffic: "steady" — chosen_by: "extracted"
+db_io_workload: "low" — chosen_by: "extracted"
+```
+
+10. **Q3 GCP spend from billing** — If `billing-profile.json` exists, map `summary.total_monthly_spend` to spend band and **skip Q3** when unambiguous:
+
+| Monthly USD | `gcp_monthly_spend` |
+| ----------- | ------------------- |
+| < 1,000     | `"<$1K"`            |
+| 1,000–4,999 | `"$1K-$5K"`         |
+| 5,000–19,999| `"$5K-$20K"`        |
+| 20,000–99,999| `"$20K-$100K"`     |
+| ≥ 100,000   | `">$100K"`          |
+
+11. **Q1 region extraction** — When inventory has a **single** GCP region among PRIMARY compute/database resources, map to closest AWS region and **skip Q1** with `target_region` `chosen_by: "extracted"`. When multiple regions, suggest default but still ask Q1.
+
+12. **Q19 primary model** — If `ai-workload-profile.json` exists and `models[0].model_id` is set with confidence ≥ 0.8, map to Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`.
+
+13. **Q20 input modalities** — If `integration.capabilities_summary` exists:
+
+| Signal | Extract | Skip Q20? |
+| ------ | ------- | --------- |
+| `vision: true` | `ai_vision: "vision-required"` | Yes |
+| `image_generation: true` (no vision) | note in `ai_capabilities_required`; Q20 may still ask unless text-only path clear | Partial — skip if only text + image gen via separate API |
+| all false / text only | `ai_vision: "text-only"` | Yes |
+
+When `image_generation: true` and `vision: false`, set `ai_capabilities_required` derived from profile and skip Q20 (image output is not vision *input*).
+
+14. **Q9 WebSocket scan** — If application code was analyzed (companion app or `ai-workload-profile.json` metadata includes app directory), scan for WebSocket usage: `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI WebSocket, `ws` package imports. If **no matches**, extract `websocket: false` and **skip Q9**. If matches found, ask Q9.
+
+15. **Q10 Cloud Run traffic** — If Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` and skip Q10. Otherwise ask Q10.
+
+Record all extracted values in `metadata.inventory_clarifications` where applicable. Questions fully resolved by extraction are **skipped** (not asked) with `chosen_by: "extracted"` and listed in `metadata.questions_skipped_extracted`.
 
 ---
 
@@ -189,10 +263,18 @@ Record extracted values. Questions whose answers are fully determined by extract
 Apply these before presenting questions:
 
 - **Q5 = "Yes, multi-cloud required"** — Immediately record `compute: "eks"`. Skip Q8 (Kubernetes sentiment) — all container workloads resolve to EKS.
+- **Q6 extracted** — When Step 2 mapped Cloud SQL `availability_type` → skip Q6.
 - **Q10/Q11 N/A** — Cloud Run not present, auto-skip.
+- **Q10 extracted** — When min_instances > 0, skip Q10.
 - **Q12/Q13 N/A** — Cloud SQL (PostgreSQL or MySQL) not present in inventory, auto-skip.
-- **Q13b auto-detect** — If `gcp_config.disk_size_gb` is present on any `google_sql_database_instance`, use it as the default for Q13b with `chosen_by: "extracted"` if the user confirms it unchanged.
-- **Q14 auto-detected** — If `integration.gateway_type` is non-null OR `integration.frameworks` is non-empty in `ai-workload-profile.json`, skip Q14. Set `ai_framework` from the detected values with `chosen_by: "extracted"`.
+- **Q12/Q13 extracted** — Dev-tier Cloud SQL (Step 2 item 9), skip Q12 and Q13.
+- **Q13b extracted** — Unambiguous disk size from inventory (Step 2 item 7), skip Q13b.
+- **Q3 extracted** — Billing band mapped (Step 2 item 10), skip Q3.
+- **Q1 extracted** — Single-region inventory (Step 2 item 11), skip Q1.
+- **Q9 extracted** — No WebSocket signals in code scan (Step 2 item 14), skip Q9.
+- **Q14 auto-detected** — If `integration.gateway_type` is non-null OR `integration.frameworks` is non-empty in `ai-workload-profile.json`, skip Q14. Set `ai_framework` with `chosen_by: "extracted"`.
+- **Q19 auto-detected** — Primary model from `ai-workload-profile.json` (Step 2 item 12), skip Q19.
+- **Q20 auto-detected** — Modalities from `capabilities_summary` (Step 2 item 13), skip Q20.
 
 ### Batch Planning
 
@@ -238,6 +320,12 @@ Interpret → `right_sizing`: A → `true`, B → `false`. Default: B → `false
 ---
 
 ## Step 4: Present Questions in Progressive Batches
+
+**Detected settings summary (when Step 2 extracted values):** Before Batch 1, if any questions were skipped via extraction, present a one-line confirmation block:
+
+> **From your Terraform and discovery:** [list extracted settings, e.g., "Region: us-west-1 (from us-west1), Cloud SQL: single-AZ ZONAL, DB size: <10GB (10GB disk), AI model: gemini-2.5-flash, WebSockets: none detected"]. I'll only ask about what we couldn't infer. Say **"correct"** to proceed or **"change [setting]"** to override any value.
+
+If the user overrides a value, update the extracted constraint with `chosen_by: "user"` and remove that question ID from `metadata.questions_skipped_extracted`.
 
 **BigQuery / deferred analytics (mandatory callout):** If Step 2 set `bigquery_present` to **true**, output this block **once**, **before** any questions (same turn as Batch 1), then continue with the question flow:
 
@@ -528,7 +616,7 @@ Before handing off to Design:
 - [ ] `ai_constraints.ai_framework` is an array (Q14 is multi-select)
 - [ ] Output is valid JSON
 - [ ] `preferences-draft.json` has been deleted (if it existed)
-- [ ] `metadata.clarify_mode` is set to `"fast_path"` or `"full"`
+- [ ] `metadata.clarify_mode` is set to `"fast_path"`, `"simple_hybrid"`, or `"full"`
 
 ---
 

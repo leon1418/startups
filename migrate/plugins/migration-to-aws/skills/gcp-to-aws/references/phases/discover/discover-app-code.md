@@ -99,6 +99,24 @@ Confidence for inferred resources: 0.60-0.80 (inferring existence, not reading i
 
 ---
 
+## Step 2.5: WebSocket Signal Scan
+
+After Step 2 (Infer Resources from Code), scan source files for WebSocket / long-lived connection patterns:
+
+| Pattern | Evidence |
+| ------- | -------- |
+| WebSocket API | `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI `WebSocket`, `ws` package imports |
+| SSE / long-poll | `EventSource`, `text/event-stream`, long-polling handlers |
+
+Record in discovery metadata (do not write a separate file):
+
+- `websocket_signals_found`: `true` if any pattern matches active (non-commented) code
+- `websocket_signal_files`: array of file paths where matches were found
+
+If **no matches**, set `websocket_signals_found: false`. Clarify Step 2 uses this to skip Q9 with `websocket: false` extracted.
+
+---
+
 ## Step 3: Flag AI Signals
 
 Scan source code files and dependency manifests for AI-relevant patterns. For each match, record the pattern, file location, and confidence score.

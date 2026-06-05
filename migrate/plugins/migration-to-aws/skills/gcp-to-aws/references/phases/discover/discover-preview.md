@@ -46,7 +46,31 @@ END
 ```
 eligible_for_clarify_fast_path =
    complexity_signal == "likely_simple"
-   AND has_ai_profile == false // any AI profile -> full Clarify, even non-agentic
+   AND has_ai_profile == false
+
+eligible_for_clarify_simple_path =
+   complexity_signal == "likely_simple"
+   AND has_ai_profile == true
+   AND is_agentic != true
+   AND ai_complexity_signal == "likely_simple"
+```
+
+**`ai_complexity_signal`** (compute when `ai-workload-profile.json` exists):
+
+```
+IF agentic_profile.is_agentic == true
+   OR integration.frameworks is non-empty (LangChain, CrewAI, etc.)
+   OR models.length > 3
+THEN ai_complexity_signal = "standard"
+
+ELSE IF integration.pattern in ("direct_sdk", "direct")
+   AND models.length <= 2
+   AND agentic_profile is absent
+THEN ai_complexity_signal = "likely_simple"
+
+ELSE
+   ai_complexity_signal = "standard"
+END
 ```
 
 ---
@@ -122,6 +146,8 @@ Write `$MIGRATION_DIR/migration-preview.json`:
   "primary_resource_count": 3,
   "complexity_signal": "likely_simple",
   "eligible_for_clarify_fast_path": true,
+  "eligible_for_clarify_simple_path": false,
+  "ai_complexity_signal": null,
   "services_summary": [
     { "gcp_type": "google_cloud_run_v2_service", "typical_aws_target": "Fargate" },
     { "gcp_type": "google_storage_bucket", "typical_aws_target": "S3" }
@@ -147,6 +173,8 @@ Write `$MIGRATION_DIR/migration-preview.json`:
 - `ai_detected` is `true` if `ai-workload-profile.json` exists
 - `services_summary` lists only PRIMARY resources, deduplicated by `gcp_type`
 - `eligible_for_clarify_fast_path` is `false` whenever `ai_detected == true`, regardless of infra complexity
+- `eligible_for_clarify_simple_path` is `true` only when `ai_detected == true`, `complexity_signal == "likely_simple"`, and `ai_complexity_signal == "likely_simple"` (non-agentic direct SDK, ≤2 models)
+- `ai_complexity_signal` is `null` when no AI profile exists; otherwise `"likely_simple"` or `"standard"`
 
 ---
 
@@ -167,7 +195,8 @@ Output this block as part of `discover.md` Step 3's user message (chat only -- n
 
 *Full cost breakdown in Estimate; runnable Terraform in Generate.*
 [if eligible_for_clarify_fast_path: "Your stack looks straightforward -- next step is 3 quick questions."]
-[if ai_detected and not eligible_for_clarify_fast_path: "AI workload detected -- full Clarify recommended for best results."]
+[if eligible_for_clarify_simple_path: "Simple stack with lightweight AI detected -- next step is a short question set (~6 questions)."]
+[if ai_detected and not eligible_for_clarify_simple_path and not eligible_for_clarify_fast_path: "AI workload detected -- full Clarify recommended for best results."]
 ```
 
 Do NOT write this to a file. Chat output only.

@@ -192,9 +192,19 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
   },
 
   "recommendation": {
-    "path": "Full Infrastructure with Optimizations",
+    "path": "migrate_optimized",
+    "path_label": "Migrate with Optimizations",
     "roi_justification": "2.6 month payback with operational efficiency; $475K 5-year savings",
     "confidence": "high",
+    "migrate_if": [
+      "operational efficiency matters",
+      "AWS-specific services needed",
+      "long-term AWS strategy"
+    ],
+    "stay_if": [
+      "cost is the only metric and AWS is more expensive",
+      "team deeply experienced with GCP"
+    ],
     "next_steps": [
       "Review financial case with stakeholders",
       "Confirm service tier selections (Aurora vs RDS, Fargate vs Lambda)",
@@ -204,6 +214,24 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
   }
 }
 ```
+
+### recommendation block in estimation-infra.json
+
+The `recommendation` block is the single source of truth for migrate/stay guidance. Consumed by Estimate chat output AND HTML migration report (Section 0). Do not duplicate this logic in the report template.
+
+| `path` value | `path_label` (display) |
+| --- | --- |
+| `"migrate_optimized"` | `"Migrate with Optimizations"` |
+| `"migrate_phased"` | `"Phased Migration"` |
+| `"stay"` | `"Stay on GCP"` |
+
+Validation:
+
+- `path` is one of: `"migrate_optimized"`, `"migrate_phased"`, `"stay"`
+- `path_label` matches the corresponding display string for `path`
+- `migrate_if` and `stay_if` are non-empty arrays of strings
+- `next_steps` is a non-empty array of strings
+- Block is **REQUIRED** in `estimation-infra.json` output (Part 7 must write it)
 
 ## Output Validation Checklist
 
@@ -225,6 +253,8 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 - `roi_analysis` is honest — if migration increases cost, say so and justify with non-cost benefits
 - `optimization_opportunities` only includes strategies relevant to the designed architecture
 - `financial_summary` provides a clear executive-level view
+- `recommendation` block exists with `path`, `path_label`, `migrate_if`, `stay_if`, and `next_steps` all populated
+- `recommendation.path` is one of: `"migrate_optimized"`, `"migrate_phased"`, `"stay"`
 - `recommendation.next_steps` includes actionable items
 - No references to AI-specific costs (those belong in `estimate-ai.md`)
 - No references to billing-only estimates (those belong in `estimate-billing.md`)

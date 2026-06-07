@@ -46,7 +46,7 @@ When any gate check fails:
 1. Output the `GATE_FAIL` line(s) to the user in plain language (what is missing and which phase to re-run).
 2. **Do NOT modify artifacts** to pass the gate (no inventing `recommendation`, no defaulting `availability`, no patching JSON inline).
 3. **Do NOT continue** to the next phase.
-4. Tell the user: **"Re-run Phase N (<name>) to produce the missing field, then continue."**
+4. Tell the user: **"Re-run Phase N (phase name) to produce the missing field, then continue."**
 
 Patching artifacts to satisfy a gate defeats fail-closed validation and produces reports that look complete but are not.
 

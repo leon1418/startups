@@ -250,6 +250,7 @@ Pull from `ai-workload-profile.json` when present:
 Show this section when `aws-design-ai.json` → `ai_architecture.honest_assessment` contains ANY of: `"recommend_stay"`, `"weak_migrate"`, or `"moderate_migrate"` where any model's Bedrock price exceeds the source provider price.
 
 > **Why migrate to Bedrock when [source] may be cheaper per token?**
+>
 > - **Single-vendor billing:** One AWS bill instead of separate provider invoices
 > - **VPC-private inference:** Model calls stay in your VPC — no data over public internet
 > - **IAM access control:** No API keys to rotate; permissions follow your AWS IAM model

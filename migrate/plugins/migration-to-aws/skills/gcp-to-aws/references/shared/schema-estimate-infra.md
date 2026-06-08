@@ -230,6 +230,7 @@ When Part 2B of `estimate-infra.md` produces an observability cost, it is includ
 ```
 
 **Validation for observability entry:**
+
 - `components` keys are exactly: `log_ingestion`, `log_storage`, `custom_metrics`, `alarms`, `tracing`
 - `volume_source` is one of: `"heuristic"`, `"billing"` (reflects log volume source — the largest cost component; metrics are always heuristic regardless of this field)
 - `tracing` is 0 when no tracing signals detected in source — do not add X-Ray costs unprompted

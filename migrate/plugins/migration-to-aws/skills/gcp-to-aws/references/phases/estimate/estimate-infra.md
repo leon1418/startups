@@ -141,6 +141,7 @@ All rates from `pricing-cache.md § CloudWatch` and `§ X-Ray`. No MCP calls nee
 **IF billing data IS available** (`billing-profile.json` exists):
 
 Check for Cloud Logging line items:
+
 - Look for `services[].sku` containing `Log Volume`, `Logging`, or `Cloud Logging`
 - Extract volume in GiB from the SKU quantity/units field directly (preferred)
 - OR derive from GCP cost: `gcp_logging_cost ÷ $0.50/GiB` (GCP's own list rate above free tier) = volume above free tier, then add 50 GiB for the free portion
@@ -151,15 +152,15 @@ Check for Cloud Logging line items:
 
 Use the per-service heuristic table to estimate monthly log volume:
 
-| AWS Service (from aws-design.json) | Estimated log volume/month | Basis                                               |
-| ----------------------------------- | -------------------------- | --------------------------------------------------- |
-| Fargate task                        | 3 GB per task              | Container stdout/stderr, request logs               |
-| Lambda function                     | 0.2 GB per function        | Invocation logs at INFO level                       |
-| RDS/Aurora instance                 | 1 GB per instance          | Error log + slow query (audit log off)              |
-| RDS/Aurora instance (audit on)      | 8 GB per instance          | If source has `pgaudit.log`, `log_statement = 'all'`, `cloudsql.log_min_duration_statement`, or explicit audit/general log database flags in Terraform |
-| ALB                                 | 2 GB per load balancer     | Access logs (if enabled)                            |
-| NAT Gateway                         | 1 GB per gateway           | Flow logs (if enabled)                              |
-| ElastiCache                         | 0.5 GB per node            | Slow log only                                       |
+| AWS Service (from aws-design.json) | Estimated log volume/month | Basis                                                                                                                                                  |
+| ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Fargate task                       | 3 GB per task              | Container stdout/stderr, request logs                                                                                                                  |
+| Lambda function                    | 0.2 GB per function        | Invocation logs at INFO level                                                                                                                          |
+| RDS/Aurora instance                | 1 GB per instance          | Error log + slow query (audit log off)                                                                                                                 |
+| RDS/Aurora instance (audit on)     | 8 GB per instance          | If source has `pgaudit.log`, `log_statement = 'all'`, `cloudsql.log_min_duration_statement`, or explicit audit/general log database flags in Terraform |
+| ALB                                | 2 GB per load balancer     | Access logs (if enabled)                                                                                                                               |
+| NAT Gateway                        | 1 GB per gateway           | Flow logs (if enabled)                                                                                                                                 |
+| ElastiCache                        | 0.5 GB per node            | Slow log only                                                                                                                                          |
 
 **RDS audit detection:** Check for database flags in the source `google_sql_database_instance` Terraform that indicate audit logging: `pgaudit.log`, `log_statement = 'all'`, `cloudsql.log_min_duration_statement`, or general/audit log flags for MySQL. Do NOT use `cloudsql.iam_authentication` as an audit proxy — IAM auth is access control, not audit logging.
 
@@ -170,6 +171,7 @@ Sum all applicable services. Set `observability.log_volume_source: "heuristic"`.
 **IF billing data IS available:**
 
 GCP Cloud Monitoring uses sample-based pricing ($0.10/1000 samples above 150M free) which does not map 1:1 to CloudWatch's per-metric-per-month pricing ($0.30/metric/month). Even with billing data, treat custom metrics as heuristic:
+
 - Count `google_monitoring_alert_policy` resources in `gcp-resource-inventory.json` as a proxy for custom metric complexity
 - Multiply alert policy count × 3 (typical metrics per alert: threshold metric + 2 related dimensions)
 - Set `observability.metrics_source: "heuristic"` (even when billing data exists — GCP metric pricing is not cleanly convertible to CloudWatch's model)
@@ -197,6 +199,7 @@ Set `observability.alarm_count_source: "inventory"` or `"default"`.
 **IF billing data IS available:**
 
 Check for Cloud Trace line items:
+
 - Extract span volume from SKU quantity/units field directly (preferred)
 - OR derive from GCP cost: `gcp_trace_cost ÷ $0.20/million` (GCP's own list rate above 2.5M free tier) = millions of spans above free tier, then add 2.5M
 - **Important:** Use GCP's rate ($0.20/M spans) to reverse-engineer volume from GCP billing. Apply AWS X-Ray rate ($5.00/M traces) to that volume for the projected cost.
@@ -205,6 +208,7 @@ Check for Cloud Trace line items:
 **IF billing data is NOT available:**
 
 Check `gcp-resource-inventory.json` or application code for tracing libraries:
+
 - If OpenTelemetry, `@google-cloud/trace-agent`, or `google.cloud.trace` imports detected: assume 1M spans/month (small app baseline)
 - If no tracing signals: set `monthly_spans: 0` (tracing not in use; do not add X-Ray costs)
 
@@ -254,6 +258,7 @@ Add an `observability` entry to `projected_costs.breakdown`. This entry REPLACES
 In Part 3 (Cost Comparison), if observability costs exceed $20/month, add a callout:
 
 > **Observability cost note:** Your GCP Cloud Operations costs may appear low or zero due to generous free tiers (50 GB/month logging, 150M metric samples, free alerting). The CloudWatch estimate of $X/month reflects the same workload without those free tiers. Consider:
+>
 > - Reducing log verbosity (WARN-only for production services) to lower ingestion costs
 > - Using CloudWatch Logs Infrequent Access class for non-critical logs ($0.25/GB — 50% cheaper than Standard)
 > - Evaluating sampling rate for X-Ray traces (10% sampling = 90% cost reduction)

@@ -46,13 +46,7 @@ When adding new reference files, verify the phase's total loaded instructions re
 
 **Hybrid stack budget warning:**
 
-When both infrastructure AND AI reference files are loaded in the same Design phase run (i.e., `gcp-resource-inventory.json` exists AND `ai-workload-profile.json` exists), estimate the combined instruction line count before proceeding:
-
-- Infra design refs (compute.md, database.md, networking.md, etc.): ~200–400 lines
-- AI design refs (ai-openai-to-bedrock.md or ai-gemini-to-bedrock.md): ~300–500 lines
-- Agentic refs (if applicable): ~200–400 lines additional
-
-If the estimated total approaches or exceeds 800 lines, output this warning to the user **before** loading the AI design refs:
+When both `gcp-resource-inventory.json` AND `ai-workload-profile.json` exist, the combined design refs will approach the ~800-line budget. Output this warning to the user **before** loading the AI design refs:
 
 > "⚠️ This is a large hybrid stack (infrastructure + AI workloads). To ensure complete and accurate recommendations, consider running the migration in two separate passes:
 >
@@ -64,7 +58,7 @@ If the estimated total approaches or exceeds 800 lines, output this warning to t
 
 If the user chooses to continue, proceed with the combined run. Load AI refs **after** infra refs to preserve infra instruction fidelity. If the user declines, stop and instruct them to re-run with a single input source type.
 
-**This warning is advisory only** — do not block the run automatically. Many hybrid stacks fit within budget; the warning fires only when the estimate approaches the limit.
+**This warning is advisory only** — it does not block the run.
 
 ---
 

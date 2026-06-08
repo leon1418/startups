@@ -1,4 +1,5 @@
 # Migration Preview Heuristic
+
 > Loaded by `discover.md` Step 3 to compute a lightweight preview signal and rough cost
 > estimate from discovery artifacts alone — before Clarify, Design, or Estimate run.
 > This is NOT the full complexity tier (that lives in `migration-complexity.md` and requires
@@ -34,13 +35,13 @@ END
 
 Read from `ai-workload-profile.json`:
 
-| Input | Source | Key |
-|---|---|---|
-| `model_count` | `ai-workload-profile.json` | Count of distinct entries in `models[]` |
-| `is_agentic` | `ai-workload-profile.json` | `agentic_profile.is_agentic == true` |
+| Input                     | Source                     | Key                                                                                |
+| ------------------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| `model_count`             | `ai-workload-profile.json` | Count of distinct entries in `models[]`                                            |
+| `is_agentic`              | `ai-workload-profile.json` | `agentic_profile.is_agentic == true`                                               |
 | `has_multi_model_routing` | `ai-workload-profile.json` | `integration.gateway_type` is `"openrouter"`, `"litellm"`, `"kong"`, or `"apigee"` |
-| `has_multiple_providers` | `ai-workload-profile.json` | `summary.ai_source == "both"` or distinct provider values across `models[]` > 1 |
-| `capability_count` | `ai-workload-profile.json` | Count of `true` values in `integration.capabilities_summary` |
+| `has_multiple_providers`  | `ai-workload-profile.json` | `summary.ai_source == "both"` or distinct provider values across `models[]` > 1    |
+| `capability_count`        | `ai-workload-profile.json` | Count of `true` values in `integration.capabilities_summary`                       |
 
 **Classify (first match wins, top to bottom):**
 
@@ -82,25 +83,26 @@ from `references/shared/pricing-cache.md` (Source Provider Pricing + Bedrock Mod
 
 **Source model → Bedrock equivalent mapping:**
 
-| Source model pattern | Bedrock equivalent | Bedrock model ID |
-|---|---|---|
-| `gpt-4o`, `gpt-4.1`, `gpt-5.*` flagship | Claude Sonnet 4.6 | `anthropic.claude-sonnet-4-6` |
-| `gpt-4o-mini`, `gpt-4.1-mini`, `gpt-5.*-mini` | Claude Haiku 4.5 | `anthropic.claude-haiku-4-5-20251001-v1:0` |
-| `gpt-3.5-turbo`, `gpt-4.1-nano`, `gpt-5.*-nano` | Amazon Nova Micro | `amazon.nova-micro-v1:0` |
-| `o3`, `o4-mini`, reasoning models | Claude Sonnet 4.6 | `anthropic.claude-sonnet-4-6` |
-| `gemini-2.5-pro`, `gemini-3.*-pro` | Claude Sonnet 4.6 | `anthropic.claude-sonnet-4-6` |
-| `gemini-2.5-flash`, `gemini-2.0-flash` | Claude Haiku 4.5 | `anthropic.claude-haiku-4-5-20251001-v1:0` |
-| `gemini-2.0-flash-lite` | Amazon Nova Lite | `amazon.nova-lite-v1:0` |
-| `claude-3-5-sonnet`, `claude-sonnet-*` | Claude Sonnet 4.6 | `anthropic.claude-sonnet-4-6` |
-| `claude-3-5-haiku`, `claude-haiku-*` | Claude Haiku 4.5 | `anthropic.claude-haiku-4-5-20251001-v1:0` |
-| `claude-3-opus`, `claude-opus-*` | Claude Opus 4.6 | `anthropic.claude-opus-4-6-v1` |
-| `text-embedding-*`, `*-embedding-*` | Amazon Titan Embeddings v2 | `amazon.titan-embed-text-v2:0` |
-| `dall-e-*`, `imagen-*`, image generation | Amazon Nova Canvas | `amazon.nova-canvas-v1:0` |
-| `whisper-*`, speech-to-text | Amazon Transcribe | (non-token service — note separately) |
-| `tts-*`, text-to-speech | Amazon Polly | (non-token service — note separately) |
-| Unknown / other | Amazon Nova Pro | `amazon.nova-pro-v1:0` |
+| Source model pattern                            | Bedrock equivalent         | Bedrock model ID                           |
+| ----------------------------------------------- | -------------------------- | ------------------------------------------ |
+| `gpt-4o`, `gpt-4.1`, `gpt-5.*` flagship         | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `gpt-4o-mini`, `gpt-4.1-mini`, `gpt-5.*-mini`   | Claude Haiku 4.5           | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `gpt-3.5-turbo`, `gpt-4.1-nano`, `gpt-5.*-nano` | Amazon Nova Micro          | `amazon.nova-micro-v1:0`                   |
+| `o3`, `o4-mini`, reasoning models               | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `gemini-2.5-pro`, `gemini-3.*-pro`              | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `gemini-2.5-flash`, `gemini-2.0-flash`          | Claude Haiku 4.5           | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `gemini-2.0-flash-lite`                         | Amazon Nova Lite           | `amazon.nova-lite-v1:0`                    |
+| `claude-3-5-sonnet`, `claude-sonnet-*`          | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
+| `claude-3-5-haiku`, `claude-haiku-*`            | Claude Haiku 4.5           | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| `claude-3-opus`, `claude-opus-*`                | Claude Opus 4.6            | `anthropic.claude-opus-4-6-v1`             |
+| `text-embedding-*`, `*-embedding-*`             | Amazon Titan Embeddings v2 | `amazon.titan-embed-text-v2:0`             |
+| `dall-e-*`, `imagen-*`, image generation        | Amazon Nova Canvas         | `amazon.nova-canvas-v1:0`                  |
+| `whisper-*`, speech-to-text                     | Amazon Transcribe          | (non-token service — note separately)      |
+| `tts-*`, text-to-speech                         | Amazon Polly               | (non-token service — note separately)      |
+| Unknown / other                                 | Amazon Nova Pro            | `amazon.nova-pro-v1:0`                     |
 
 For each mapped model pair, compute:
+
 - `source_input_per_1m` and `source_output_per_1m` from pricing-cache.md Source Provider Pricing
 - `bedrock_input_per_1m` and `bedrock_output_per_1m` from pricing-cache.md Bedrock Models
 - `cost_direction`: `"lower"` if both Bedrock prices ≤ source, `"higher"` if both > source, `"mixed"` otherwise
@@ -116,13 +118,13 @@ and note that it will be available after Clarify.
 
 Generate 2-4 bullets based on what was detected in `ai-workload-profile.json`:
 
-| Signal | Decision bullet |
-|---|---|
-| Always | "Bedrock model selection for [list detected model IDs, max 3, then '+ N more']" |
-| `is_agentic == true` | "Agentic migration path (retarget / AgentCore Harness / Strands)" |
-| `has_multi_model_routing == true` | "Multi-model routing strategy on Bedrock (LiteLLM adapter vs native routing)" |
-| `has_multiple_providers == true` | "Re-embedding requirements and cascade pair testing across providers" |
-| `integration.pattern == "streaming"` | "Streaming transport layer (Bedrock streaming vs current SDK)" |
+| Signal                               | Decision bullet                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| Always                               | "Bedrock model selection for [list detected model IDs, max 3, then '+ N more']" |
+| `is_agentic == true`                 | "Agentic migration path (retarget / AgentCore Harness / Strands)"               |
+| `has_multi_model_routing == true`    | "Multi-model routing strategy on Bedrock (LiteLLM adapter vs native routing)"   |
+| `has_multiple_providers == true`     | "Re-embedding requirements and cascade pair testing across providers"           |
+| `integration.pattern == "streaming"` | "Streaming transport layer (Bedrock streaming vs current SDK)"                  |
 
 Cap at 4 bullets.
 
@@ -130,11 +132,11 @@ Cap at 4 bullets.
 
 ### Step 4A: Build timeline_hint string
 
-| ai_complexity_signal | timeline_hint |
-|---|---|
-| `likely_simple` | "1-3 weeks (single model swap; confirm after Clarify)" |
-| `standard` | "2-6 weeks (multi-model migration; confirm after Clarify)" |
-| `complex` | "4-8 weeks (agentic or multi-provider stack; confirm after Clarify)" |
+| ai_complexity_signal | timeline_hint                                                        |
+| -------------------- | -------------------------------------------------------------------- |
+| `likely_simple`      | "1-3 weeks (single model swap; confirm after Clarify)"               |
+| `standard`           | "2-6 weeks (multi-model migration; confirm after Clarify)"           |
+| `complex`            | "4-8 weeks (agentic or multi-provider stack; confirm after Clarify)" |
 
 Always append "(confirm after Clarify)" — full classification requires preferences.
 
@@ -198,6 +200,7 @@ Write `$MIGRATION_DIR/migration-preview.json`:
 ```
 
 **Field rules:**
+
 - `route` is `"ai_only"` for this path
 - `primary_resource_count` is `0` for AI-only runs (no IaC)
 - `complexity_signal` mirrors `ai_complexity_signal` for downstream consumers

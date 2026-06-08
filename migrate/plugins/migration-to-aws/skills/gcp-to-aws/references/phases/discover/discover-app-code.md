@@ -366,22 +366,22 @@ Determine how the application integrates with AI services:
 
   Scan for these patterns and classify:
 
-  | Pattern                                                      | Gateway Type     | Evidence                           |
-  | ------------------------------------------------------------ | ---------------- | ---------------------------------- |
-  | `from litellm import completion` / `litellm` in dependencies | `llm_router`     | LiteLLM — multi-provider router    |
-  | `base_url` containing `openrouter.ai` in source code        | `llm_router`     | OpenRouter — multi-provider router (code) |
-  | Env var `OPENAI_BASE_URL` containing `openrouter.ai` in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router` | OpenRouter — env-configured router |
-  | Env var `OPENROUTER_API_KEY` or `OR_API_KEY` present in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router` | OpenRouter — API key detected |
-  | Env var `LITELLM_PROXY_BASE_URL` or `LITELLM_API_KEY` present in any config file | `llm_router` | LiteLLM proxy — env-configured |
-  | `portkey` imports or `x-portkey-` headers                    | `llm_router`     | Portkey — AI gateway               |
-  | `helicone` imports or `x-helicone-` headers                  | `llm_router`     | Helicone — AI gateway              |
-  | Kong, Apigee, or custom API gateway routing to AI endpoints  | `api_gateway`    | API gateway proxying AI calls      |
-  | `from vapi_python import Vapi` / Vapi SDK                    | `voice_platform` | Vapi — voice AI platform           |
-  | `bland` SDK or Bland.ai API calls                            | `voice_platform` | Bland.ai — voice AI platform       |
-  | `retell` SDK or Retell API calls                             | `voice_platform` | Retell — voice AI platform         |
-  | `from langchain` with provider imports                       | `framework`      | LangChain orchestration framework  |
-  | `from llama_index` with provider imports                     | `framework`      | LlamaIndex orchestration framework |
-  | Direct SDK calls only (no router/gateway/framework)          | `direct`         | Direct API integration             |
+  | Pattern                                                                                                           | Gateway Type     | Evidence                                  |
+  | ----------------------------------------------------------------------------------------------------------------- | ---------------- | ----------------------------------------- |
+  | `from litellm import completion` / `litellm` in dependencies                                                      | `llm_router`     | LiteLLM — multi-provider router           |
+  | `base_url` containing `openrouter.ai` in source code                                                              | `llm_router`     | OpenRouter — multi-provider router (code) |
+  | Env var `OPENAI_BASE_URL` containing `openrouter.ai` in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router`     | OpenRouter — env-configured router        |
+  | Env var `OPENROUTER_API_KEY` or `OR_API_KEY` present in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router`     | OpenRouter — API key detected             |
+  | Env var `LITELLM_PROXY_BASE_URL` or `LITELLM_API_KEY` present in any config file                                  | `llm_router`     | LiteLLM proxy — env-configured            |
+  | `portkey` imports or `x-portkey-` headers                                                                         | `llm_router`     | Portkey — AI gateway                      |
+  | `helicone` imports or `x-helicone-` headers                                                                       | `llm_router`     | Helicone — AI gateway                     |
+  | Kong, Apigee, or custom API gateway routing to AI endpoints                                                       | `api_gateway`    | API gateway proxying AI calls             |
+  | `from vapi_python import Vapi` / Vapi SDK                                                                         | `voice_platform` | Vapi — voice AI platform                  |
+  | `bland` SDK or Bland.ai API calls                                                                                 | `voice_platform` | Bland.ai — voice AI platform              |
+  | `retell` SDK or Retell API calls                                                                                  | `voice_platform` | Retell — voice AI platform                |
+  | `from langchain` with provider imports                                                                            | `framework`      | LangChain orchestration framework         |
+  | `from llama_index` with provider imports                                                                          | `framework`      | LlamaIndex orchestration framework        |
+  | Direct SDK calls only (no router/gateway/framework)                                                               | `direct`         | Direct API integration                    |
 
   **Env var scan scope for gateway detection:** Check these files for `OPENAI_BASE_URL`, `OPENROUTER_API_KEY`, `OR_API_KEY`, `LITELLM_PROXY_BASE_URL`, `LITELLM_API_KEY`:
   - `.env`, `.env.local`, `.env.production`, `.env.staging`, `.env.*` (any environment file)

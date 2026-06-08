@@ -8,11 +8,11 @@
 
 ## Step 1: Map model IDs to Bedrock
 
-| Anthropic SDK model | Bedrock model ID | Tier | Input/Output per 1M |
-|---|---|---|---|
-| `claude-opus-4-*` | `anthropic.claude-opus-4-6-v1` | Premium | $5 / $25 |
-| `claude-sonnet-4-*` | `anthropic.claude-sonnet-4-6` | Flagship | $3 / $15 |
-| `claude-haiku-4-*` | `anthropic.claude-haiku-4-5-20251001-v1:0` | Fast | $1 / $5 |
+| Anthropic SDK model | Bedrock model ID                           | Tier     | Input/Output per 1M |
+| ------------------- | ------------------------------------------ | -------- | ------------------- |
+| `claude-opus-4-*`   | `anthropic.claude-opus-4-6-v1`             | Premium  | $5 / $25            |
+| `claude-sonnet-4-*` | `anthropic.claude-sonnet-4-6`              | Flagship | $3 / $15            |
+| `claude-haiku-4-*`  | `anthropic.claude-haiku-4-5-20251001-v1:0` | Fast     | $1 / $5             |
 
 Claude 3.5 Haiku and Sonnet v2 remain available if pinned. Claude 3 Haiku is Legacy (EOL Sep 2026). Claude 3.7 Sonnet is EOL (April 2026).
 
@@ -36,9 +36,10 @@ Before: `client.messages.create(model=..., max_tokens=1024, messages=[{"role": "
 After: `client.converse(modelId="anthropic.claude-sonnet-4-6", messages=[{"role": "user", "content": [{"text": "Hello"}]}], inferenceConfig={"maxTokens": 1024})`
 
 Key differences:
+
 - content is typed blocks [{"text": "..."}] not a plain string
 - max_tokens moves to inferenceConfig.maxTokens
-- response text at response["output"]["message"]["content"][0]["text"]
+- response text at `response["output"]["message"]["content"][0]["text"]`
 
 ---
 

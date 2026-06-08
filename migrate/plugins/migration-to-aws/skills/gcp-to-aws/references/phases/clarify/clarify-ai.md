@@ -96,7 +96,7 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 | < $500/month         | **AWS Activate Founders** (up to $5,000 credits, self-service, no VC needed — apply at aws.amazon.com/startups/credits); Bedrock free tier covers initial testing; Bedrock cost comparison shows modest savings |
 | $500–$2,000/month    | **AWS Activate Portfolio** (up to $200,000 credits for VC/accelerator-backed startups — requires Activate Provider Org ID); Bedrock cost comparison highlighted; credits apply to Bedrock third-party models including Claude |
 | $2,000–$10,000/month | **AWS Activate Portfolio** (up to $200,000); Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (up to $1M credits, cohort-based, adjacent to the credits-hub funnel) |
-| > $10,000/month      | **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; see aws.amazon.com/startups/credits); dedicated AI migration support; Bedrock provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (up to $1M credits, ~2% acceptance, 8-week cohort — aws.amazon.com/startups/generative-ai/accelerator) |
+| > $10,000/month      | **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; see aws.amazon.com/startups/credits); dedicated AI migration support; Bedrock provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort — aws.amazon.com/startups/generative-ai/accelerator) |
 
 **Activate eligibility (Founders & Portfolio):** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
 
@@ -420,7 +420,7 @@ _Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). Ask
 
 If `ai_monthly_spend` is `">$10K"`: also flag **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; aws.amazon.com/startups/credits).
 
-If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`: also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort, ~2% acceptance rate — adjacent cohort program, distinct from the credits-hub funnel): aws.amazon.com/startups/generative-ai/accelerator
+If `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`: also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort — adjacent cohort program, distinct from the credits-hub funnel): aws.amazon.com/startups/generative-ai/accelerator
 
 Interpret → `startup_program_status`: A → `"has_credits"`, B → `"eligible_founders"`, C → `"eligible_portfolio"`, D → `"unknown"`. Default: D → `"unknown"`.
 

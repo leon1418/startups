@@ -196,7 +196,7 @@ Credits expire within 1–2 years. Apply when you're ready to ramp up AWS usage.
 
 ## AWS Generative AI Accelerator
 
-An adjacent cohort program for agentic AI startups, distinct from the AWS Activate credits-hub funnel above. Highly selective (~2% acceptance rate). The 2025 global cohort selected 40 startups; consult the program page for the next cohort cycle.
+An adjacent cohort program for agentic AI startups, distinct from the AWS Activate credits-hub funnel above. Highly selective. The 2025 global cohort selected 40 startups; consult the program page for the next cohort cycle.
 
 - **Credits:** Up to $1,000,000 in AWS credits
 - **Program:** 8-week cohort with mentorship, technical support, and go-to-market resources

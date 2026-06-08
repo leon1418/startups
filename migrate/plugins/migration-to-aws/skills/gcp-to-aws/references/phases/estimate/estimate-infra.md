@@ -371,13 +371,13 @@ Present the monthly and annual cost difference between GCP baseline and each AWS
 
 Present applicable optimizations with estimated savings:
 
-| Optimization | Savings Range | Applies To | When |
-| --- | --- | --- | --- |
-| Compute Savings Plans | 20–66% | Fargate, Lambda, EC2 | Post-migration (after 30–90 day usage baseline) |
-| Database Savings Plans | Up to 35% (serverless) / ~20% (provisioned) | Aurora, RDS, DynamoDB, ElastiCache, DocumentDB, Neptune, Keyspaces, Timestream, DMS | Post-migration or after instance right-sizing |
-| RDS Reserved Instances | Up to 69% | RDS, Aurora (provisioned) | Post-migration (after architecture stabilizes) |
-| S3 Intelligent-Tiering / S3-IA | 38–50% | S3 storage | During migration |
-| Spot Instances | 60–90% | Batch/non-critical EC2 workloads | If batch jobs exist |
+| Optimization                   | Savings Range                               | Applies To                                                                          | When                                            |
+| ------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Compute Savings Plans          | 20–66%                                      | Fargate, Lambda, EC2                                                                | Post-migration (after 30–90 day usage baseline) |
+| Database Savings Plans         | Up to 35% (serverless) / ~20% (provisioned) | Aurora, RDS, DynamoDB, ElastiCache, DocumentDB, Neptune, Keyspaces, Timestream, DMS | Post-migration or after instance right-sizing   |
+| RDS Reserved Instances         | Up to 69%                                   | RDS, Aurora (provisioned)                                                           | Post-migration (after architecture stabilizes)  |
+| S3 Intelligent-Tiering / S3-IA | 38–50%                                      | S3 storage                                                                          | During migration                                |
+| Spot Instances                 | 60–90%                                      | Batch/non-critical EC2 workloads                                                    | If batch jobs exist                             |
 
 For each applicable optimization:
 
@@ -391,11 +391,11 @@ Cross-reference Clarify when available: `cloud_run_traffic_pattern = business-ho
 
 **Relevance to GCP migrations:**
 
-| Source | Fargate commitment sizing from GCP data? | Notes |
-| ------ | ---------------------------------------- | ----- |
-| **Cloud Run → Fargate** | **Unreliable** | Variable-priced, scales to zero, bills per-request. GCP billing does not map 1:1 to Fargate vCPU-hours. |
+| Source                                 | Fargate commitment sizing from GCP data?               | Notes                                                                                                                                                                                                                                            |
+| -------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Cloud Run → Fargate**                | **Unreliable**                                         | Variable-priced, scales to zero, bills per-request. GCP billing does not map 1:1 to Fargate vCPU-hours.                                                                                                                                          |
 | **GKE → Fargate** (re-platform to ECS) | **Unreliable for commitment; useful for sanity check** | Node pools are often 24/7 with known machine types — you can rough-estimate vCPU-hours from node count × machine type. But re-platforming changes task sizing, autoscaling, and bin-packing; do not purchase a Savings Plan from GCP data alone. |
-| **GKE → EKS** (keep Kubernetes) | **Partial** | Compute Savings Plans apply to **EC2 worker nodes** or **EKS Fargate profiles**, not the EKS control plane fee (~$0.10/hr per cluster). Post-migration baseline still recommended after right-sizing. |
+| **GKE → EKS** (keep Kubernetes)        | **Partial**                                            | Compute Savings Plans apply to **EC2 worker nodes** or **EKS Fargate profiles**, not the EKS control plane fee (~$0.10/hr per cluster). Post-migration baseline still recommended after right-sizing.                                            |
 
 **What Compute Savings Plans offer:**
 

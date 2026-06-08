@@ -187,6 +187,7 @@ Immediately after the subtitle, before any other section, write a conditional **
 
 ```markdown
 > **Start here**
+>
 > - **AI migration:** `cd ai-migration && ./setup_bedrock.sh --dry-run`, then re-run with `--execute` when ready
 > - **Infrastructure:** `cd terraform && terraform init && terraform plan -out migration.tfplan`, then `terraform apply migration.tfplan`
 > - **Both tracks:** complete AI setup first, then run Terraform

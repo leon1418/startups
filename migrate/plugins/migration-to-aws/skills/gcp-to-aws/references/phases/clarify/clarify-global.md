@@ -8,7 +8,9 @@ Present questions with a conversational tone and brief context explaining why ea
 
 ## Q1 — Where are your users located?
 
-**Rationale:** Geography drives AWS region selection and CDN strategy. It does NOT by itself justify multi-region architecture or Aurora Global Database — those decisions require understanding write patterns and RTO/RPO requirements from Q6 (uptime) and Q7 (maintenance window). Recommending multi-region based on geography alone would over-engineer most architectures and significantly increase cost.
+**Auto-extract signal:** When `gcp-resource-inventory.json` shows a **single** GCP region among PRIMARY compute/database resources, map to the closest AWS region and **skip Q1** with `target_region` `chosen_by: "extracted"`. When multiple regions are present, suggest the closest AWS region as default but still ask Q1.
+
+**Rationale:** Geography drives AWS region selection and CDN strategy.
 
 > I need to understand your user base to recommend the right AWS region and CDN strategy.
 >
@@ -82,6 +84,16 @@ Default: A — no constraint.
 
 ## Q3 — Approximately how much are you spending on GCP per month in total?
 
+**Auto-extract signal:** If `billing-profile.json` exists, map `summary.total_monthly_spend` to the spend band below and **skip Q3** when unambiguous (`chosen_by: "extracted"`). If billing is absent or ambiguous, ask Q3.
+
+| Monthly USD   | `gcp_monthly_spend` |
+| ------------- | ------------------- |
+| < 1,000       | `"<$1K"`            |
+| 1,000–4,999   | `"$1K-$5K"`         |
+| 5,000–19,999  | `"$5K-$20K"`        |
+| 20,000–99,999 | `"$20K-$100K"`      |
+| ≥ 100,000     | `">$100K"`          |
+
 **Rationale:** Total GCP spend is the primary input for ARR estimation, which determines credits eligibility tier. Also provides a sanity check for cost estimates when billing data is not uploaded.
 
 > Total GCP spend helps me estimate AWS credits eligibility and provides a cost baseline for the migration plan.
@@ -93,7 +105,7 @@ Default: A — no constraint.
 > E) > $100,000/month
 > F) I don't know
 
-**Billing enrichment:** If `billing-profile.json` exists, show:
+**Billing enrichment (when Q3 is not skipped):** If `billing-profile.json` exists but extraction was skipped due to ambiguity, show:
 
 > Your billing data shows ~$[total_monthly_spend]/month. Does this match your expectation?
 
@@ -197,6 +209,15 @@ Default: B — no constraint, evaluate full compute options.
 ---
 
 ## Q6 — If your application went down unexpectedly right now, what would happen?
+
+**Auto-extract signal (Cloud SQL PostgreSQL/MySQL only):** Read `availability_type` from `google_sql_database_instance` (`config.availability_type` or top-level). When unambiguous:
+
+| GCP value  | `availability` extracted | Skip Q6?                       |
+| ---------- | ------------------------ | ------------------------------ |
+| `ZONAL`    | `"single-az"`            | Yes — `chosen_by: "extracted"` |
+| `REGIONAL` | `"multi-az"`             | Yes — `chosen_by: "extracted"` |
+
+**Never auto-extract:** `multi-az-ha` and `multi-region` require Q6 user answers (Mission-Critical / Catastrophic) — IaC cannot infer these. Cloud SQL `REGIONAL` is RDS Multi-AZ (`multi-az`), not Aurora (`multi-az-ha`). Skip Q6 only when **all** instances agree. When instances disagree or `availability_type` is missing on any instance, ask Q6.
 
 **Rationale:** Availability requirements drive database engine selection, deployment topology, and whether multi-AZ is mandatory. Aurora Global Database and multi-region compute are only recommended when Catastrophic is selected AND Q1 confirms global users — both signals are required.
 

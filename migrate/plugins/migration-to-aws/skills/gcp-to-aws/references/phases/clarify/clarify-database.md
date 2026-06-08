@@ -31,7 +31,9 @@ If the engine is not PostgreSQL or MySQL, note the appropriate RDS or DynamoDB t
 
 _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL.
 
-**Rationale:** Traffic pattern informs capacity planning on the target **already chosen by Q6**. Q6 always wins for product family: Inconvenient / Significant Issue → RDS; Mission-Critical / Catastrophic → Aurora. This question does **not** upgrade a Significant Issue customer to Aurora because they have read-heavy traffic.
+**Auto-extract signal (dev-tier):** When **all** Cloud SQL instances match dev pattern (`db-f1-micro`, `db-g1-small`, or `tier` contains `micro`/`small` with `availability_type: ZONAL`), extract `database_traffic: "steady"` with `chosen_by: "extracted"` and **skip Q12**. When instances mix dev and prod tiers, ask Q12.
+
+**Rationale:** Traffic pattern informs capacity planning on the target **already chosen by Q6**.
 
 **Context for user:** Give concrete examples so the user can pattern-match:
 
@@ -75,6 +77,8 @@ Default: A — `database_traffic: "steady"`.
 
 _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no Cloud SQL.
 
+**Auto-extract signal (dev-tier):** Same dev-tier pattern as Q12 — extract `db_io_workload: "low"` with `chosen_by: "extracted"` and **skip Q13** only when **all** instances are dev-tier. When instances mix dev and prod tiers, ask Q13.
+
 **Rationale:** On AWS, storage and I/O billing differ between RDS and Aurora. This captures how disk-heavy the workload is. **Q6 still governs RDS vs Aurora** — this question only selects storage/I/O options within that family.
 
 > A) Low (< 1,000 IOPS) — Mostly reads, infrequent writes
@@ -109,7 +113,16 @@ _Fire when:_ Cloud SQL (PostgreSQL or MySQL) present in inventory. Skip when: no
 
 **Rationale:** Database size is the primary driver of migration tooling selection. pg_dump/pg_restore is sufficient for small databases but becomes impractically slow above ~10GB within a typical maintenance window. pgcopydb's parallel copy cuts migration time by 3–5x for medium databases. Very large databases (>500GB) require DMS for continuous replication regardless of whether a maintenance window exists.
 
-**Auto-detect signal:** If `gcp_config.disk_size_gb` is present on `google_sql_database_instance`, use it as the default answer and confirm with the user rather than asking from scratch.
+**Auto-detect signal:** Read disk size from `google_sql_database_instance`: `config.disk_size`, `config.disk_size_gb`, or `gcp_config.disk_size_gb`. Map to Q13b band and **skip Q13b** when unambiguous:
+
+| Disk size (GB) | `db_size` value | Skip Q13b?                     |
+| -------------- | --------------- | ------------------------------ |
+| < 10           | `"<10GB"`       | Yes — `chosen_by: "extracted"` |
+| 10 – 99        | `"10-100GB"`    | Yes — `chosen_by: "extracted"` |
+| 100 – 499      | `"100-500GB"`   | Yes — `chosen_by: "extracted"` |
+| ≥ 500          | `">500GB"`      | Yes — `chosen_by: "extracted"` |
+
+If multiple instances disagree, ask Q13b. Record raw GB in `metadata.inventory_clarifications.db_size_gb` when extracted.
 
 > Database size determines which migration tool we recommend — this directly affects your migration window length and risk.
 >

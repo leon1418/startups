@@ -292,7 +292,72 @@ Scan files that contained AI signals for specific model information:
 
 ---
 
-## Step 5.5: Extract Agentic Details (Only if `is_agentic: true`)
+## Step 5B: Disambiguate AI Workloads by SDK Method
+
+After extracting model details (Step 5), split the detected AI usage into distinct **workloads** — one per unique combination of `(model_id, sdk_method, structured_output)`. This enables downstream phases to produce one Bedrock recommendation per workload instead of collapsing multiple capabilities into a single recommendation.
+
+**Load** `data/sdk-capability-map.json` from the plugin source. If missing or malformed, halt with diagnostic: `"[Discover] Failed to load sdk-capability-map.json"`.
+
+**For each AI call site detected in Steps 3–5:**
+
+1. **Resolve the SDK method** — the fully qualified method name (e.g., `ai.models.generateContent`, `openai.chat.completions.create`, `openai.images.generate`). Match against `sdk-capability-map.json` entries using exact, case-sensitive equality.
+
+2. **Detect structured output** — for methods in `structured_output_trio` (`chat.completions.create`, `messages.create`, `generateContent`), check if the call passes any of: `response_format`, `responseSchema`, or `responseMimeType: 'application/json'`. If yes → `structured_output: true`, `capability: "structured_output"`, `confidence: "high"`. If no → `structured_output: false`, `capability: "text_generation"`, `confidence: "medium"`.
+
+3. **Assign capability from map** — for methods NOT in the structured-output trio, use the map value directly with `confidence: "high"`. For methods not in the map at all → `capability: "unknown"`, `confidence: "low"`.
+
+4. **Collapse by workload tuple** — group call sites sharing the same `(model_id, sdk_method, structured_output)` into a single workload entry. Record all `call_sites` (file + line).
+
+5. **Generate workload_id** — deterministic hash: `"wl_" + sha256(model_id + "|" + sdk_method + "|" + ("structured" if structured_output else "plain"))[:6]`
+
+**Output:** Add a `workloads` array to the `ai-workload-profile.json` output alongside the existing `models[]` field.
+
+```json
+"workloads": [
+  {
+    "workload_id": "wl_3a1f2c",
+    "model_id": "gemini-2.5-flash",
+    "sdk_method": "ai.models.generateContent",
+    "capability": "text_generation",
+    "capability_confidence": "medium",
+    "structured_output": false,
+    "call_sites": [
+      { "file": "lib/gemini.ts", "line": 11 }
+    ]
+  },
+  {
+    "workload_id": "wl_8e22b4",
+    "model_id": "gemini-2.5-flash",
+    "sdk_method": "ai.models.generateContent",
+    "capability": "structured_output",
+    "capability_confidence": "high",
+    "structured_output": true,
+    "call_sites": [
+      { "file": "lib/gemini.ts", "line": 27 }
+    ]
+  },
+  {
+    "workload_id": "wl_c97d10",
+    "model_id": "imagen-3.0-generate-001",
+    "sdk_method": "ai.models.generateImages",
+    "capability": "image_generation",
+    "capability_confidence": "high",
+    "structured_output": false,
+    "call_sites": [
+      { "file": "lib/imagen.ts", "line": 60 }
+    ]
+  }
+]
+```
+
+**Rules:**
+
+- `workloads[]` is an empty array when no AI call sites are detected
+- `call_sites[].file` uses repo-relative POSIX paths
+- Every model_id in `workloads[]` MUST also appear in `models[]` (backward compatibility)
+- If a method is in the structured-output trio AND the model is multimodal (Gemini, GPT-4o, Claude) AND structured output is NOT detected → set `capability_confidence: "medium"` (ambiguous — Clarify will confirm)
+
+---
 
 **Skip this step entirely if `is_agentic: false` from Step 3.5.**
 
@@ -547,6 +612,10 @@ After generating the output file, the parent `discover.md` handles the phase sta
 - `current_costs` section is present ONLY if billing data was provided; omitted entirely otherwise
 - `detection_signals` matches the signals found in Step 3
 - All field names use EXACT required keys
+- `workloads[]` is present (empty array if no AI call sites; one entry per distinct `(model_id, sdk_method, structured_output)` tuple)
+- Every `workloads[].model_id` also appears in `models[].model_id`
+- `workloads[].capability_confidence` is one of: `"high"`, `"medium"`, `"low"`
+- `workloads[].workload_id` matches pattern `wl_[0-9a-f]{6}`
 - If `is_agentic: true`: `agentic_profile` section exists with all required fields
 - If `is_agentic: true`: `agentic_profile.agent_count` equals length of `agentic_profile.agents[]`
 - If `is_agentic: true`: `agentic_profile.tool_count` equals length of `tool_manifest[]` (deduplicated)

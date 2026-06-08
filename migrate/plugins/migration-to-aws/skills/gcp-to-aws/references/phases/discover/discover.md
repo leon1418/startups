@@ -129,6 +129,7 @@ After all loaded sub-discoveries complete, check what artifacts were produced in
      - If Step 4 exit applied with confidence below 70% **but** `ai-workload-profile.json` exists with `metadata.profile_source` = `"iac_vertex"` -> **allow completion** (IaC-inferred profile retained).
      - If execution continued to Steps 5–8 (confidence **≥** 70%) -> **require** `ai-workload-profile.json`.
    - If full `discover-billing.md` ran OR lightweight billing extraction ran -> require `billing-profile.json`
+   - **Always** (after all routes complete) -> require `migration-preview.json`. This is produced by `discover-preview.md` in Step 3. If it is missing after Step 3 executes, STOP and output: "Discover handoff failed: migration-preview.json not produced. Re-run discover-preview."
    - If any triggered route is missing its required artifact(s): STOP and output: "Discover route [name] did not produce required artifacts. Resolve the sub-discovery failure before completing Phase 1."
 
 ## Step 3: Update Phase Status

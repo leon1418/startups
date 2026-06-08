@@ -67,12 +67,12 @@ For resources not covered by fast-path:
 
 7b. **Cloud SQL Q6 gate (mandatory — after rubric):** For `google_sql_database_instance` (PostgreSQL or MySQL), read `preferences.json` → `design_constraints.availability` and **enforce**:
 
-| `availability`   | Required `aws_service`                          |
-| ------------------ | ----------------------------------------------- |
-| `single-az`        | `RDS PostgreSQL` or `RDS MySQL` (engine match)  |
-| `multi-az`         | `RDS PostgreSQL` or `RDS MySQL` + `multi_az: true` |
-| `multi-az-ha`      | `Aurora PostgreSQL` or `Aurora MySQL`           |
-| `multi-region`     | `Aurora PostgreSQL` or `Aurora MySQL` Global Database |
+| `availability`          | Required `aws_service`                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `single-az`             | `RDS PostgreSQL` or `RDS MySQL` (engine match)                                                                                                                                                                                        |
+| `multi-az`              | `RDS PostgreSQL` or `RDS MySQL` + `multi_az: true`                                                                                                                                                                                    |
+| `multi-az-ha`           | `Aurora PostgreSQL` or `Aurora MySQL`                                                                                                                                                                                                 |
+| `multi-region`          | `Aurora PostgreSQL` or `Aurora MySQL` Global Database                                                                                                                                                                                 |
 | absent / null / missing | **Do not proceed** — Cloud SQL PostgreSQL/MySQL is present but Q6 was not answered. Return to Clarify to ask Q6 (or apply the documented Q6 default) before assigning RDS/Aurora topology. Do not infer Aurora from the rubric alone. |
 
 **IaC extraction note:** Only `single-az` and `multi-az` can be auto-extracted from Terraform (`ZONAL` / `REGIONAL`). **`multi-az-ha` and `multi-region` are never inferred from IaC** — they require explicit user intent via Q6 (Mission-Critical / Catastrophic). Cloud SQL `REGIONAL` maps to `multi-az` (RDS Multi-AZ), not `multi-az-ha` (Aurora).

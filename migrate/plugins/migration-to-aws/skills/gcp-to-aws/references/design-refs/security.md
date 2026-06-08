@@ -30,16 +30,17 @@ The plugin always emits `baseline.tf` with account-wide security controls — Gu
 
 Apply these patterns when generating `vpc.tf`. Start with no access and add only what is needed.
 
-| Component     | Default Inbound                  | Default Outbound        |
-| ------------- | -------------------------------- | ----------------------- |
-| ALB           | 443 from 0.0.0.0/0; 80 redirect  | Fargate SG only         |
-| Fargate       | ALB SG only (on app port)        | 443 (HTTPS), DB SG      |
-| EKS nodes     | ALB SG only (on app port)        | 443 (HTTPS), DB SG      |
-| RDS/Aurora    | Fargate SG only (on DB port)     | None                    |
-| ElastiCache   | Fargate SG only (on cache port)  | None                    |
-| Lambda (VPC)  | None                             | 443, DB SG              |
+| Component    | Default Inbound                 | Default Outbound   |
+| ------------ | ------------------------------- | ------------------ |
+| ALB          | 443 from 0.0.0.0/0; 80 redirect | Fargate SG only    |
+| Fargate      | ALB SG only (on app port)       | 443 (HTTPS), DB SG |
+| EKS nodes    | ALB SG only (on app port)       | 443 (HTTPS), DB SG |
+| RDS/Aurora   | Fargate SG only (on DB port)    | None               |
+| ElastiCache  | Fargate SG only (on cache port) | None               |
+| Lambda (VPC) | None                            | 443, DB SG         |
 
 **Hard rules:**
+
 - Never emit a security group ingress rule with `cidr_blocks = ["0.0.0.0/0"]` for ports 22 (SSH), 3389 (RDP), or 5900 (VNC). Emit a commented-out placeholder pointing to SSM Session Manager instead.
 - ALB port 80 must redirect to 443 — never forward HTTP directly.
 - All compute (Fargate, EKS nodes, EC2) must be in private subnets. ALB is the only public-facing component.
@@ -50,11 +51,11 @@ Apply these patterns when generating `vpc.tf`. Start with no access and add only
 
 After generating Terraform, recommend running a security scanner before `terraform apply`:
 
-| Tool        | Purpose                                      | Command                          |
-| ----------- | -------------------------------------------- | -------------------------------- |
-| **checkov** | Multi-framework IaC scanner (Terraform, etc) | `checkov -d terraform/`          |
-| **tfsec**   | Terraform-specific security scanner          | `tfsec terraform/`               |
-| **trivy**   | IaC + container image scanning               | `trivy config terraform/`        |
+| Tool        | Purpose                                      | Command                   |
+| ----------- | -------------------------------------------- | ------------------------- |
+| **checkov** | Multi-framework IaC scanner (Terraform, etc) | `checkov -d terraform/`   |
+| **tfsec**   | Terraform-specific security scanner          | `tfsec terraform/`        |
+| **trivy**   | IaC + container image scanning               | `trivy config terraform/` |
 
 Include this recommendation in the generated `terraform/README.md` under a "Before You Apply" section. Do not block artifact generation on scanner availability — recommend it as a post-generation step.
 

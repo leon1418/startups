@@ -1,69 +1,65 @@
-# Step Functions
-## Decision Framework: Standard vs Express
+# Step Functions — Startup Decision Guide
 
-| Feature         | Standard                                  | Express                                     |
-|-----------------|-------------------------------------------|---------------------------------------------|
-| Max duration    | 1 year                                    | 5 minutes                                   |
-| Execution model | Exactly-once                              | At-least-once (async) / At-most-once (sync) |
-| Pricing         | Per state transition ($0.025/1000)        | Per request + duration                      |
-| History         | Full execution history in console         | CloudWatch Logs only                        |
-| Step limit      | 25,000 events per execution               | Unlimited                                   |
-| Max concurrency | Default ~1M (soft limit)                  | Default ~1,000 (soft limit)                 |
-| Ideal for       | Long-running, business-critical workflows | High-volume, short, event processing        |
+## Stage-Based Recommendation
 
-**Opinionated recommendation**:
-- **Default to Standard** for business workflows, orchestration, and anything requiring auditability.
-- **Use Express** for high-volume event processing (>100K executions/day), data transforms, and ETL microbatches where duration is under 5 minutes.
-- **Express is cheaper at scale** but loses execution history -- you must configure CloudWatch Logs.
+### Pre-PMF (Seed / <$1M ARR)
 
-## State Types
+- **Don't use Step Functions for simple workflows.** If your flow is "Lambda A → Lambda B → Lambda C" with basic error handling, just chain them in code. Step Functions adds ASL complexity and $0.025/1000 transitions overhead.
+- **Use Step Functions when:** You have human approval steps, waiting (hours/days for callbacks), complex branching, or need visual debugging of multi-step processes.
+- **Express workflows for high-volume data processing** where you'd otherwise write a Lambda orchestrator.
 
-### Task State (does work)
+### Post-PMF / Growth ($1M-$10M ARR)
 
-**Opinionated**: Always add Retry and Catch to every Task state. Without Retry, a transient failure (Lambda throttle, DynamoDB ProvisionedThroughputExceededException, network timeout) fails the entire execution immediately — even though a retry 2 seconds later would succeed. Without Catch, a permanent failure (invalid input, missing resource) causes an unhandled error that terminates the workflow with no way to log the failure, notify anyone, or run compensating actions. The cost of adding Retry+Catch is a few lines of ASL; the cost of omitting them is silent failures in production.
+- Step Functions becomes valuable when you have business-critical workflows that need auditability (payment processing, order fulfillment, onboarding flows).
+- Replace homegrown state machines (status columns in databases, Lambda chains with SQS in between) with Step Functions when debugging them takes more than 30 minutes.
 
-## Error Handling: Retry and Catch
+## Cost Traps
 
-### Retry Strategy
+| Trap                                    | Impact                                                                                                                        | Fix                                                                                    |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Standard for high-volume short tasks    | At 100K executions/day × 10 transitions = 1M transitions = $25/day = $750/month                                               | Switch to Express ($1.00/million requests + duration — typically 90% cheaper at scale) |
+| Pass states "for clarity"               | Each Pass counts as a billed transition in Standard                                                                           | Eliminate unnecessary Pass states; combine logic                                       |
+| Lambda wrapper for AWS SDK calls        | Pay Lambda invocation ($0.20/million) + transition ($25/million) instead of just transition                                   | Use direct SDK integrations (200+ supported services)                                  |
+| Standard workflows for cron jobs        | Paying per-transition for scheduled tasks with no need for execution history                                                  | Use EventBridge Scheduler → Lambda directly                                            |
+| Not setting TimeoutSeconds on callbacks | Execution stays open for up to 1 YEAR — you pay nothing per-se but accumulate orphaned executions that hit concurrency limits | Always set TimeoutSeconds on `.waitForTaskToken`                                       |
 
-**Opinionated**: Order retries from specific to general. Use `JitterStrategy: FULL` to prevent thundering herd. Put `States.ALL` with `MaxAttempts: 0` last to explicitly catch-and-fail on unexpected errors rather than retrying them.
+## Counterintuitive Advice
 
-### Catch and Error Recovery
+- **A Lambda function with try/catch is often better than Step Functions for 2-3 step workflows.** The overhead of learning ASL, managing IAM for Step Functions, and the state machine definition doesn't pay off until you have branching, parallel execution, or wait states.
+- **Express workflows are underused by startups.** If you're writing a Lambda that orchestrates 3 other Lambdas and you're spending time on error handling — Express workflow does this natively at lower cost for short (<5 min) flows.
+- **Distributed Map is free at low volume and massively valuable.** Processing 10K items in parallel with automatic batching and error handling — building this yourself in Lambda takes weeks.
+- **Don't use Workflow Studio in production pipelines.** Great for prototyping, but export to ASL JSON and version control it. Console-only workflows are undocumented infrastructure.
 
-**Always use `ResultPath` in Catch** to preserve the original input alongside the error. Without it, the error replaces your entire state input.
+## Decision Framework: Should You Use Step Functions?
 
-## Workflow Studio
+**Yes, clearly worth it:**
 
-Use Workflow Studio in the AWS Console for:
-- Visual design and prototyping (drag-and-drop states)
-- Understanding existing workflows
-- Quick iteration on state machine logic
+- Workflow has wait states (human approval, callback patterns, timers)
+- 5 steps with complex branching/parallel execution
+- You need visual execution history for debugging/auditing
+- Saga pattern with compensating transactions
+- Processing large datasets (Distributed Map)
 
-**Opinionated**: Start in Workflow Studio for prototyping, then export to ASL (Amazon States Language) JSON and manage in version control. Never rely solely on the console for production workflows.
+**Probably not worth it:**
 
-## Input/Output Processing
+- Linear A→B→C with basic retry (just use Lambda with try/catch)
+- Simple cron job (use EventBridge Scheduler → Lambda)
+- Request/response within API latency budget (Step Functions adds 50-200ms overhead)
+- You have 1-2 engineers and nobody knows ASL (learning curve vs shipping speed)
 
-Data flows through each state as: `InputPath -> Parameters -> Task -> ResultSelector -> ResultPath -> OutputPath`
+**Express vs Standard decision:**
 
-**Opinionated**: Use `ResultPath` generously to accumulate data through states. Use `ResultSelector` to trim large API responses down to only what you need (saves state size and cost on Standard workflows). See `references/integrations.md` for detailed examples of each processing stage.
+- <5 min duration AND >1000 executions/day → Express
+- Need execution history in console → Standard
+- Long-running (>5 min) → Standard (no choice)
+- Cost-sensitive high-volume → Express (calculate breakeven: ~50 transitions/execution = equal cost)
 
-## Anti-Patterns
+## When to Graduate
 
-1. **Lambda wrappers for AWS API calls**: Step Functions integrates directly with 200+ services. Don't write a Lambda just to call DynamoDB PutItem or SQS SendMessage.
-2. **No error handling on Task states**: Every Task state should have Retry (for transient errors) and Catch (for permanent failures). No exceptions.
-3. **Ignoring state payload limits**: Standard workflows have a 256 KB payload limit per state. Store large data in S3 and pass references.
-4. **Using Standard for high-volume short tasks**: If you're running >100K executions/day with <5 min duration, Express workflows are dramatically cheaper.
-5. **Missing TimeoutSeconds on callback tasks**: Without a timeout, `.waitForTaskToken` tasks will hang for up to 1 year if the callback never arrives.
-6. **Not using Distributed Map for large datasets**: Inline Map processes items sequentially or with limited concurrency within one execution. Distributed Map scales to millions of items.
-7. **Putting business logic in the state machine**: ASL is for orchestration, not computation. Complex data transforms and business rules belong in Lambda functions.
-8. **Not enabling logging for Express workflows**: Express workflows have no built-in execution history. You MUST configure CloudWatch Logs or you'll have zero visibility.
-9. **Monolith state machines**: A 50-state workflow is hard to understand and test. Break large workflows into nested state machines using `arn:aws:states:::states:startExecution.sync:2`.
-10. **Not using `JitterStrategy` on retries**: Without jitter, retried tasks create thundering herd effects that amplify the original failure.
-
-## Cost Optimization
-
-- **Standard**: $0.025 per 1,000 state transitions. Minimize states. Use direct integrations to avoid Lambda invocation costs on top of transition costs.
-- **Express**: Priced by number of requests and duration. Cheaper for high-volume, short workflows.
-- **Pass states are not free** in Standard (they count as transitions). Eliminate unnecessary Pass states.
-- **Combine simple sequential tasks** where possible to reduce transition count.
-- Use `ResultSelector` to trim response payloads -- smaller payloads mean faster processing.
+| Trigger                                             | Action                                      |
+| --------------------------------------------------- | ------------------------------------------- |
+| Debugging Lambda chains takes >30min                | Wrap in Step Functions for visual debugging |
+| You built a status column state machine in DynamoDB | Replace with Step Functions                 |
+| Processing >10K items in batch jobs                 | Use Distributed Map                         |
+| Compliance requires workflow audit trail            | Standard workflows (full execution history) |
+| >100K executions/day on Standard                    | Evaluate Express for cost savings           |

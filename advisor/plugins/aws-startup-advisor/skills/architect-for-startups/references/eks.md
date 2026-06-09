@@ -1,71 +1,81 @@
-# EKS
-## Process
-## Compute Strategy
+# EKS — Startup-Specific Guidance
 
-**Default to managed node groups** for most workloads.
+## The Hard Truth: Most Startups Shouldn't Use EKS
 
-- **Managed Node Groups**: AWS handles node provisioning, AMI updates, and draining. Best default. Use with Karpenter for intelligent scaling.
-- **Fargate Profiles**: No node management at all. Best for low-ops teams running stateless workloads. Limitations: no DaemonSets, no persistent volumes (EBS), no GPUs, higher per-pod cost at scale.
-- **Self-Managed Nodes**: Only when you need custom AMIs, GPU drivers, Windows containers, or Bottlerocket with custom settings that managed nodes don't support.
+**EKS is a Series B+ decision.** The Kubernetes tax is real:
 
-## Cluster Setup
+- EKS control plane: $73/month (before any workload runs)
+- Minimum viable production cluster: ~$300-500/month (control plane + 2-3 nodes + ALB + NAT)
+- Platform engineering time: 20-40% of one engineer's bandwidth for maintenance, upgrades, RBAC, networking
+- Time to first deploy: days/weeks vs hours for ECS Fargate
 
-- Use **private endpoint** for the API server in production. Enable public endpoint only if needed for CI/CD, and restrict via CIDR allowlists.
-- Deploy the cluster across **at least 3 AZs** for high availability.
-- Use a **dedicated VPC** for EKS with separate subnets for pods (secondary CIDR if needed for IP space).
-- Enable **envelope encryption** for Kubernetes secrets using a KMS key.
-- Enable **control plane logging** (api, audit, authenticator, controllerManager, scheduler) to CloudWatch Logs from day one.
+**Choose EKS only when:**
 
-## IAM: IRSA vs Pod Identity
+- Team > 10-15 engineers with multiple teams needing namespace isolation
+- You're hiring primarily from a Kubernetes-experienced talent pool
+- You need advanced scheduling (GPU sharing, bin-packing, multi-tenancy)
+- Your compute spend exceeds $20K/month and Karpenter's optimization justifies the platform cost
+- You're already running K8s and migrating to AWS (don't re-learn ECS just for AWS)
 
-**Default to EKS Pod Identity** for new clusters (EKS 1.24+). It is simpler and does not require an OIDC provider.
+## Startup Cost Traps
 
-- **Pod Identity**: AWS-managed, no OIDC setup. Create a Pod Identity Association linking a K8s service account to an IAM role. The role trust policy uses `pods.eks.amazonaws.com` as the principal.
-- **IRSA (IAM Roles for Service Accounts)**: Legacy but still widely used. Requires an OIDC provider on the cluster. Annotate the K8s ServiceAccount with `eks.amazonaws.com/role-arn`. Use for clusters < 1.24 or cross-account access patterns not yet supported by Pod Identity.
-- **Never use node instance roles for application permissions**. Node roles should only have permissions for kubelet, ECR pulls, and CNI. Application permissions go through Pod Identity or IRSA.
+1. **The $73/month control plane for dev/staging**: Many startups create 3 clusters (dev/staging/prod) = $219/month in control planes alone before a single pod runs. At pre-Series A, use namespaces on a single cluster for isolation. Add dedicated clusters at Series B.
 
-## EKS Add-ons
+2. **Managed node groups with oversized instances**: Default tutorials use `m5.large` nodes. A startup running 3-5 microservices needs maybe 2-4 vCPUs total. Use `t3.medium` nodes or Karpenter with tight resource limits.
 
-Manage these as EKS add-ons (not Helm) for automatic version compatibility:
+3. **Add-on sprawl**: Each add-on (cert-manager, external-dns, ArgoCD, Datadog, Istio) runs pods that consume node resources. A "production-ready" cluster with common add-ons needs 2-4 vCPUs just for platform components. Budget this separately.
 
-- **vpc-cni**: Required. Enable `ENABLE_PREFIX_DELEGATION` for higher pod density (110+ pods/node). Set `WARM_PREFIX_TARGET=1` to reduce IP waste.
-- **kube-proxy**: Required. Use IPVS mode for large clusters (>500 nodes).
-- **CoreDNS**: Required. Scale replicas based on cluster size (2 for small, 4+ for large). Enable NodeLocal DNSCache for latency-sensitive workloads.
-- **EBS CSI Driver**: Required for persistent volumes. Install via add-on with Pod Identity for IAM.
-- **EFS CSI Driver**: For shared file systems across pods/nodes.
-- **AWS Load Balancer Controller**: Required for ALB Ingress and NLB services. Not a managed add-on -- install via Helm.
-- **Metrics Server**: Required for HPA. Install via add-on.
+4. **Karpenter consolidation disabled**: Karpenter defaults to not consolidating nodes. Enable `consolidationPolicy: WhenEmptyOrUnderutilized` immediately — it's the primary mechanism for right-sizing your fleet and avoiding paying for idle capacity.
 
-## Autoscaling: Karpenter vs Cluster Autoscaler
+5. **Load Balancer per service**: Each Kubernetes `Service type: LoadBalancer` creates an NLB (~$16/month). Use an Ingress controller (ALB Controller or nginx) to share one load balancer across services.
 
-**Default to Karpenter** for new clusters. It is faster, more flexible, and cost-optimized.
+## Stage-Specific Recommendations (If You're Committed to EKS)
 
-- **Karpenter**: Provisions nodes directly (not ASGs). Define `NodePool` and `EC2NodeClass` CRDs. Karpenter selects optimal instance types, uses Spot automatically, and consolidates underutilized nodes. Bin-packing is far superior to Cluster Autoscaler.
-- **Cluster Autoscaler**: Legacy. Tied to ASG min/max. Slower scaling (minutes vs seconds). Use only if Karpenter is not an option (e.g., very old clusters, org policy).
+### Early (1 cluster, <$5K/month compute)
 
-Karpenter best practices:
-- Define `NodePool` with broad instance families (`c`, `m`, `r` families) -- let Karpenter choose the best fit.
-- Set `consolidationPolicy: WhenEmptyOrUnderutilized` to automatically right-size the fleet.
-- Use `topologySpreadConstraints` in pod specs to distribute across AZs.
-- Set `expireAfter` (e.g., 720h) to rotate nodes and pick up new AMIs.
-- Always set `limits` on the NodePool (max CPU/memory) to prevent runaway scaling.
+- Single cluster, namespaces for env separation (dev/staging/prod namespaces)
+- Karpenter from day one — never use Cluster Autoscaler for new clusters
+- Fargate profiles for low-traffic namespaces (dev) to avoid idle node costs
+- Skip service mesh (Istio/Linkerd) — use simple K8s Services and Network Policies
+- ArgoCD for GitOps from the start — it's free and prevents `kubectl apply` drift
 
-## Upgrade Strategy
+### Growth ($5K-50K/month compute)
 
-- EKS supports N-1 version skew. Upgrade **one minor version at a time**.
-- Order: control plane first, then add-ons, then node groups.
-- Use `eksctl` or Terraform to orchestrate. Never skip versions.
-- Test upgrades in a non-prod cluster first. Check the [EKS version changelog](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html) for deprecations.
-- Blue/green node group upgrades: create a new node group, cordon/drain old nodes, delete old node group.
+- Separate prod cluster from non-prod
+- Karpenter with Spot for stateless workloads (70% savings)
+- Pod Identity for IAM (not IRSA) — simpler, fewer moving parts
+- Enable control plane logging for security/audit
+- Implement PodDisruptionBudgets for all production workloads
 
-## Anti-Patterns
+### Scale ($50K+/month compute)
 
-- **Over-privileged node IAM roles**: Node roles should not have S3, DynamoDB, or other application permissions. Use Pod Identity or IRSA for least-privilege per workload.
-- **Not using Pod Disruption Budgets (PDBs)**: Without PDBs, node drains during upgrades or Karpenter consolidation can take down all replicas simultaneously.
-- **Running without resource requests/limits**: Kubernetes cannot schedule efficiently without them. Karpenter cannot right-size nodes. Set requests equal to limits for consistent performance, or set requests lower for burstable workloads.
-- **Single-AZ clusters**: Always spread nodes and pods across at least 2 AZs (3 preferred) using topology spread constraints.
-- **Managing add-ons with Helm when EKS add-ons exist**: EKS-managed add-ons handle version compatibility automatically. Use them for vpc-cni, kube-proxy, CoreDNS, and CSI drivers.
-- **Using Cluster Autoscaler with diverse instance types**: Cluster Autoscaler struggles with heterogeneous ASGs. Switch to Karpenter.
-- **No network policies**: By default, all pods can talk to all pods. Install a network policy engine (Calico or VPC CNI network policy) and enforce least-privilege pod-to-pod communication.
-- **Skipping control plane logging**: Without audit logs, you cannot investigate security incidents or debug API server issues. Enable all five log types from the start.
-- **kubectl apply on production without GitOps**: Use ArgoCD or Flux for production deployments. Manual kubectl apply is not auditable and not reproducible.
+- Dedicated node groups for isolation (GPU, high-memory, batch)
+- Multi-cluster with fleet management (if multi-region needed)
+- Full observability stack (Prometheus/Grafana or Datadog)
+- Consider EKS Anywhere for hybrid if needed
+
+## Counterintuitive Startup Advice
+
+- **ECS to EKS migration is easier than EKS to ECS.** If unsure, start with ECS. If you later need K8s, your containers and Dockerfiles transfer unchanged — only the orchestration layer changes. The reverse (EKS → ECS) requires removing all K8s-specific config (Helm charts, CRDs, operators).
+
+- **A well-run ECS setup is operationally simpler AND cheaper than EKS until $20K/month compute.** The K8s ecosystem flexibility only pays off when you have enough services and team size to leverage it.
+
+- **Don't use Helm for everything.** Early startups over-invest in templating 3-5 services with complex Helm charts. Plain Kubernetes manifests + Kustomize overlays are more readable and debuggable for small teams. Switch to Helm when you have 10+ services with shared patterns.
+
+- **Fargate on EKS is worse than Fargate on ECS.** EKS Fargate has more limitations (no DaemonSets, no persistent volumes, no GPUs, higher per-pod overhead, slower scheduling). If you want Fargate simplicity, use ECS. If you want EKS, use managed node groups with Karpenter.
+
+## When to Graduate TO EKS
+
+| Signal                                                | Why Now                                 |
+| ----------------------------------------------------- | --------------------------------------- |
+| >15 engineers, multiple teams deploying independently | Namespace isolation, RBAC per team      |
+| Monthly compute > $20K, need optimization             | Karpenter's bin-packing saves 30-40%    |
+| Need GPU sharing across workloads                     | K8s device plugin + time-slicing        |
+| Hiring pipeline is primarily K8s-experienced          | Developer experience matters            |
+| Need advanced traffic management                      | K8s ecosystem (Istio, Cilium) is richer |
+
+## Credits-Specific Guidance
+
+- EKS control plane ($73/month) is covered by credits but is a fixed cost — don't create clusters you won't use.
+- During credits: experiment with EKS to validate if your team can operate it. This is the time to learn without cost pressure.
+- If your team struggles with EKS during the credits period, that's your answer — switch to ECS before credits expire and you're paying $500+/month for a platform you can't operate well.

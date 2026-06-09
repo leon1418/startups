@@ -1,202 +1,76 @@
+# Migration App Runner to ECS Express — Startup-Specific Guidance
 
-You are an AWS migration specialist guiding App Runner to ECS Express Mode migrations. This is a sample skill demonstrating how to build a controlled, guardrailed migration workflow — read operations run freely, write operations are presented as commands for the user to execute, and destructive operations require explicit confirmation.
+## Why This Matters for Startups
 
-AWS App Runner is closing to new customers on April 30, 2026. Existing services continue to run, but new deployments must use ECS Express Mode (or another compute option). This skill walks through the migration one service at a time.
+App Runner was the "startup-friendly" compute option. It's closing to new customers April 30, 2026. Existing services keep running, but you need a plan.
 
-## Required MCP Servers
+## Startup Decision: What to Migrate TO
 
-### `ecs-mcp` — Amazon ECS MCP Server (user must configure separately)
+Don't assume ECS Express Mode is the answer. Choose based on your situation:
 
-**Not bundled with this plugin.** The user must add this to their own MCP configuration before the skill can inspect live ECS infrastructure. Source: `mcp-proxy-for-aws` pointing at the regional ECS MCP endpoint.
+| Your Situation                                | Best Target                                                     | Why                                                     |
+| --------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------- |
+| Simple API, low traffic, want PaaS simplicity | **ECS Express Mode**                                            | Closest to App Runner experience                        |
+| Spiky traffic, want $0 at idle                | **Lambda + API Gateway**                                        | If your app fits Lambda constraints (15 min, stateless) |
+| Already considering containers seriously      | **ECS Fargate (standard)**                                      | More control than Express Mode, same pricing            |
+| Source-code deploy (no Dockerfile)            | **Lambda** (repackage) or **Express Mode** (containerize first) | Express Mode requires container images                  |
 
-Used for: monitoring Express Mode provisioning, checking deployment status, reading container logs, inspecting ALB target health, diagnosing health check failures, and verifying network configuration during cutover.
+### The "Do I Even Need to Migrate?" Question
 
-The user should add the following to their MCP config (e.g., `~/.claude/mcp.json` or a project-level `.mcp.json`), replacing `us-east-1` with their region:
+**Existing App Runner services continue to work.** You only MUST migrate if:
 
-```json
-{
-  "mcpServers": {
-    "ecs-mcp": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": [
-        "mcp-proxy-for-aws@latest",
-        "https://ecs-mcp.us-east-1.api.aws/mcp",
-        "--service", "ecs-mcp",
-        "--region", "us-east-1"
-      ]
-    }
-  }
-}
-```
+- You need to create NEW services (can't after April 2026)
+- You want to consolidate on fewer platforms
+- App Runner's scaling model (concurrent requests) doesn't fit your workload
 
-Requires `uv` / `uvx` installed. Inherits AWS credentials from the environment (profile, SSO, or env vars). Read tools are safe to auto-approve; write tools should require user approval.
+**If your App Runner service is stable and you're not creating new ones, deprioritize this migration.** Focus on product, not infrastructure churn.
 
-## Prerequisites
+## Cost Comparison for Startups
 
-- AWS CLI v2 installed
-- Python 3.10+ and `uv` installed (for MCP proxy)
-- An existing App Runner service to migrate
-- AWS credentials with permissions for ECS, IAM, App Runner, Route 53, CloudWatch, and ECR
-- Both MCP servers configured and working (see above) — `ecs-mcp` must be added by the user
+| Scenario              | App Runner               | ECS Express Mode     | Lambda   |
+| --------------------- | ------------------------ | -------------------- | -------- |
+| Idle (0 req/min)      | ~$5/mo (provisioned min) | $16/mo (ALB minimum) | $0       |
+| Light (1 req/sec)     | ~$20/mo                  | ~$30/mo              | ~$3/mo   |
+| Moderate (10 req/sec) | ~$50/mo                  | ~$60/mo              | ~$25/mo  |
+| Heavy (100 req/sec)   | ~$200/mo                 | ~$180/mo             | ~$200/mo |
 
-## Process
+**Key insight**: ECS Express Mode is MORE expensive than App Runner at low traffic due to the ALB baseline. If cost matters and traffic is light, Lambda might be the better migration target.
 
-1. **Verify MCP servers** — confirm `ecs-mcp` is available. If not, stop and guide the user through setup.
-2. **Discover** the App Runner service configuration (image, CPU/memory, env vars, health check, VPC, custom domains)
-3. **Decide the path**: Quick Migrate for simple services, or the full 9-step workflow for production-critical or complex services
-4. **Prepare IAM roles** — reuse existing roles when trust policies and managed policies already match
-5. **Deploy Express Mode** with matching configuration and monitor provisioning via `ecs-mcp`
-6. **Validate** — health checks, logs (via `ecs-mcp`), functional parity against the App Runner service
-7. **Cut over traffic** — Route 53 weighted routing, ramped by service criticality
-8. **Decommission App Runner** — presented as a checklist, never executed automatically
+## Startup Quick Migration Path
 
-Use `awsknowledge` MCP tools to verify current API syntax, managed policy names, and pricing throughout — never assume parameter names. Use `ecs-mcp` to inspect live ECS resources, read logs, and monitor deployments.
+For non-critical services (dev, staging, internal tools):
 
-## Guardrails
+1. Extract config: `aws apprunner describe-service --service-arn <arn>`
+2. Note: image URI, port, env vars, CPU/memory
+3. Create Express Mode service with same config
+4. Test the `*.ecs.<region>.on.aws` URL
+5. Update DNS or upstream references
+6. Keep App Runner as rollback for 48 hours, then delete
 
-This skill follows a **guide-and-inform model**. The read/write boundary is enforced by the skill's own instructions:
+**Total time**: 2-4 hours for a simple service.
 
-| Category | Examples | Who executes |
-|---|---|---|
-| **Read** | `describe-service`, `list-services`, `get-role`, ECS MCP inspect tools | Skill runs directly |
-| **Write** | Creating IAM roles, creating the Express service, updating DNS | Skill produces the command; **user runs it** |
-| **Destructive** | `delete-service`, `delete-role`, `pause-service`, removing DNS records | Skill presents a checklist; **user explicitly confirms** |
+## Startup-Specific Gotchas
 
-Additional guardrails:
-- **Looks up API syntax at the time of use.** Every CLI parameter, managed policy name, and service principal is looked up via `awsknowledge` MCP tools rather than hardcoded. This reduces the risk of stale syntax, but does not eliminate it — always verify commands before running them.
-- **Checks for existing IAM roles** before creating new ones, and advises reuse when trust policies and attached managed policies already match.
-- **Recommends keeping App Runner running after cutover.** Default recommendation: 24–48 hours as a rollback net before deleting.
-- **Runs a cost comparison.** Helps users understand the billing model differences and choose the right migration timing.
-- **Does not touch CI/CD.** Pipeline updates are called out as user action items, not automated.
+| Gotcha                                      | Impact                                                      | Mitigation                                                       |
+| ------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| ALB is shared across up to 25 services      | Good — amortizes $16/mo baseline across services            | Migrate all App Runner services to one Express Mode ALB          |
+| Auto-scaling metric change (requests → CPU) | Bursty traffic may scale differently                        | Monitor for 48h after cutover; adjust `--scaling-target`         |
+| No source-code deploy                       | Must containerize if currently deploying from GitHub source | Write a Dockerfile first (budget 1-2 hours)                      |
+| IAM roles are more complex                  | App Runner had simpler permissions model                    | Reuse existing roles — don't create new ones unless needed       |
+| Health check default differs                | App Runner: TCP. Express Mode: HTTP `/ping`                 | Add a `/ping` endpoint or configure health check path explicitly |
 
-## What ECS Express Mode Requires (3 Inputs)
+## When to NOT Use Express Mode (Startup Context)
 
-1. **Container image URI** — from ECR, ECR Public, Docker Hub, or any accessible registry
-2. **Task execution role** — trusts `ecs-tasks.amazonaws.com`, needs `AmazonECSTaskExecutionRolePolicy`
-3. **Infrastructure role** — trusts `ecs.amazonaws.com`, needs the Express Mode managed policy. **Look up the current policy name via `awsknowledge` MCP tools** — do not hardcode.
+Choose standard ECS Fargate instead if:
 
-## What Express Mode Auto-Provisions
+- You need fine-grained networking control (specific subnets, custom security groups)
+- You want to share an ALB you already manage
+- You need sidecar containers (observability agents, proxies)
+- You're running >5 services and want central control
 
-ECS cluster, task definition, service with canary deployment, ALB with HTTPS, security groups, auto scaling, CloudWatch log group, deployment alarm, ACM certificate, and a public URL (`<name>.ecs.<region>.on.aws`).
+Choose Lambda instead if:
 
-## Key Differences from App Runner
-
-| Aspect | App Runner | ECS Express Mode |
-|--------|-----------|-----------------|
-| Auto scaling metric | Concurrent requests | CPU utilization (60% default) |
-| Deployment | Blue/green (internal) | Canary (verify exact behavior via docs) |
-| Health check default | TCP on port | HTTP on `/ping` |
-| VPC | Via VPC connector | VPC-native (awsvpc) |
-| Load balancer | Internal NLB, not accessible | ALB, fully accessible, shared up to 25 services |
-| Source code deploy | Supported | Container image based (containerize source-code services first) |
-
-## App Runner CPU/Memory → Fargate Mapping
-
-| App Runner | Fargate CPU | Fargate Memory |
-|-----------|------------|---------------|
-| 0.25 vCPU / 0.5 GB | 256 | 512 |
-| 0.5 vCPU / 1 GB | 512 | 1024 |
-| 1 vCPU / 2 GB | 1024 | 2048 |
-| 1 vCPU / 3 GB | 1024 | 3072 |
-| 2 vCPU / 4 GB | 2048 | 4096 |
-| 4 vCPU / 8 GB | 4096 | 8192 |
-| 4 vCPU / 12 GB | 4096 | 12288 |
-
-## Quick Migrate (Happy Path)
-
-For simple App Runner services — **image-based, public, no VPC connector, no custom domain, non-critical or low-traffic** — use this condensed path. Typical duration: 30–60 minutes depending on IAM propagation and Express Mode provisioning time.
-
-**Eligibility check:** `describe-service` on the App Runner service. Confirm all:
-- `SourceConfiguration.ImageRepository` is set (not `CodeRepository`)
-- No `NetworkConfiguration.EgressConfiguration.VpcConnectorArn`
-- No custom domains (`list-custom-domains` returns empty)
-- User accepts brief downtime or a single DNS flip
-
-If any fail, fall back to the full [migration-workflow.md](references/migration-workflow.md).
-
-**Quick path:**
-
-1. **Extract config** via `describe-service` — image URI, port, env vars, CPU/memory, health check path.
-2. **Create IAM roles** (reuse if they already exist):
-   - Task execution role trusting `ecs-tasks.amazonaws.com` with `AmazonECSTaskExecutionRolePolicy`
-   - Infrastructure role trusting `ecs.amazonaws.com` with the Express Mode managed policy (look up via `awsknowledge`)
-3. **Create Express Mode service** via `create-express-gateway-service` with `--monitor-resources`. Map CPU/memory per the table above. Wait for ACTIVE.
-4. **Smoke test** the auto-generated `*.ecs.<region>.on.aws` URL.
-5. **Cut over DNS** — single flip (no weighted routing). Skip if no user-facing DNS.
-6. **Keep App Runner paused for 24 hours** as a rollback safety net, then delete.
-
-**Escalate to full workflow** if: VPC connector present, custom domain in use, production-critical, traffic >100 req/sec, or any smoke test fails.
-
-## Full Migration Workflow
-
-For services that don't qualify for Quick Migrate, follow the 9-step workflow in [references/migration-workflow.md](references/migration-workflow.md):
-
-1. **Discover and Assess** — extract App Runner config
-2. **Prepare IAM Roles** — create execution, infrastructure, and task roles
-3. **Verify Network Connectivity** — ensure VPC/subnet compatibility
-4. **Deploy Express Mode Service** — create the service with matching config
-5. **Configure Custom Domain** (optional) — see [references/custom-domain.md](references/custom-domain.md)
-6. **Validate** — health checks, logs, functional parity
-7. **Gradual Traffic Cutover** — Route 53 weighted routing (10→25→50→75→100%)
-8. **Update CI/CD** — point pipelines at Express Mode
-9. **Decommission App Runner** — cleanup checklist
-
-## Cost Awareness
-
-See [references/cost-comparison.md](references/cost-comparison.md) for the full cost comparison workflow. App Runner and ECS Express Mode use different billing models — running the comparison helps users choose the right migration timing and configuration for their workload.
-
-## Infrastructure-as-Code
-
-The workflow produces AWS CLI commands by default. If the user prefers Terraform, CDK, or CloudFormation, translate the same parameters into the requested IaC syntax — look up current resource/construct names via `awsknowledge` MCP tools. The canonical inputs (image URI, CPU/memory, roles, health check path, network config) stay identical regardless of the tool.
-
-## WAF and CloudFront
-
-See [references/waf-cloudfront.md](references/waf-cloudfront.md). Key point: WAF attaches to the ALB (shared across up to 25 services), not the individual service. CloudFront origins must be re-pointed from the App Runner URL to the ALB DNS name.
-
-## Source Code Services
-
-If the App Runner service deploys from source code (not a container image), it must be containerized first. Generate a Dockerfile and push to ECR. Express Mode only accepts container images.
-
-## Migrating Multiple Services
-
-- Express Mode shares a single ALB across up to 25 services (per ALB, not per VPC)
-- Migrate one at a time, lowest-risk first
-- Task execution and infrastructure roles can be reused
-- Each service needs its own Route 53 weighted cutover
-
-## When to Load Reference Files
-
-- Starting or continuing a migration → [references/migration-workflow.md](references/migration-workflow.md)
-- Configuring a custom domain on Express Mode → [references/custom-domain.md](references/custom-domain.md)
-- Comparing costs before or during migration → [references/cost-comparison.md](references/cost-comparison.md)
-- Migrating WAF or CloudFront configuration → [references/waf-cloudfront.md](references/waf-cloudfront.md)
-- Debugging migration issues → [references/troubleshooting.md](references/troubleshooting.md)
-
-## Anti-Patterns
-
-- **Running the Quick Migrate path on a production-critical service**: The quick path skips weighted routing and parallel-run validation. Use the full 9-step workflow for anything revenue-critical or high-traffic.
-- **Hardcoding API parameter names or managed policy names**: AWS CLI syntax and policy names drift over time. Always look them up via `awsknowledge` MCP tools at the time of use.
-- **Skipping the cost comparison**: App Runner and Express Mode use different billing models. Running the comparison helps choose the right migration timing and configuration.
-- **Cutting over DNS without smoke testing**: Always validate the Express Mode service URL before shifting any production traffic.
-- **Deleting App Runner immediately after cutover**: Keep it running 24–48 hours as a rollback net. Pause first, then delete.
-- **Manually deleting Express Mode managed resources**: ALBs, target groups, and security groups created by Express Mode should only be removed via the delete API. Manual deletion causes orphaned state.
-- **Ignoring auto-scaling metric differences**: App Runner scales on concurrent requests; Express Mode scales on CPU utilization. Bursty workloads may behave differently — re-tune `--scaling-target` if needed.
-- **Mixing DNS record types in weighted routing**: Both the App Runner and Express Mode records must use the same type (both CNAME or both Alias A). Mixing breaks weighted routing.
-
-## Limitations
-
-- **This skill does not guarantee zero downtime, data integrity, or cost savings.** It provides guided steps to minimize risk, but the outcome depends on the user's environment, configuration, and validation. Always test thoroughly before cutting over production traffic.
-- This skill is informed by the [AWS App Runner availability-change migration guide](https://docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html), the Express Mode launch blog, the AWS CLI reference, and the Amazon ECS developer guide. Always cross-reference with `awsknowledge` MCP tools for the latest syntax.
-- This skill is designed for one service at a time. For fleet migrations (>10 services), loop the workflow.
-- The skill does not ship pre-built IaC modules — it translates canonical inputs into whatever IaC the user requests.
-- Cost estimates are approximations. They do not account for data transfer, NAT Gateway, CloudWatch, or other ancillary charges.
-
-## Related Skills
-
-- `ecs` — ECS architecture, launch type selection, task definitions, and Express Mode reference
-- `migration-advisor` (agent) — Multi-cloud migration assessment and wave planning
-- `iam` — IAM role design and least-privilege policies
-- `networking` — VPC, subnet, and security group design
-- `cost-check` — AWS cost estimation and optimization
-- `cloudfront` — CDN configuration for ECS-backed services
+- Your app fits Lambda constraints (stateless, <15 min, <10GB memory)
+- Traffic is highly variable with long periods of zero requests
+- You want $0 baseline cost
+- You're willing to handle cold starts (or pay for provisioned concurrency)

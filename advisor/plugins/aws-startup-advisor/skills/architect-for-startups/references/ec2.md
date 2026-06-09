@@ -1,89 +1,68 @@
-# EC2
-## Process
+# EC2 — Startup-Specific Guidance
 
-## Instance Type Selection
+## When Startups Should Use EC2 Directly
 
-Follow this decision tree:
+**Almost never as your first choice.** Start with Lambda or ECS Fargate. EC2 makes sense for startups only when:
 
-- **General purpose (M family)**: Default choice. M7i, M7g (Graviton, 20-30% better price-performance), M7a (AMD).
-- **Compute optimized (C family)**: CPU-bound workloads -- batch processing, media encoding, HPC, ML inference. C7g for best price-performance.
-- **Memory optimized (R/X family)**: In-memory databases, large caches, real-time analytics. R7g for most cases, X2idn for extreme memory (up to 4 TB).
-- **Storage optimized (I/D family)**: High sequential I/O, data warehousing, distributed file systems. I4i for NVMe, D3 for dense HDD.
-- **Accelerated (P/G/Inf/Trn family)**: P5 for ML training, G5 for graphics/inference, Inf2 for cost-efficient inference, Trn1 for training on Trainium.
+- You need GPUs (ML training/inference) — no Fargate GPU support
+- You're running software that requires full OS control (custom kernels, specific drivers, Docker-in-Docker)
+- You're running a stateful workload that doesn't fit managed services (self-managed databases, Redis clusters, Kafka)
+- Your sustained compute spend exceeds $10K/month and you can commit to instance management
 
-**Always prefer Graviton (arm64)** unless the workload requires x86. Graviton instances (suffix `g`) deliver 20-30% better price-performance.
+**The hidden cost**: EC2 requires patching, AMI management, monitoring agents, and capacity planning. At a 3-person startup, that's 10-20% of an engineer's time — your scarcest resource.
 
-**Right-sizing**: Start with CloudWatch metrics or Compute Optimizer recommendations. Target 40-70% average CPU utilization. If consistently below 40%, downsize.
+## Startup Cost Traps
 
-## Launch Templates
+1. **Running instances 24/7 in dev/staging**: A `t3.medium` costs ~$30/month. Three dev environments left running = $90/month doing nothing nights/weekends. Use Auto Scaling scheduled actions or Lambda-triggered stop/start. Savings: 65% on non-prod instances.
 
-- **Always use launch templates**, never launch configurations (deprecated).
-- Pin the AMI ID in the template. Use SSM Parameter Store to resolve the latest AMI at deploy time:
-  ```
-  /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
-  ```
-- Set `InstanceInitiatedShutdownBehavior: terminate` for ephemeral workloads.
-- Use `MetadataOptions` to enforce IMDSv2: `HttpTokens: required`, `HttpPutResponseHopLimit: 1`.
-- Configure `TagSpecifications` to tag instances, volumes, and ENIs at launch for cost allocation.
-- Use launch template **versions** and set the ASG to `$Latest` or `$Default` to control rollouts.
+2. **Elastic IPs not attached to instances**: $3.60/month per unused EIP. Teams allocate them "for later" and forget. Check monthly.
 
-## Auto Scaling Groups
+3. **gp2 volumes still in use**: gp2 costs more than gp3 and performs worse at small sizes (gp2 scales IOPS with size; gp3 gives 3000 IOPS baseline regardless). Convert all gp2 → gp3 immediately, it's free and non-disruptive.
 
-- **Target tracking** is the right default: scale on `ASGAverageCPUUtilization` at 60-70%.
-- For request-driven workloads, use `ALBRequestCountPerTarget`.
-- **Predictive scaling**: Enable for workloads with predictable daily/weekly patterns. It pre-provisions capacity 5-10 minutes ahead.
-- Use **mixed instances policy** with multiple instance types (same family, different sizes) to improve Spot availability and reduce costs.
-- Set `HealthCheckType: ELB` when behind a load balancer (default is EC2, which only catches instance failures).
-- Configure `DefaultInstanceWarmup` (e.g., 300s) to prevent premature scale-in while instances are still warming up.
-- Use **instance refresh** for AMI updates: `MinHealthyPercentage: 90`, `InstanceWarmup: 300`.
+4. **Savings Plans purchased too early**: Don't buy Compute Savings Plans until you have 3+ months of stable EC2 usage data. Startups pivot — a 1-year commitment on instance types you abandon in 3 months is wasted money.
 
-## Spot Instances
+5. **Data transfer between AZs**: $0.01/GB each way. A chatty microservices architecture across AZs can accumulate $100s/month in cross-AZ transfer that doesn't show up obviously in Cost Explorer. Keep tightly-coupled services in the same AZ or use ECS/EKS service mesh for efficient routing.
 
-Use Spot for fault-tolerant, stateless, or flexible-schedule workloads. Up to 90% savings.
+## Stage-Specific Recommendations
 
-- **Spot Fleet / Mixed Instances Policy**: Diversify across at least 6-10 instance types and all AZs. The broader the pool, the lower the interruption rate.
-- **Allocation strategy**: `capacity-optimized` (default, best for reducing interruptions) or `price-capacity-optimized` (balances price and capacity). Avoid `lowest-price` — it concentrates instances on the cheapest instance type in a single pool, which means higher interruption rates (AWS reclaims the cheapest capacity first) and lower fleet diversity. The few cents saved per hour are wiped out by the disruption cost of frequent interruptions.
-- **Spot interruption handling**: Use EC2 metadata service or EventBridge to catch the 2-minute warning. Drain connections and save state.
-- **Spot placement score**: Use `aws ec2 get-spot-placement-scores` to find regions/AZs with best capacity before launching.
-- **Spot with ASG**: Use mixed instances policy with `OnDemandBaseCapacity: 1` or `2` and `SpotAllocationStrategy: capacity-optimized` for a baseline of on-demand with Spot overflow.
-- Never use Spot for: databases, single-instance workloads, or anything that cannot tolerate interruption.
+### If You Must Use EC2 (Pre-Series A)
 
-## Placement Groups
+- **Single instance, single AZ** is acceptable for non-critical workloads
+- Use `t3.small` or `t3a.small` ($15/month) — burstable is fine for dev/staging
+- Use Spot for batch/ML training from day one — 70-90% savings and you learn the interruption model early
+- **SSM Session Manager, not SSH keys** — zero additional infrastructure cost and IAM-controlled
 
-- **Cluster**: Low-latency, high-throughput between instances (HPC, tightly coupled). Same AZ, same rack.
-- **Spread**: Maximum resilience. Each instance on distinct hardware. Max 7 per AZ. Use for small critical workloads.
-- **Partition**: Large distributed workloads (HDFS, Cassandra, Kafka). Instances in same partition share hardware, different partitions don't.
+### Growth Stage (Series A-B, steady EC2 usage)
 
-## Storage: EBS vs Instance Store
+- Buy 1-year No Upfront Compute Savings Plans for baseline (30% savings, flexible across instance types)
+- Graviton (ARM64): migrate workloads for 20-30% cost reduction — most Docker containers work unchanged
+- Mixed instance ASGs: 3+ instance types, Spot for workers, On-Demand for stateful
 
-**Default to EBS** unless you need maximum IOPS.
+### Scale ($50K+/month EC2)
 
-### Instance Store
-- Ephemeral NVMe attached to the host. Data lost on stop/terminate/hardware failure.
-- Use for: caches, buffers, scratch data, temporary storage. I4i instances deliver up to 2.5M IOPS.
-- Never store data you cannot afford to lose.
+- 3-year Partial Upfront Savings Plans for steady-state base (up to 60% savings)
+- Reserved Instances for specific GPU instances that don't change
+- Spot fleet with `capacity-optimized` for batch/ML — diversify across 10+ instance types
 
-## Output Format
+## Counterintuitive Startup Advice
 
-| Field | Details |
-|-------|---------|
-| **Instance type** | Family, size, and architecture (e.g., m7g.large / arm64) |
-| **AMI** | AMI source (AL2023, custom), resolution method (SSM parameter) |
-| **Storage (EBS type/size)** | Volume type (gp3, io2), size, IOPS, throughput |
-| **ASG config** | Min/max/desired, health check type, instance warmup |
-| **Spot strategy** | On-demand base capacity, Spot allocation strategy, instance diversity |
-| **Key pair / SSM** | SSM Session Manager (preferred) or key pair for access |
-| **Security group** | Inbound/outbound rules, referenced SG IDs |
-| **Monitoring** | CloudWatch agent config, detailed monitoring, custom metrics |
+- **A single EC2 instance is a valid architecture.** For internal tools, admin panels, or low-traffic services that don't justify container orchestration — one `t3.small` with a Docker Compose setup and an AMI-based backup strategy works fine. It's not "production best practice" but it's pragmatic until revenue justifies HA.
 
-## Anti-Patterns
+- **Don't build for multi-AZ until you have paying customers who'd notice.** Multi-AZ doubles your compute baseline cost. If your SLA is informal and your recovery plan is "redeploy from AMI in 10 minutes," that's fine at pre-PMF.
 
-- **Using SSH keys**: Use SSM Session Manager instead. No need to manage key pairs, open port 22, or maintain bastion hosts. SSM provides audit logging and IAM-based access control.
-- **IMDSv1 still enabled**: Enforce IMDSv2 (`HttpTokens: required`) in launch templates. IMDSv1 is vulnerable to SSRF attacks that can steal instance credentials.
-- **Manually launching instances**: Everything should go through launch templates and ASGs, even "temporary" instances. Manual instances become untracked snowflakes.
-- **Single instance type in ASG**: Use mixed instances policy with 3+ instance types from the same family. This improves Spot availability and on-demand capacity during shortages.
-- **gp2 volumes**: gp2 ties IOPS to volume size. gp3 is cheaper, with independently configurable IOPS and throughput. Migrate all gp2 volumes to gp3.
-- **Oversized instances**: Running m5.4xlarge at 5% CPU because "we might need it." Use Compute Optimizer, right-size, and scale horizontally instead.
-- **No EBS encryption**: Enable default encryption at the account level. There is no performance penalty on current generation instances and it satisfies most compliance requirements.
-- **Using public IPs when not needed**: Place instances in private subnets behind a load balancer or NAT Gateway. Use VPC endpoints for AWS service access.
-- **Ignoring Graviton**: Arm64 (Graviton) instances are 20-30% better price-performance for most workloads. Test compatibility and migrate -- most Linux workloads run without changes.
+- **Spot instances for production stateless workloads is fine.** The standard advice is "never use Spot in production." For startups: if your service handles graceful shutdown and you have On-Demand fallback in your ASG, the 70% savings funds an extra engineer-month every few months.
+
+## When to Graduate TO EC2 (from Fargate)
+
+| Signal                                             | Why EC2                                 |
+| -------------------------------------------------- | --------------------------------------- |
+| Monthly Fargate spend > $10K with >80% utilization | EC2 + Savings Plans is 30-50% cheaper   |
+| Need GPU instances                                 | No Fargate GPU support                  |
+| Need instance store NVMe for caching               | Fargate has no local storage option     |
+| Running workloads requiring privileged containers  | Fargate doesn't support privileged mode |
+
+## Credits-Specific Guidance
+
+- EC2 On-Demand is covered by AWS Activate credits. During credits: don't buy Savings Plans or Reserved Instances — they can't be applied against credits and you lose flexibility.
+- When credits expire: you'll hit full on-demand pricing immediately. Plan 1 month ahead: identify steady-state instances, purchase Savings Plans, and right-size or terminate anything over-provisioned.
+- GPU instances (P/G family) burn credits extremely fast. A single `p3.2xlarge` costs ~$2,200/month. Use Spot for training and be deliberate about GPU hours.

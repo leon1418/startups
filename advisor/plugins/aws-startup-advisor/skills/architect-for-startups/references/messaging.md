@@ -1,120 +1,65 @@
-# Messaging
-## Service Selection Guide
+# Messaging — Startup Decision Guide
 
-| Requirement                             | Use                          |
-|-----------------------------------------|------------------------------|
-| Decouple producer from consumer, 1-to-1 | SQS                          |
-| One message, multiple subscribers       | SNS + SQS (fan-out)          |
-| Ordered, exactly-once processing        | SQS FIFO                     |
-| Event routing based on content          | EventBridge                  |
-| Cross-account/cross-region events       | EventBridge                  |
-| Schema registry and discovery           | EventBridge                  |
-| Simple mobile/email push notifications  | SNS                          |
-| Replay past events                      | EventBridge Archive + Replay |
+## Stage-Based Recommendation
 
-**Opinionated guidance:**
-- Default to **EventBridge** for new event-driven architectures — it's more flexible than SNS for routing and filtering
-- Use **SNS + SQS fan-out** for high-throughput workloads where EventBridge's throughput limits are a concern
-- Use **SQS** directly when you just need a simple work queue with no fan-out
+### Pre-PMF (Seed / <$1M ARR)
 
-## Amazon SQS
+- **Default to SQS Standard.** Don't overthink messaging architecture. A single SQS queue between your API and a worker Lambda covers 90% of early async needs.
+- **Skip EventBridge until you have 3+ services producing events.** For 1-2 services, direct SQS/SNS is simpler and cheaper.
+- **Don't build event-driven microservices yet.** You'll refactor your domain model 5 times before PMF. Monolith + SQS for background jobs is the right pattern.
 
-### Standard vs FIFO
+### Post-PMF / Growth ($1M-$10M ARR)
 
-**Use Standard unless you need ordering or exactly-once.** The throughput difference is significant.
+- **EventBridge when you have 3+ services that react to the same business events.** The content-based routing eliminates Lambda glue.
+- **SNS + SQS fan-out for high-throughput notification patterns** (>10K events/sec).
+- **FIFO queues only when you have actual ordering bugs** in production, not as a preventive measure. They cost more and have lower throughput (3,000 msg/sec with batching vs unlimited for Standard).
 
-### Visibility Timeout
-- Default: 30 seconds. Set it to at least 6x your average processing time.
-- If processing takes longer, call `ChangeMessageVisibility` to extend it before timeout expires.
-- If messages reappear in the queue, your visibility timeout is too short.
+### Scale ($10M+ ARR)
 
-### Dead-Letter Queues (DLQs)
-- **Always configure a DLQ.** Messages that fail processing silently retry forever without one.
-- Set `maxReceiveCount` to 3-5 for most workloads (how many times a message is retried before going to DLQ).
-- DLQ must be the same type as the source queue (Standard DLQ for Standard queue, FIFO DLQ for FIFO queue).
-- Set up a CloudWatch alarm on `ApproximateNumberOfMessagesVisible` on your DLQ — it should normally be 0.
-- Use DLQ redrive to move messages back to the source queue after fixing the bug.
+- EventBridge + Schema Registry for event contracts across teams.
+- Consider Kinesis/MSK only for true streaming use cases (>100K events/sec sustained).
 
-### Polling Best Practices
-- **Always use long polling** (`WaitTimeSeconds=20`). Short polling queries a subset of SQS servers and returns immediately — most responses are empty. At 4 polls/second that is ~345,600 empty API calls/day per consumer, each billed at the standard SQS rate. Long polling holds the connection open for up to 20 seconds and queries all servers, reducing empty responses by ~90% and cutting SQS API costs proportionally.
-- Use batch operations: `ReceiveMessage` with `MaxNumberOfMessages=10` and `SendMessageBatch` for up to 10 messages.
-- Delete messages immediately after successful processing.
+## Cost Traps
 
-## Amazon SNS
+| Trap                        | Impact                                                  | Fix                                                                                 |
+| --------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Short polling SQS           | ~345K empty API calls/day per consumer at standard rate | Always `WaitTimeSeconds=20`. Saves ~90% of SQS API costs.                           |
+| SQS FIFO "just to be safe"  | 50% more expensive + 3K msg/sec cap (vs unlimited)      | Use Standard unless you have a proven ordering bug. Design for idempotency instead. |
+| EventBridge for everything  | $1.00/million events + complex debugging                | SQS direct is $0.40/million for simple point-to-point                               |
+| SNS for point-to-point      | Extra hop + cost for single subscriber                  | Use SQS directly. SNS adds value only at 2+ subscribers.                            |
+| Lambda polling empty queues | Lambda invocations checking SQS with nothing to process | Use SQS event source mapping (free polling) instead of custom pollers               |
 
-## Amazon EventBridge
+## Counterintuitive Advice
 
-### When to Choose EventBridge
-- Content-based routing with complex rules
-- Events from AWS services, SaaS integrations, or custom apps
-- Schema discovery and registry for event contracts
-- Cross-account or cross-region event delivery
-- Event replay from archive
+- **Synchronous is fine at startup scale.** Don't add SQS between your API and database "for decoupling" when you have 10 requests/second. It adds latency, complexity, and debugging difficulty. Add async when you have a specific scaling bottleneck.
+- **EventBridge Archives are not a replacement for event sourcing.** The replay is useful for debugging, not for rebuilding state. If you need event sourcing, use DynamoDB Streams or build a proper event store.
+- **SQS FIFO's exactly-once is per message-group, not per queue.** If you thought FIFO makes your whole system exactly-once, you misunderstood it. You still need idempotent consumers for Standard OR FIFO.
+- **DLQ without alerting is worse than no DLQ.** It gives you false confidence that errors are "handled" when they're actually just accumulating silently. Set up the CloudWatch alarm on DLQ message count ON THE SAME DAY you create the DLQ.
 
-### Event Rules
-- Match events with JSON patterns (event patterns)
-- Up to 300 rules per event bus (soft limit)
-- Each rule can have up to 5 targets
-- Use input transformers to reshape events before delivery
+## Decision Shortcuts
 
-```json
-{
-  "source": ["my.application"],
-  "detail-type": ["OrderPlaced"],
-  "detail": {
-    "amount": [{"numeric": [">", 100]}],
-    "status": ["CONFIRMED"]
-  }
-}
-```
+**"Should I use messaging here?"**
 
-### EventBridge Pipes
-- Point-to-point integration: source -> filter -> enrich -> target
-- Sources: SQS, DynamoDB Streams, Kinesis, Kafka
-- Reduces Lambda glue code for simple transformations
-- Use filtering to process only relevant events from the source
+- Request-response with <1s latency requirement → No, call directly
+- Fire-and-forget, no response needed → Yes, SQS
+- One event, multiple reactions → Yes, SNS or EventBridge
+- Smoothing traffic spikes → Yes, SQS in front of worker
+- "Because microservices should be decoupled" → No, that's cargo culting
 
-### EventBridge Scheduler
-- Cron and rate-based scheduling with one-time schedules
-- Replaces CloudWatch Events scheduled rules
-- Supports time zones and flexible time windows
-- Can target any EventBridge target (Lambda, SQS, Step Functions, etc.)
+**"SQS Standard or FIFO?"**
 
-### Throughput
-- Default: 10,000 PutEvents per second per account per region (soft limit)
-- For higher throughput, use custom event buses and request limit increases
-- If you need >100K events/sec, consider SNS + SQS fan-out instead
+- Can you make your consumer idempotent? → Standard (higher throughput, lower cost)
+- Is ordering a regulatory requirement? → FIFO
+- Processing the same message twice causes money loss? → FIFO (with deduplication)
+- You're not sure → Standard. You can always migrate later.
 
-## Common Patterns
+## When to Graduate
 
-### Saga / Choreography
-```
-Service A --event--> EventBridge --rule--> Service B --event--> EventBridge --rule--> Service C
-```
-Each service publishes events and reacts to events. Use DLQs on every consumer.
-
-### Queue-Based Load Leveling
-```
-API Gateway --> SQS --> Lambda (batch processing)
-```
-SQS absorbs traffic spikes. Lambda processes at a controlled concurrency.
-
-### Fan-Out with Filtering
-```
-Producer --> SNS Topic --> SQS Queue A (filter: premium)
-                      --> SQS Queue B (filter: standard)
-                      --> Lambda (filter: all, for analytics)
-```
-
-
-## Anti-Patterns
-
-- **No DLQ on SQS queues.** Failed messages retry silently until they expire. You lose visibility into failures and potentially lose data.
-- **Short polling SQS.** Short polling queries a subset of SQS servers and returns immediately — at 4 polls/second, that is ~345,600 empty API calls/day per consumer, each billed at standard SQS rate. Long polling (`WaitTimeSeconds=20`) queries all servers and holds the connection, reducing empty responses by ~90%.
-- **Using SNS for point-to-point.** If there's only one subscriber, use SQS directly. SNS adds latency and cost for no benefit.
-- **Giant messages in SQS/SNS.** Don't push large payloads through messaging. Store in S3, send a reference. The 256 KB limit exists for a reason.
-- **Not designing for idempotency.** SQS Standard delivers at-least-once. SNS retries. EventBridge can replay. Every consumer must handle duplicate messages safely.
-- **Tight coupling via message schemas.** If changing a message format breaks consumers, you've traded one form of coupling for another. Use EventBridge Schema Registry or version your message formats.
-- **Using EventBridge for high-throughput streaming.** EventBridge is for event routing, not high-volume data streaming. Use Kinesis or MSK for >10K events/sec sustained.
-- **Polling SQS from multiple consumers without proper visibility timeout.** If visibility timeout is too short, multiple consumers process the same message. Set timeout to 6x processing time.
-- **No monitoring on DLQs.** A DLQ without an alarm is just a message graveyard. Alert on `ApproximateNumberOfMessagesVisible > 0`.
+| Trigger                                                 | Action                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------- |
+| Background job takes >29s (API Gateway timeout)         | Add SQS + worker Lambda                                        |
+| Same event needs to trigger 3+ different actions        | SNS fan-out or EventBridge                                     |
+| You're writing Lambda "routers" that inspect event type | Switch to EventBridge rules                                    |
+| You need cross-account event delivery                   | EventBridge (cross-account rules)                              |
+| >10K events/sec sustained throughput                    | SNS+SQS fan-out (EventBridge has soft limits)                  |
+| >100K events/sec sustained                              | Kinesis or MSK — you've outgrown messaging, you need streaming |

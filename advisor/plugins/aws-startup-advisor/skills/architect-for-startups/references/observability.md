@@ -1,71 +1,83 @@
-# Observability
-## CloudWatch Metrics
+# Observability — Startup Decision Guide
 
-## CloudWatch Logs
+## Stage-Based Recommendation
 
-### Log Groups and Retention
-- Set retention on every log group. The default is **never expire** — this gets expensive fast.
-- Recommended: 30 days for dev, 90 days for production, archive to S3 for long-term
+### Pre-PMF (Seed / <$1M ARR)
 
-### Structured Logging
-Always log in JSON format. This enables Logs Insights queries on fields.
+- **CloudWatch only. No Datadog, no New Relic, no Grafana Cloud.** Third-party observability tools cost $15-50/host/month and grow linearly. At this stage, CloudWatch + Embedded Metric Format is sufficient and covered by AWS credits.
+- **3 metrics, 3 alarms, 1 dashboard.** Error rate, p99 latency, and request count. That's it. You don't need 47 dashboards for 1 service.
+- **Log retention: 7 days dev, 30 days prod.** The default "never expire" will silently accumulate $50-200/month in log storage within 6 months.
+- **Skip X-Ray until you have 3+ services.** Tracing a monolith tells you nothing useful. Tracing across service boundaries is where it helps.
 
-## CloudWatch Alarms
+### Post-PMF / Growth ($1M-$10M ARR)
 
-### Alarm Best Practices
-- Use **3 out of 5 datapoints** evaluation to avoid flapping on transient spikes
-- Set `TreatMissingData` to `notBreaching` for low-traffic services (avoids false alarms when no data)
-- Set `TreatMissingData` to `breaching` for critical health checks (missing data = something is down)
-- Use composite alarms to create "alarm hierarchies": a top-level alarm that fires only when multiple sub-alarms are in ALARM state
-- Always send alarms to SNS. Connect SNS to PagerDuty, Slack, or email.
+- Add X-Ray or OpenTelemetry when you have 3+ services and debugging cross-service issues takes >1 hour.
+- Consider Datadog/New Relic ONLY if CloudWatch Logs Insights becomes too slow for your team's debugging workflow. The convenience costs 5-10x.
+- Increase log retention to 90 days prod when you have compliance requirements.
+- Add anomaly detection on request count and latency (needs 2 weeks of baseline data).
 
-### Anomaly Detection
-- Trains on 2 weeks of data. Do not enable during a known-bad period.
-- Adjust the bandwidth (number of standard deviations). Start with 2, widen if too noisy.
-- Best for: request count, latency, error rate — metrics with daily/weekly patterns.
+### Scale ($10M+ ARR)
 
-## CloudWatch Dashboards
+- OpenTelemetry for vendor-neutral instrumentation.
+- Centralized observability platform decision (CloudWatch vs third-party based on team size and budget).
+- This is when the Datadog bill becomes justified ($50K+/year but saves engineering time at 20+ engineers).
 
-### Dashboard Design
-- One dashboard per service or domain (not one giant dashboard)
-- Top row: key business metrics (request rate, error rate, latency p99)
-- Second row: infrastructure health (CPU, memory, connections)
-- Third row: dependencies (downstream API latency, queue depth)
-- Use metric math to show rates and percentages, not raw counts
-- Add text widgets to document what each section monitors and what to do when values are abnormal
+## Cost Traps
 
-### Automatic Dashboards
-- CloudWatch provides automatic dashboards per service — start there before building custom
-- ServiceLens provides an application-centric view combining metrics, logs, and traces
+| Trap                                  | Impact                                                                                                | Fix                                                                                                    |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Log retention: never expire (default) | $0.03/GB/month storage — grows forever. 100GB/month of logs = $36/year in year 1, $72 in year 2, etc. | Set retention policy on creation. 30 days prod.                                                        |
+| Custom metrics via PutMetricData      | $0.30/metric/month + $0.01/1000 API calls                                                             | Use Embedded Metric Format in Lambda — creates metrics from logs at zero API cost                      |
+| High-cardinality custom metrics       | Dimensions multiply: 100 users × 10 endpoints = 1000 metrics = $300/month                             | Use Logs Insights for high-cardinality analysis, reserve metrics for low-cardinality aggregates        |
+| X-Ray 100% sampling in prod           | $5.00/million traces recorded + storage                                                               | Sample: 1/sec + 5% additional. For startups this is usually enough.                                    |
+| Datadog before $5M ARR                | $15-50/host/month + $1.70/million log events. 10 containers + logs = $500-2000/month easily           | CloudWatch is included in AWS credits. Switch when team size (>10 engineers) justifies the UX premium. |
+| CloudWatch Dashboards                 | $3/dashboard/month — sounds small, proliferates fast                                                  | 1 dashboard per service max. Use automatic dashboards for exploration.                                 |
+| Contributor Insights                  | $0.02/rule/100 log events evaluated. High-volume logs = surprise bill                                 | Enable only on specific log groups for incident investigation, disable after                           |
 
-## X-Ray Tracing
+## Counterintuitive Advice
 
-### Instrumentation
-- AWS SDK automatically instruments calls to AWS services
-- Use X-Ray SDK or OpenTelemetry to instrument your application code
-- Set sampling rules to control trace volume (default: 1 req/sec + 5% of additional)
+- **Fewer alarms = faster response.** 3 well-chosen alarms that always require action beat 30 alarms that are "probably fine." Every alarm should have a runbook. If you can't write the runbook, delete the alarm.
+- **Alarm on symptoms, not causes.** "Error rate >1%" tells you something is broken. "CPU >80%" tells you... maybe nothing is wrong. Users feel symptoms, not causes.
+- **CloudWatch Logs Insights is underrated.** Startups reach for Elasticsearch/Datadog because they assume CloudWatch is limited. Logs Insights with structured JSON logging handles 95% of debugging queries for teams under 20 engineers.
+- **Embedded Metric Format is the single most important observability feature for Lambda-based startups.** It turns log lines into metrics at zero additional cost. You get custom metrics for free.
+- **Don't build a "golden dashboard" until you've been in production for 3 months.** You'll build the wrong dashboard on day 1 because you don't know what fails yet. Start with the 3 basics and add panels as you learn from incidents.
 
-### X-Ray Best Practices
-- Add annotations for business-relevant fields (user ID, order ID) so you can filter traces
-- Use groups to define filter expressions for specific trace sets
-- Active tracing on API Gateway and Lambda captures the full request lifecycle
-- X-Ray daemon runs as a sidecar in ECS or as a DaemonSet in EKS
+## Minimum Viable Observability
 
-## Contributor Insights
+### Seed Stage Checklist
 
-- Identifies top contributors to a metric (e.g., top IPs, top API callers)
-- Define rules in JSON that specify log group + fields to analyze
-- Good for: identifying noisy neighbors, DDoS sources, hot partition keys in DynamoDB
+- [ ] Structured JSON logging (enables Logs Insights queries)
+- [ ] Log retention set on all log groups (7d dev, 30d prod)
+- [ ] 3 alarms: error rate, p99 latency, 5xx count (SNS → email/Slack)
+- [ ] 1 dashboard: request count, error rate, latency p99
+- [ ] Lambda: use Embedded Metric Format for custom metrics (free)
+- [ ] CloudTrail enabled (default trail — free for management events)
 
-## Anti-Patterns
+### Post-PMF Additions
 
-- **No log retention policy**: CloudWatch Logs default to never expire. Costs grow silently. Set retention on every log group.
-- **Alarming on every metric**: Too many alarms leads to alert fatigue. Alarm on symptoms (error rate, latency), not causes (CPU). Use composite alarms to reduce noise.
-- **Average-based latency alarms**: Averages hide tail latency. Use p99 or p95 for latency alarms.
-- **Missing structured logging**: Unstructured logs cannot be queried efficiently with Logs Insights. Always log JSON.
-- **No tracing in distributed systems**: Without X-Ray or OpenTelemetry, debugging cross-service issues requires correlating timestamps across log groups. Enable tracing.
-- **Sampling rate of 100%**: Full tracing in production generates enormous data volume and cost. Use sampling — 1 req/sec + 5% is usually sufficient.
-- **Not using Embedded Metric Format in Lambda**: EMF turns log lines into metrics with zero PutMetricData API calls. It's cheaper and simpler than the alternatives.
-- **Dashboard without runbook links**: A dashboard that shows a problem without explaining what to do about it is only half useful. Add text widgets with runbook links.
-- **Ignoring CloudWatch anomaly detection**: Static thresholds don't work for metrics with daily patterns. Use anomaly detection for request count and latency.
-- **CloudWatch Agent not installed on EC2**: Without the agent, you only get basic metrics (CPU, network, disk I/O). Install the agent for memory utilization, disk space, and custom metrics.
+- [ ] X-Ray sampling on API Gateway + Lambda (1/sec + 5%)
+- [ ] Anomaly detection on request count (catches traffic drops = outage)
+- [ ] DLQ monitoring alarms (ApproximateNumberOfMessagesVisible > 0)
+- [ ] Composite alarm for service health (error rate AND latency breach)
+- [ ] Log retention 90 days in prod
+
+## When to Graduate
+
+| Trigger                                                  | Action                                                              |
+| -------------------------------------------------------- | ------------------------------------------------------------------- |
+| First customer-facing outage you can't diagnose in 30min | Add X-Ray tracing                                                   |
+| Debugging takes >1hr regularly                           | Increase log retention, add structured fields                       |
+| 3+ services with cross-service calls                     | Distributed tracing (X-Ray or OTEL)                                 |
+| 10+ engineers needing observability                      | Evaluate Datadog/New Relic (UX justifies cost)                      |
+| SOC2 audit                                               | 90-day log retention, CloudTrail in all accounts                    |
+| Monthly observability bill >$500 on CloudWatch           | Audit: log retention, custom metrics cardinality, unused dashboards |
+
+## Credits Consideration
+
+CloudWatch costs (logs, metrics, dashboards, X-Ray) are covered by AWS Activate credits. While you have credits:
+
+- Don't optimize log retention aggressively — keep 90 days everywhere for debugging convenience
+- Use X-Ray at higher sampling rates to build intuition about your system
+- Create dashboards freely for learning
+
+Set a calendar reminder 6 months before credits expire to implement cost-optimized retention policies.

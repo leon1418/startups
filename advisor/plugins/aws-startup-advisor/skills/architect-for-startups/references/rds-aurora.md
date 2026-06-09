@@ -1,124 +1,84 @@
-# RDS and Aurora
+# RDS & Aurora — Startup-Specific Guidance
 
-## Engine Selection Decision Matrix
+## The Startup Database Decision
 
-| Requirement                                               | Recommendation                                              | Why                                                           |
-|-----------------------------------------------------------|-------------------------------------------------------------|---------------------------------------------------------------|
-| MySQL/PostgreSQL, predictable workload, cost-sensitive    | RDS for MySQL/PostgreSQL                                    | Simpler, cheaper for small-medium workloads                   |
-| MySQL/PostgreSQL, high availability, auto-scaling storage | Aurora (MySQL/PostgreSQL)                                   | 6-way replicated storage, up to 128 TB auto-grow              |
-| Spiky or unpredictable traffic                            | Aurora Serverless v2                                        | Scales ACUs in 0.5 increments, optional scale-to-zero support |
-| Oracle or SQL Server licensing                            | RDS for Oracle / SQL Server                                 | Only option for these engines on managed AWS                  |
-| Very small dev/test database                              | RDS with `db.t4g.micro` or Aurora Serverless v2 min 0.5 ACU | Lowest cost entry points                                      |
-| High write throughput, global                             | Aurora Global Database                                      | Sub-second cross-region replication, write forwarding         |
-| Existing on-prem PostgreSQL migration                     | Aurora PostgreSQL + DMS                                     | Wire-compatible, minimal app changes                          |
+**PostgreSQL on Aurora Serverless v2 is the default database for startups.** It gives you:
 
-## Cost Comparison
-- Aurora instances cost ~20% more than equivalent RDS instances
-- Aurora eliminates separate EBS costs — storage is included in the Aurora pricing model
-- For read-heavy workloads, Aurora's shared storage makes replicas cheaper (no storage duplication)
-- Aurora Serverless v2 can be more cost-effective for variable workloads than provisioned instances sitting idle
+- Familiar SQL with full query flexibility (critical when access patterns are unknown)
+- Scale-to-near-zero (0.5 ACU minimum = ~$44/month)
+- Auto-scaling during traffic spikes without capacity planning
+- No DBA required until Series B
 
-### When to Use Serverless v2
-- Development and staging environments
-- Applications with idle periods (nights, weekends)
-- Spiky read workloads (reporting, batch queries)
-- New applications where traffic patterns are unknown
+**Use plain RDS (not Aurora) when:**
 
-### When to Avoid Serverless v2
-- Sustained high-throughput production writers — provisioned is cheaper at steady state
-- Latency-sensitive workloads during scale-up (scaling from minimum takes seconds, not instant)
+- Budget is extremely tight — `db.t4g.micro` RDS PostgreSQL costs ~$12/month vs Aurora's $44/month minimum
+- You need Oracle or SQL Server (Aurora doesn't support these)
+- Your database will stay small (<50GB) with low connection counts
 
-## High Availability Configurations
+## Startup Cost Traps
 
-### RDS Multi-AZ (Instance)
-- Synchronous standby in a different AZ — automatic failover
-- Standby is not readable (unlike Aurora replicas)
-- Use for: production databases that need simple HA without read scaling
+1. **Aurora Serverless v2 minimum ACU cost**: Even "scaled to zero" isn't zero — minimum is 0.5 ACU = ~$44/month. For a side project or internal tool, plain RDS `db.t4g.micro` at $12/month is 4x cheaper. Use Aurora Serverless v2 when the auto-scaling justifies the minimum.
 
-### RDS Multi-AZ (Cluster) — db.r6gd Only
-- One writer + two readable standbys across 3 AZs
-- Uses local NVMe + synchronous replication
-- Sub-35-second failover
-- Limited to specific instance classes
+2. **Multi-AZ on day one**: Multi-AZ doubles your database cost. At pre-PMF with no revenue, single-AZ + automated daily snapshots is an acceptable risk. Your "HA plan" is: restore from snapshot (10-30 min downtime). Add Multi-AZ when you have paying customers with uptime expectations.
 
-### Aurora Multi-AZ
-- Create at least one read replica in a different AZ for HA
-- All replicas share storage, so failover has zero data loss
-- For production: minimum 2 replicas across 2 AZs (writer + 2 readers = 3 AZs)
+3. **RDS Proxy when you don't need it**: $18/month minimum per proxy. Only needed for Lambda→RDS connections (Lambda's connection storm problem). If your app uses containers with connection pooling (HikariCP, pgBouncer), skip RDS Proxy entirely.
 
-### Aurora Global Database
-- Cross-region replication with <1 second typical lag
-- Managed RPO/RTO with automated failover
-- Write forwarding lets readers in secondary regions redirect writes to the primary
-- Use for: disaster recovery, low-latency global reads
+4. **Oversized instances "for headroom"**: Startups provision `db.r6g.large` ($140/month) when `db.t4g.medium` ($48/month) with 2 vCPU/4GB handles their workload fine. Start with the smallest `t4g` class that has enough memory for your working set. Upsize takes <10 minutes with minimal downtime.
 
-## RDS Proxy
+5. **Read replicas before you need them**: Each Aurora read replica adds ~$44/month minimum. Don't add replicas until: (a) you've confirmed reads are the bottleneck via Performance Insights, and (b) your read traffic exceeds what the writer can handle. Most startups need 0 read replicas until post-Series A.
 
-- Fully managed connection pooler sitting between applications and the database
-- Multiplexes thousands of application connections to a smaller pool of database connections
-- Reduces failover time by maintaining open connections to standby
-- Essential for Lambda → RDS/Aurora (Lambda creates many short-lived connections)
+6. **Snapshot retention at 35 days**: Default is 7 days, but teams set 35 days "for safety." At 100GB database, that's ~$23/month in backup storage vs ~$5/month for 7 days. Right-size retention to your actual compliance needs.
 
-### When to Use RDS Proxy
-- Lambda functions connecting to RDS/Aurora (connection exhaustion risk)
-- Applications with many short-lived connections
-- Reducing failover disruption (proxy pins to new primary automatically)
+## Stage-Specific Recommendations
 
-### When to Skip RDS Proxy
-- Applications with persistent connection pools (like traditional app servers with HikariCP/pgBouncer)
-- Workloads requiring session-level features (prepared statements, temp tables — proxy may pin connections)
+### Pre-PMF (minimal spend, maximum flexibility)
 
-## Security
+- **RDS PostgreSQL `db.t4g.micro`** (~$12/month) OR **Aurora Serverless v2** (0.5 ACU, ~$44/month)
+- Single-AZ, automated daily snapshots
+- `gp3` storage (20GB minimum, auto-extends)
+- No read replicas, no RDS Proxy
+- Password in Secrets Manager with `--manage-master-user-password`
+- Total cost: $12-50/month
 
-### Encryption
-- **At rest**: Enable at creation time (cannot be enabled later without snapshot-restore). Use AWS KMS CMK for key control.
-- **In transit**: Enforce SSL via parameter group (`rds.force_ssl = 1` for PostgreSQL, `require_secure_transport = ON` for MySQL)
+### Post-PMF / Series A (real users, need reliability)
 
-### Network Isolation
-- Deploy in private subnets only — never assign a public IP
-- Use security groups to restrict ingress to application subnets
-- Use VPC endpoints for API calls (`rds` and `rds-data` endpoints)
+- **Aurora Serverless v2** with 0.5-8 ACU range (handles spikes without pre-provisioning)
+- Enable Multi-AZ (add one reader in a second AZ — doubles as HA AND read scaling)
+- Enable Performance Insights (free tier covers 7 days retention)
+- Add RDS Proxy only if using Lambda for API handlers
+- Enable deletion protection
+- Total cost: $100-300/month
 
-### Authentication
-- **IAM database authentication**: Token-based, no passwords stored — good for Lambda and automated access
-- **Secrets Manager rotation**: Automatic password rotation on a schedule — use for traditional username/password auth
-- **Kerberos/Active Directory**: Available for SQL Server and Oracle via AWS Directory Service
+### Scale (Series B+, >$500/month database)
 
-## Blue/Green Deployments
+- Evaluate Aurora Provisioned vs Serverless v2 — provisioned is cheaper for sustained high load
+- Aurora Global Database if you need multi-region reads or DR
+- Blue/Green deployments for zero-downtime major version upgrades
+- Consider Reserved Instances for Aurora provisioned (1-year, up to 30% savings)
 
-- Create a "green" copy of the production database with changes applied (engine upgrade, parameter changes, schema changes)
-- RDS keeps the green environment in sync via logical replication
-- Switchover takes ~1 minute with minimal downtime
-- Automatic rollback if health checks fail
+## Counterintuitive Startup Advice
 
-### Supported Changes
-- Major engine version upgrades
-- Parameter group changes
-- Schema changes on the green environment
-- Instance class changes
+- **Start with RDS, not Aurora.** Aurora's $44/month minimum seems trivial, but at pre-PMF you might have 5 services each needing a database. 5 × $44 = $220/month. 5 × RDS `db.t4g.micro` = $60/month. Migrate to Aurora when a specific database needs auto-scaling storage or high availability.
 
-### Limitations
-- Not available for Aurora Serverless v1 (v2 supported)
-- Requires enough capacity for both environments during the transition
+- **PostgreSQL, always PostgreSQL.** Even if your team knows MySQL better. PostgreSQL has: better JSON support (replace MongoDB), full-text search (replace Elasticsearch for simple cases), PostGIS (location queries), and a richer extension ecosystem. This flexibility reduces the number of databases you need.
 
-## Anti-Patterns
+- **Single-AZ is fine until you have SLAs.** The "always use Multi-AZ in production" guidance assumes production means "paying customers with contractual uptime." If your production means "100 beta users who'll understand 10 minutes of downtime," save the money.
 
-- **Public subnets for databases.** Never place RDS/Aurora in a public subnet. Use private subnets and access through application layer, VPN, or bastion.
-- **Default parameter groups.** Always create custom parameter groups — default ones cannot be modified and make tuning impossible.
-- **Unencrypted instances.** Encryption must be enabled at creation. Retrofitting requires snapshot → copy-encrypted → restore, which means downtime and new endpoints.
-- **Lambda without RDS Proxy.** Lambda creates new connections per invocation. Without a connection pooler, concurrent Lambdas exhaust `max_connections` within seconds.
-- **Single-AZ production databases.** No HA means any AZ failure takes down the database until manual intervention.
-- **Oversized instances "just in case".** Start with Performance Insights data, right-size based on actual db.load, not guesswork. Graviton (r7g) instances offer better price-performance.
-- **Ignoring storage IOPS limits.** gp3 default is 3,000 IOPS — if the workload exceeds this, provision higher IOPS or move to io2 before hitting throttling.
-- **Manual password management.** Use `--manage-master-user-password` (Secrets Manager integration) or IAM authentication. Hardcoded passwords in application config are a security incident waiting to happen.
-- **Not enabling deletion protection on production.** A single `delete-db-instance` call without deletion protection can destroy the production database.
+- **Connection pooling in your app, not RDS Proxy.** PgBouncer sidecar or built-in pooling (HikariCP for Java, Prisma for Node.js) is free and runs co-located with your app. RDS Proxy's value is specifically for Lambda's thousands-of-ephemeral-connections problem.
 
-### Common Migration Paths
-- **Self-managed MySQL/PostgreSQL → Aurora**: Use AWS DMS for minimal-downtime migration with CDC
-- **Oracle/SQL Server → Aurora PostgreSQL**: Use AWS SCT (Schema Conversion Tool) + DMS
-- **RDS MySQL → Aurora MySQL**: Use snapshot restore (fastest) or create Aurora read replica of RDS instance then promote
+## When to Evaluate Alternatives
 
-### Key Considerations
-- Always run SCT assessment report before cross-engine migrations — it quantifies conversion effort
-- Test with DMS validation tasks to verify data integrity post-migration
-- Plan for endpoint changes — Aurora uses cluster endpoints (writer) and reader endpoints
+| Signal                                                     | Direction                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------ |
+| Single table with >10K writes/sec, simple key-value access | DynamoDB for that table                                |
+| Need sub-10ms reads on hot data                            | DynamoDB or ElastiCache in front of Aurora             |
+| Full-text search beyond PostgreSQL's capabilities          | OpenSearch for search, keep Aurora as source of truth  |
+| Time-series data (metrics, IoT) growing unbounded          | Timestream or InfluxDB                                 |
+| Monthly database cost > $2K, mostly reads                  | Consider read replicas + Aurora Global if multi-region |
+
+## Credits-Specific Guidance
+
+- RDS/Aurora instance hours are covered by credits. During credits: use Aurora Serverless v2 with a generous ACU range — let it auto-scale without worrying about cost.
+- **Critical warning**: when credits expire, Aurora Serverless v2 with a 0.5-64 ACU range can surprise you with a $500+ first bill if it scaled up during a traffic spike. Set `max ACU` conservatively (4-8 ACU) unless you know your peak load.
+- Multi-AZ costs double — enable during credits to test failover behavior, but be aware it doubles your post-credits cost.
+- Snapshot storage accumulates outside of instance costs. Clean up manual snapshots before credits expire.

@@ -1,76 +1,81 @@
-# DynamoDB
-## Process
+# DynamoDB — Startup-Specific Guidance
 
-## Key Design Principles
+## When Startups Should Choose DynamoDB
 
-### Partition Key Selection
-- **High cardinality is mandatory.** A partition key with few distinct values creates hot partitions.
-- Good partition keys: `userId`, `orderId`, `deviceId`, `tenantId`
-- Bad partition keys: `status`, `date`, `region`, `type`
-- If you must query by a low-cardinality attribute, use it as a sort key or GSI sort key — never as the partition key.
+**DynamoDB is the right default database for startups when:**
 
-### Sort Key Design
-- Use composite sort keys to enable flexible queries: `STATUS#TIMESTAMP`, `TYPE#2024-01-15`
-- Sort keys enable `begins_with`, `between`, and range queries — design them for your query patterns
-- Hierarchical sort keys work well: `COUNTRY#STATE#CITY` lets you query at any level with `begins_with`
+- Your data model is key-value or document-oriented (user profiles, sessions, IoT telemetry, orders)
+- You need single-digit millisecond latency at any scale
+- You want zero operational overhead (no patching, scaling, backups to manage)
+- Your access patterns are known upfront (this is critical — DynamoDB punishes query pattern changes)
 
-### Single-Table Design
-Use single-table design when:
-- You need transactions across entity types
-- You want to minimize the number of DynamoDB tables to manage
-- Your entities share the same partition key (e.g., all items for a tenant)
+**DynamoDB is the WRONG choice when:**
 
-Avoid single-table design when:
-- Access patterns are simple and don't cross entity boundaries
-- Team members are unfamiliar with the pattern (readability matters)
-- You need different table-level settings per entity type (encryption, capacity, TTL)
+- You don't know your access patterns yet (early prototyping with ad-hoc queries → use PostgreSQL)
+- You need complex joins, aggregations, or flexible queries → use PostgreSQL/Aurora
+- Your data is highly relational with many-to-many relationships → use PostgreSQL
+- You need full-text search → use OpenSearch or PostgreSQL with pg_trgm
 
-Generic key names (`PK`, `SK`, `GSI1PK`, `GSI1SK`) are standard for single-table design.
+## The Access Pattern Lock-in Problem
 
-**Prefer GSIs over LSIs unless you need strong consistency on the alternate sort key**
+This is the #1 DynamoDB mistake startups make: choosing DynamoDB for operational simplicity, then discovering 6 months later that a new feature requires a query pattern the table design doesn't support.
 
-## Capacity Modes
+**Mitigation**: Before committing to DynamoDB, write down your top 10 access patterns. If you can't, you don't know enough about your product to choose DynamoDB. Use PostgreSQL/Aurora until patterns stabilize, then migrate hot paths to DynamoDB.
 
-### On-Demand
-- Use for: unpredictable traffic, new workloads, spiky patterns, dev/test
-- More expensive per-request than provisioned at sustained volume
-- Scales instantly (within previously reached traffic levels; new peaks may take minutes)
+## Startup Cost Traps
 
-### Provisioned
-- Use for: predictable, steady-state production workloads
-- Enable auto-scaling — never set a fixed capacity without it
-- Set target utilization to 70% for auto-scaling
-- Reserved capacity available for further savings on committed throughput
-- Provisioned is typically 5-7x cheaper than on-demand at sustained load
+1. **On-Demand mode at scale without noticing**: On-Demand is correct at the start (zero cost at zero traffic). But at sustained load, it's 5-7x more expensive than provisioned. **Trigger to switch**: when your DynamoDB bill exceeds $100/month with predictable traffic patterns, switch to provisioned with auto-scaling.
 
-## DynamoDB Streams
-- Use for: event-driven architectures, cross-region replication, materialized views, analytics pipelines
-- Stream records are available for 24 hours
-- Pair with Lambda for real-time processing — use event source mapping with batch size tuning
+2. **GSI proliferation**: Each GSI copies all projected attributes and consumes write capacity on every write to the base table. Startups add GSIs reactively ("we need to query by email too") without budgeting the cost. At 5+ GSIs with full projections, you may be paying 5x your base table cost in GSI writes.
 
-## TTL (Time to Live)
+3. **Scan-based "analytics"**: Teams build admin dashboards that Scan the entire table. At 1M items, a full Scan costs ~$1.25 and takes seconds. At 100M items, it's $125 per scan. Export to S3 + Athena for analytics — never Scan production tables repeatedly.
 
-- Set a TTL attribute (epoch seconds) to auto-expire items at no cost
-- Deletion is eventual — items may persist up to 48 hours past expiry
-- TTL deletions appear in Streams (useful for cleanup triggers)
-- Use for: session data, temporary tokens, audit logs with retention policies
-- Filter expired items in queries with a condition: `#ttl > :now`
+4. **DAX when you don't need it**: DAX clusters start at ~$50/month (t3.small) and require VPC placement. Don't add DAX until you've confirmed: (a) reads are the bottleneck, (b) the same items are read repeatedly, (c) eventual consistency is acceptable. Most startups don't need DAX.
 
-## DAX (DynamoDB Accelerator)
+5. **DynamoDB Streams + Lambda at high volume**: Each Lambda invocation from Streams counts against your Lambda concurrent execution limit AND costs per invocation. At 10K writes/second, that's 10K Lambda invocations/second. Use Kinesis Data Streams as the consumer if write volume is high.
 
-- In-memory cache in front of DynamoDB — microsecond read latency
-- Use for: read-heavy workloads with repeated access to the same items
-- **Do not use DAX when:** writes are heavy, data changes constantly, or you need strongly consistent reads (DAX serves eventually consistent by default)
-- DAX cluster runs in your VPC — factor in the instance cost
-- Item cache and query cache are separate — both cache misses hit DynamoDB
+## Stage-Specific Recommendations
 
-## Anti-Patterns
+### Pre-PMF (validating product)
 
-- **Scan for queries.** If you're scanning with a filter, you need a GSI or a redesigned key schema.
-- **Hot partition keys.** A single partition key that receives disproportionate traffic (e.g., `status=ACTIVE`) throttles the entire table.
-- **Large items.** DynamoDB max item size is 400 KB. Store large blobs in S3 and keep a pointer in DynamoDB.
-- **Relational modeling.** Don't normalize into many tables with joins — DynamoDB has no joins. Denormalize and use single-table design or composite keys.
-- **Over-indexing.** Each GSI duplicates data and consumes write capacity. Only create indexes for access patterns you actually need.
-- **Using Scan in production code paths.** Scans read the entire table and are expensive. Use Query with a well-designed key schema instead.
-- **Ignoring pagination.** Query and Scan return max 1 MB per call. Always handle `LastEvaluatedKey` for pagination.
-- **Not using condition expressions.** Without conditions on writes, concurrent updates silently overwrite each other. Use `attribute_not_exists` or version counters for optimistic locking.
+- **Use On-Demand mode** — zero cost at zero traffic, scales automatically
+- **Simple key design**: don't over-engineer single-table design at this stage. One table per entity is fine (users table, orders table). Optimize later.
+- **Enable Point-in-Time Recovery** ($0.20/GB-month) — your only protection against accidental deletes
+- Total cost at low traffic: $0-5/month
+
+### Post-PMF (scaling, Series A)
+
+- Switch predictable tables to **Provisioned + Auto-Scaling** (target 70% utilization)
+- Consider single-table design for entities that transact together
+- Add DynamoDB Streams for event-driven patterns (materialized views, search indexing)
+- Export to S3 for analytics instead of Scanning
+
+### Scale (Series B+, >$1K/month DynamoDB)
+
+- Reserved capacity (1-year or 3-year) for base throughput — up to 77% savings
+- Evaluate Global Tables only if you genuinely need multi-region writes
+- DAX for read-heavy hot key patterns
+- Consider moving some tables to Aurora if query flexibility is needed
+
+## Counterintuitive Startup Advice
+
+- **Don't do single-table design at the start.** It's an optimization for scale and reduced table management. At pre-PMF with 2-3 entities, separate tables are more readable, easier to reason about, and trivial to change. Single-table design is a one-way door that's painful to refactor.
+
+- **DynamoDB is often MORE expensive than Aurora for typical CRUD apps.** A startup with a standard web app (users, posts, comments, likes) paying $50/month for a `db.t4g.micro` Aurora Serverless v2 instance would pay $200+/month for the same data in DynamoDB with GSIs for all query patterns. DynamoDB wins on latency and ops burden, not on cost for relational-shaped data.
+
+- **Free tier covers you longer than you think.** DynamoDB free tier (25 RCU, 25 WCU, 25 GB) is permanent and enough for ~200 reads/sec and ~25 writes/sec. Most pre-PMF startups never exceed this.
+
+## When to Graduate FROM DynamoDB
+
+| Signal                                                         | Direction                                   |
+| -------------------------------------------------------------- | ------------------------------------------- |
+| Constantly needing new GSIs for new features                   | Your data is relational — use PostgreSQL    |
+| Admin dashboards Scanning tables                               | Export to S3, query with Athena             |
+| Need full-text search                                          | Add OpenSearch (or use PostgreSQL)          |
+| Monthly bill > $500 with Reserved Capacity still too expensive | Data model mismatch — evaluate alternatives |
+
+## Credits-Specific Guidance
+
+- DynamoDB On-Demand costs are covered by credits. During credits: stay on On-Demand even if traffic is predictable — the flexibility is worth it while you're iterating on data models.
+- When credits expire: On-Demand bills hit immediately. Switch to Provisioned + Auto-Scaling for any table with consistent traffic before credits run out.
+- Point-in-Time Recovery and backups also count against credits — enable them generously during the credits period.

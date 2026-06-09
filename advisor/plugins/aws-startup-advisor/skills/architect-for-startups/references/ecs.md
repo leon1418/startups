@@ -1,56 +1,69 @@
-# ECS
-## Launch Type Selection
+# ECS — Startup-Specific Guidance
 
-**Default to Fargate** unless you have a specific reason to manage instances yourself. Fargate eliminates the operational overhead of patching, scaling, and right-sizing EC2 instances — for most teams, the engineering time saved on instance management exceeds the ~20-30% price premium over equivalent EC2 capacity.
+## When to Choose ECS (vs Lambda or EKS)
 
-- **Fargate**: No instance management, per-vCPU/memory billing, automatic security patching of the underlying host. Use Fargate Spot for fault-tolerant batch/worker tasks (up to 70% savings).
-- **EC2**: Choose when you need GPU instances, sustained CPU at >80% utilization where the price premium matters (Fargate costs ~$0.04/vCPU-hour vs ~$0.03 for EC2 at steady state), specific instance types (Graviton3, high-memory), or host-level access (Docker-in-Docker, EBS volume mounts, custom AMIs).
+**Choose ECS when**: You've outgrown Lambda ($300-500+/month Lambda bill with steady traffic), need long-running processes, WebSockets, or >6MB responses, but don't have a platform team to run Kubernetes.
 
-## Task Definitions
+**The startup sweet spot**: ECS Fargate is the "right-sized" container platform for teams of 1-15 engineers. It gives you containers without the Kubernetes learning curve, tax, or operational burden.
 
-- One application container per task definition, with sidecars (log routers, envoy proxies, datadog agents) in the same task definition. Reason: ECS scales, deploys, and health-checks at the task level. If you put two unrelated application containers in one task, they scale together (wasting resources when only one needs more capacity), deploy together (risking both when only one changes), and if one crashes the entire task is marked unhealthy. Sidecars are fine because they share the lifecycle of the application container by design.
-- Always set `cpu` and `memory` at the task level for Fargate. For EC2 launch type, set container-level limits.
-- Use `secrets` to pull from Secrets Manager or Parameter Store -- never bake credentials into images or environment variables.
-- Use `dependsOn` with `condition: HEALTHY` for sidecar ordering.
-- Set `essential: true` only on the primary container. Sidecar crashes should not kill the task unless they are truly required.
-- Use `readonlyRootFilesystem: true` where possible for security hardening.
+**Do NOT start with ECS if**: Your traffic is spiky/unpredictable and you can fit in Lambda's constraints. Lambda's scale-to-zero beats Fargate's minimum-task cost for low-traffic services.
 
-## Service Configuration & Networking
+## Startup Cost Traps
 
-- **awsvpc** network mode is mandatory for Fargate and recommended for EC2. Each task gets its own ENI.
-- Place tasks in private subnets with NAT Gateway or VPC endpoints for ECR/S3/CloudWatch Logs.
-- Use security groups at the task level -- one SG per service, allow only required ingress from the load balancer SG.
-- **Service Connect** (Cloud Map-based): preferred for service-to-service communication over manual service discovery. Provides built-in retries, timeouts, and observability.
+1. **Fargate Spot in production services**: 70% savings sounds great, but Spot tasks get terminated with 30s warning. Use ONLY for: batch jobs, queue workers, background processing. Never for user-facing APIs unless you have graceful failover to on-demand.
 
-## Load Balancer Integration
+2. **Over-provisioned task definitions**: Startups copy-paste `2 vCPU / 4GB` task defs without measuring. A typical Node.js/Python API serves 200+ req/s on `0.25 vCPU / 0.5GB` (~$9/month). Start at the minimum and scale up based on Container Insights metrics.
 
-- **ALB**: Default for HTTP/HTTPS services. Use path-based or host-based routing to multiplex services on one ALB.
-- **NLB**: Use for TCP/UDP, gRPC without HTTP/2 termination, extreme throughput, or static IPs.
-- Always configure health check grace period (`healthCheckGracePeriodSeconds`) to avoid premature task kills during startup -- set to at least 2x your container startup time.
-- Use `deregistrationDelay` of 30s (default 300s is usually too long) to speed up deployments.
+3. **ALB cost baseline**: An ALB costs ~$22/month minimum (fixed hourly) + LCU charges. For a startup with 2-3 services, that's fine. But don't create one ALB per service — use path-based routing on a shared ALB until you need isolation.
 
-## Auto-Scaling
+4. **NAT Gateway double-tax**: Fargate tasks in private subnets need NAT for internet access. NAT costs $32/month + $0.045/GB processed. For early startups with one service, consider running in public subnets with security groups locked down (heresy, but saves $32/month). Graduate to private subnets when you have compliance requirements or >3 services.
 
-- **Target tracking on ECSServiceAverageCPUUtilization (70%)** is the right default for most services.
-- For request-driven services, scale on `RequestCountPerTarget` from the ALB.
-- For queue workers, scale on `ApproximateNumberOfMessagesVisible` from SQS using step scaling.
-- Set `minCapacity` >= 2 for production services (multi-AZ resilience).
-- Fargate scaling is slower than EC2 (60-90s to launch) -- keep headroom with a slightly lower scaling target.
+5. **Container Insights**: Costs ~$7-15/month in CloudWatch charges per cluster. Worth it for production, not needed for dev/staging.
 
-## Deployment Strategies
+## Stage-Specific Recommendations
 
-- **Rolling update** (default): Good for most workloads. Set `minimumHealthyPercent: 100` and `maximumPercent: 200` to deploy with zero downtime.
-- **Blue/Green (CodeDeploy)**: Use for production services that need instant rollback. Requires ALB. Configure `terminateAfterMinutes` to keep the old task set alive during validation.
-- **Canary**: Use CodeDeploy with `CodeDeployDefault.ECSCanary10Percent5Minutes` for high-risk changes.
-- Circuit breaker: Always enable `deploymentCircuitBreaker` with `rollback: true` to auto-rollback failed deployments.
+### Pre-PMF (1-5 engineers, <$1K/month infra)
 
-## Anti-Patterns
+- **Single Fargate service**, single ALB, public subnet (with locked-down SG)
+- `0.25 vCPU / 0.5GB` task, `minCount=1`, `maxCount=3`
+- Use `ECS Exec` for debugging (replaces SSH)
+- Total cost: ~$35-50/month (1 task + ALB)
 
-- **Using :latest tag in production**: Always use immutable image tags (git SHA or semantic version). `:latest` makes rollbacks impossible and deployments non-deterministic.
-- **One giant cluster per account**: Use separate clusters per environment (dev/staging/prod) or per team. Cluster-level IAM and capacity provider strategies are easier to manage.
-- **Oversized task definitions**: Right-size CPU and memory. A 4 vCPU / 8 GB task running at 10% utilization is burning money. Start small, scale up based on CloudWatch Container Insights metrics.
-- **Skipping health checks**: Always define container health checks in the task definition AND target group health checks. Without both, ECS cannot detect unhealthy tasks.
-- **Ignoring ECS Exec**: Enable `ExecuteCommandConfiguration` on the cluster and `enableExecuteCommand` on the service. It replaces SSH access to containers and is essential for debugging.
-- **No deployment circuit breaker**: Without it, a bad deployment will keep cycling failing tasks indefinitely, consuming capacity and generating noise.
-- **Putting secrets in environment variables**: Use the `secrets` field with Secrets Manager or SSM Parameter Store references. Environment variables are visible in the console and API.
-- **Running as root**: Set `user` in the task definition to a non-root user. Combine with `readonlyRootFilesystem` for defense in depth.
+### Post-PMF / Series A (5-15 engineers, $1K-10K/month)
+
+- Move to private subnets + NAT Gateway
+- Add a second service (worker/background jobs)
+- Enable Container Insights on production cluster
+- Use Fargate Spot for workers, on-demand for APIs
+- Consider Graviton (`ARM64`) — 20% cheaper on Fargate too
+
+### Scaling (Series B+, >$10K/month compute)
+
+- Evaluate ECS on EC2 with Savings Plans if >80% utilization sustained
+- Fargate's ~20-30% premium over EC2 matters at $50K+/month
+- At this stage, also evaluate if EKS makes sense for your hiring pipeline (more K8s engineers available than ECS-specific)
+
+## Counterintuitive Startup Advice
+
+- **One cluster, one service is fine.** The "one cluster per environment" guidance assumes you have environments. At pre-PMF, run one cluster with one production service. Add dev/staging clusters when you have a team that needs them.
+
+- **Skip blue/green deployments initially.** Rolling updates with circuit breaker give you auto-rollback without CodeDeploy complexity. Blue/green adds value at scale (instant rollback) but adds operational surface area early.
+
+- **`:latest` tag is acceptable in dev/staging.** Yes, it's an anti-pattern in production. But for a 2-person team iterating daily, the overhead of tagging every dev build with a SHA isn't worth it until you have a CI/CD pipeline.
+
+- **Don't multi-region until revenue demands it.** ECS services in 2 regions = 2x base cost + cross-region complexity. Stay single-region until you have customers requiring <50ms latency in another continent or contractual uptime SLAs.
+
+## When to Graduate from ECS
+
+| Signal                                                      | Direction                                                |
+| ----------------------------------------------------------- | -------------------------------------------------------- |
+| Team > 15 engineers, multiple teams deploying independently | Evaluate EKS — better multi-tenancy, namespace isolation |
+| Monthly compute bill > $50K with Fargate                    | Evaluate ECS on EC2 with Spot + Savings Plans            |
+| Need service mesh, custom autoscaling, GitOps               | EKS ecosystem is richer for these                        |
+| Hiring pipeline returns mostly K8s-experienced candidates   | Switching cost is worth it for velocity                  |
+
+## Credits-Specific Guidance
+
+- Fargate compute is covered by AWS Activate credits. During credits: use on-demand everywhere, don't bother with Spot, and provision for peak.
+- When credits expire: the "always on" baseline of Fargate tasks hits immediately. Budget the transition: right-size tasks, add Spot for workers, configure scale-to-zero for non-prod.
+- Fargate costs are predictable — easy to model post-credits burn rate: `tasks × hours × (vCPU_price + memory_price)`.

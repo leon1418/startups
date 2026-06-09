@@ -1,127 +1,48 @@
+# AWS Planning — Startup-Specific Guidance
 
-You are an AWS Solutions Architect running a structured planning workflow. This skill orchestrates discovery through final review in one cohesive flow.
+## Stage-Gated Planning
 
-## Workflow
+### Pre-Seed / MVP (< $1K/mo AWS spend)
 
-```
-DISCOVER → DESIGN → REVIEW → ESTIMATE → DELIVER
-```
+- Skip Phase 3 (Security Review) depth — basic guardrails only. Don't let security theater block shipping.
+- Phase 4 (Cost Estimate) matters more than Phase 2 (Design) at this stage. A $500/mo surprise kills a pre-seed startup.
+- Deliver the simplest architecture that validates the hypothesis. If it's a single Lambda + DynamoDB, that IS the plan.
 
-### Phase 1: Discovery
+### Seed / Product-Market Fit ($1K–$10K/mo)
 
-Use the discovery questions from the `customer-ideation` skill as your reference menu.
+- Full workflow applies but bias toward speed over perfection
+- Security Review: focus only on data exposure risk (public S3, no auth) — skip compliance depth until Series A
+- Cost Estimate: model the "what if we 10x" scenario — will your architecture bankrupt you at success?
 
-**Start with 3-5 high-signal questions:**
-- What business problem are you solving?
-- Who are the users and how many? (10, 1K, 100K, 1M+)
-- What are your hard constraints? (budget, timeline, compliance, team skills)
-- What does the workload look like? (API, batch, streaming, event-driven)
-- What's already in place? (existing infra, CI/CD, identity provider)
+### Series A+ ($10K+/mo)
 
-**Then follow the user's answers** — ask 2-3 targeted follow-ups based on what they said. Don't dump all questions. After the initial round, ask: "I have enough to start on an architecture. Want to go deeper on discovery, or should I move to design?"
+- Full workflow with no shortcuts
+- Add: cost allocation tags from day 1 (you'll need them for board reporting)
+- Add: multi-account strategy planning (separate prod/dev NOW, not later)
 
-### Phase 2: Design
+## Anti-Patterns — Startup Edition
 
-Apply the `aws-architect` skill's process:
-1. Evaluate against the six Well-Architected pillars
-2. Propose architecture with specific AWS services and configurations
-3. Call out trade-offs explicitly (cost vs performance, simplicity vs resilience)
-4. Use `awsknowledge` MCP tools to verify service limits and feature availability
-5. Describe the architecture flow (data path, request path)
+- **Over-engineering for hypothetical scale**: You have 50 users. Lambda + DynamoDB. Not EKS. Not multi-region. Not event sourcing. The startup that builds for 10M users at 50 users usually dies at 50 users.
+- **Skipping cost modeling because "we have credits"**: Credits expire. Model what happens when they run out. If your architecture costs $15K/mo and credits cover $5K, you have 3 months of runway buffer, not infinite time.
+- **Proposing services the team cannot operate**: A 3-person startup cannot operate Kubernetes, Kafka, and a data lake simultaneously. Each managed service you skip saves 20% of one engineer's time.
+- **Building the "enterprise-ready" version first**: SOC2, multi-tenant isolation, audit logging — all matter, but not before you have 10 paying customers. Build the path TO compliance, don't implement it day 1.
 
-**Keep it simple.** Start with the simplest architecture that meets requirements. A Lambda + DynamoDB API is better than EKS for 100 users.
+## Startup-Specific Cost Traps in Planning
 
-### Phase 3: Security Review
+| Trap                                   | Why It Hits Startups Hard                                                                    |
+| -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| NAT Gateway ($32/mo + data)            | Often unnecessary pre-PMF. Use VPC endpoints or public subnets with security groups          |
+| Multi-AZ RDS ($200+/mo minimum)        | Single-AZ is fine until you have SLA commitments to paying customers                         |
+| Secrets Manager ($0.40/secret/mo)      | Use SSM Parameter Store SecureString (free) until you need rotation                          |
+| CloudWatch Logs (never-expire default) | Set 30-day retention. You won't look at 6-month-old dev logs                                 |
+| ECS + ALB baseline                     | $50/mo minimum even at zero traffic. Consider Lambda until steady-state traffic justifies it |
 
-**This phase is mandatory — never skip it.**
+## "When to Graduate" Triggers
 
-Spawn the `iac-reviewer` agent (`subagent_type: "aws-dev-toolkit:iac-reviewer"`) or invoke the `security-review` skill to validate the proposed architecture. Review should cover:
-- IAM least privilege
-- Encryption at rest and in transit
-- Network isolation (VPC, security groups, NACLs)
-- Public exposure surface
-- Secrets management
-
-Also recommend baseline SCP guardrails:
-- No public security groups on private resources (EC2, RDS, ElastiCache)
-- No unencrypted storage (S3, RDS, EBS)
-- No public RDS instances
-- Require IMDSv2
-- No root access key creation
-- No S3 public access grants
-
-### Phase 4: Cost Estimate
-
-Use the `cost-check` skill or `aws-pricing` MCP tools to produce a rough monthly cost range. Include:
-- Baseline cost (steady state)
-- Scale cost (at projected peak)
-- Cost optimization opportunities (Savings Plans, Spot, right-sizing)
-
-For AI/ML workloads, also invoke the `bedrock` skill.
-
-### Phase 5: Deliver
-
-Present the final plan as:
-
-```markdown
-# AWS Architecture Plan: [Project Name]
-
-## Summary
-[1 paragraph overview]
-
-## Discovery Summary
-[Key requirements, constraints, and decisions from discovery]
-
-## Architecture
-### Services
-| Service | Purpose | Configuration | Monthly Est. |
-|---------|---------|---------------|-------------|
-
-### Architecture Flow
-[Data/request path description]
-
-### Diagram
-[Mermaid or ASCII diagram]
-
-## Security Review
-[Findings from Phase 3 — blockers, warnings, suggestions]
-
-## SCP Guardrails
-[Recommended SCPs for the account/org]
-
-## Cost Estimate
-| Scenario | Monthly Estimate |
-|----------|-----------------|
-| Baseline | $X - $Y |
-| At scale | $X - $Y |
-
-## Trade-offs & Decisions
-[Key choices made and why]
-
-## Risks & Mitigations
-[What could go wrong and how to handle it]
-
-## Next Steps
-1. [Scaffold IaC with `/aws-dev-toolkit:iac-scaffold`]
-2. [Set up CI/CD]
-3. [Configure monitoring]
-```
-
-## Anti-Patterns
-
-- **Skipping discovery and jumping to design**: Proposing services before understanding the business problem leads to solutions that don't fit. Always complete Phase 1 before drawing architecture diagrams.
-- **Proposing services the team cannot operate**: A Kubernetes cluster is the wrong answer for a team with zero container experience and a 2-week deadline. Match complexity to team capability.
-- **Ignoring cost until the end**: Cost is a constraint, not an afterthought. Validate cost feasibility during design, not after presenting a finished architecture the customer cannot afford.
-- **Skipping the security review**: Every architecture plan must go through Phase 3. An unreviewed design shipped to production is a liability, not a deliverable.
-- **Over-engineering for hypothetical scale**: Designing for 10 million users when the current user base is 500. Start simple, design for 10x current load, and document the path to 100x.
-- **Single-vendor lock-in without justification**: Using proprietary services is fine when they provide clear advantages, but call out the lock-in trade-off explicitly so the customer makes an informed decision.
-- **Not defining success criteria**: A plan without measurable outcomes (latency targets, availability SLA, cost ceiling) cannot be validated after implementation.
-- **Presenting one option as the only option**: Always present at least two approaches with trade-offs. The customer needs to understand what they are choosing and what they are giving up.
-
-## Related Skills
-
-- `aws-architect` — Well-Architected design evaluation and service selection
-- `customer-ideation` — Discovery questions and requirements gathering
-- `security-review` — Mandatory security validation for proposed architectures
-- `cost-check` — Cost estimation and optimization analysis
-- `challenger` — Pushback and alternative perspective on proposed designs
+| Current Choice           | Graduate When                                          | Graduate To                                              |
+| ------------------------ | ------------------------------------------------------ | -------------------------------------------------------- |
+| Single Lambda + DynamoDB | p99 latency matters AND traffic is steady (not spiky)  | ECS Fargate + Aurora                                     |
+| Single-AZ RDS            | First paying customer with uptime SLA                  | Multi-AZ RDS                                             |
+| No IaC (console clicks)  | Second engineer joins OR you need a second environment | CDK or Terraform                                         |
+| Single AWS account       | First production customer                              | Prod + Dev accounts minimum                              |
+| No monitoring            | First production customer                              | CloudWatch dashboards + 3 alarms (errors, latency, cost) |

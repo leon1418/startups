@@ -1,54 +1,70 @@
+# IaC Scaffold — Startup-Specific Guidance
 
-Scaffold a new AWS IaC project.
+## When to Introduce IaC (Not Day 1 for Everyone)
 
-**Framework**: $ARGUMENTS[0] (cdk, terraform, sam, or cfn)
-**Description**: $ARGUMENTS[1]
+| Stage                      | IaC Recommendation                                     | Why                                                                                  |
+| -------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Pre-seed solo founder      | Skip IaC. Console + CLI.                               | You're iterating daily. IaC slows you down at this stage. Document what you clicked. |
+| Pre-seed with 2+ engineers | Minimal IaC (CDK or Terraform for the main stack only) | Reproducibility matters when 2 people touch infra                                    |
+| Seed                       | IaC required for production resources                  | You need a second environment and can't recreate from memory                         |
+| Series A+                  | Everything in IaC, no exceptions                       | Audit trail, repeatability, team onboarding                                          |
 
-## Process
+## Framework Selection for Startups
 
-1. Ask clarifying questions if the framework or description is unclear
-2. Use the `aws-iac` MCP tools to validate resource configurations and check for security issues
-3. Use the `awsknowledge` MCP tools to look up current best practices for the chosen framework
-4. Generate the project structure following the patterns in [templates/](templates/)
+| Factor                      | CDK (TypeScript)               | Terraform                                   | SAM                                     |
+| --------------------------- | ------------------------------ | ------------------------------------------- | --------------------------------------- |
+| Startup default             | ✅ If team writes TypeScript   | ✅ If multi-cloud possible or team knows it | ✅ If pure serverless (Lambda + API GW) |
+| Learning curve for web devs | Low (it's TypeScript)          | Medium (new DSL)                            | Low (YAML + familiar)                   |
+| Footgun risk                | Medium (generates complex CFN) | Low (explicit)                              | Low (simple scope)                      |
+| Operational overhead        | Low (CDK CLI)                  | Medium (state management)                   | Lowest                                  |
+| When to switch away         | Never needed for most startups | If going all-in AWS (CDK advantage)         | When you add non-serverless resources   |
 
-## Framework-Specific Guidance
+**Opinionated startup default**:
 
-### CDK (TypeScript default)
-- Use `cdk init app --language typescript` patterns
-- Separate stacks by lifecycle (networking, data, compute)
-- Use `cdk-nag` for compliance checks
-- Outputs for cross-stack references
+- Pure serverless app → SAM (simplest, fastest iteration with `sam local`)
+- Full-stack app → CDK in TypeScript (same language as your app, likely)
+- Multi-cloud or Terraform-experienced team → Terraform
 
-### Terraform
-- Module-per-service structure
-- Remote state in S3 + DynamoDB locking
-- Use `terraform-aws-modules` where they exist
-- Separate tfvars per environment
+## Startup IaC Anti-Patterns
 
-### SAM
-- template.yaml at root
-- Globals section for shared Lambda config
-- Use SAM Accelerate for fast iteration
+| Anti-Pattern                            | Why It Hurts                                            | Do This Instead                                                                          |
+| --------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Separate repo for IaC                   | Context switching, drift between app and infra          | Monorepo: `/infra` next to `/src`                                                        |
+| One stack per resource                  | Deployment takes forever, circular dependencies         | One stack per LIFECYCLE (stateful data, stateless compute, networking)                   |
+| Custom constructs/modules before needed | Abstraction without understanding = debugging nightmare | Use L2 constructs (CDK) or official modules (Terraform). Write custom only on third use. |
+| IaC for developer sandboxes             | Over-engineering for ephemeral environments             | `cdk deploy --context env=dev` with cheaper defaults, or just use console for scratch    |
+| Parameterizing everything               | 50 parameters nobody understands                        | Hardcode sensible defaults. Parameterize only what CHANGES between environments          |
 
-### CloudFormation
-- Nested stacks for reuse
-- Parameters with AllowedValues for guardrails
-- Conditions for multi-environment templates
+## Startup-Optimized Stack Separation
 
-## Gotchas
+```
+stack-1: foundation (VPC if needed, DNS zone, shared secrets)
+  → Deploys once, changes rarely
+  → Even for pre-seed: just DNS zone + maybe a VPC
 
-- Always include a `.gitignore` appropriate for the framework
-- CDK: don't put secrets in context — use SSM Parameter Store or Secrets Manager
-- Terraform: never commit `.tfstate` — configure remote backend first
-- SAM: `sam local` needs Docker — mention this in the README
-- All frameworks: tag everything with at minimum `Environment`, `Project`, `Owner`
-- Include a Makefile or justfile with common commands (deploy, destroy, diff, synth)
+stack-2: data (databases, S3 buckets, DynamoDB tables)
+  → Deploys rarely, NEVER destroyed (data loss)
+  → Enable deletion protection on everything here
 
-## Output
+stack-3: compute (Lambda functions, ECS services, API Gateway)
+  → Deploys frequently (every PR merge)
+  → Safe to destroy and recreate
+```
 
-Generate the complete project structure with:
-1. Entry point / main config file
-2. At least one example resource
-3. Environment-specific configuration
-4. README with setup instructions
-5. CI/CD pipeline config (GitHub Actions default, ask if different)
+**Key rule**: Never put databases and compute in the same stack. A botched compute deploy should never risk your data.
+
+## Minimum Viable IaC for Startups
+
+If you're scaffolding for the first time, include ONLY:
+
+1. The compute + API layer
+2. The data layer (separate stack)
+3. A `Makefile` with: `deploy`, `destroy`, `diff`, `logs`
+4. Environment config: `dev` and `prod` (not `staging`, `qa`, `perf`, etc.)
+
+Skip until needed:
+
+- CI/CD pipeline IaC (use GitHub Actions with `aws-actions/configure-aws-credentials` — simple YAML)
+- Monitoring/alerting IaC (click 3 alarms in the console — faster than writing CDK for them)
+- Multi-account bootstrap (until you actually have multiple accounts)
+- Custom domains + ACM certs (until you need them for customers)

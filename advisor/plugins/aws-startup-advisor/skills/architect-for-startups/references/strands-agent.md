@@ -1,57 +1,75 @@
-# Strands Agent
-## First: Clarify Language
+# Strands Agents — Startup Decision Guide
 
-Before writing any code, ask the user:
+## When to Use Strands (vs. Alternatives)
 
-> **TypeScript or Python?** (TypeScript is recommended for new projects — it has strong typing, good DX, and first-class Strands support. Python is fully supported too.)
+| Situation                                    | Recommendation       | Why                                                                         |
+| -------------------------------------------- | -------------------- | --------------------------------------------------------------------------- |
+| Building first AI agent on AWS               | **Strands**          | Thinnest abstraction, least vendor lock-in, direct Bedrock integration      |
+| Already invested in LangChain/LangGraph      | Stay on LangChain    | Migration cost isn't worth it unless you're hitting LangChain-specific pain |
+| Need managed multi-agent orchestration       | Bedrock Agents       | If you don't want to manage containers and agent routing yourself           |
+| Simple single-call LLM feature (no tool use) | Direct `InvokeModel` | Strands adds overhead you don't need for prompt-in/text-out                 |
 
-Default to TypeScript if the user doesn't have a preference.
+## TypeScript vs Python: Startup Perspective
 
-## Observability & Tracing
+**Default to TypeScript for startups** unless your team is Python-native:
 
-Strands has OpenTelemetry built in. Every agent invocation, model call, and tool execution emits OTel spans automatically. You just configure where to send them.
+- Most startup backends are Node/TypeScript already — one language = one deployment pipeline
+- Type safety catches tool schema bugs at compile time (agent tool bugs are expensive to debug in production)
+- Strands TS has first-class support and bundles Zod for tool validation
 
-- **AgentCore deployed agents**: OTel is enabled by default → CloudWatch Logs, X-Ray traces, GenAI dashboard
-- **Local development**: Set `OTEL_EXPORTER_OTLP_ENDPOINT` to route to Jaeger, Grafana, Langfuse, etc.
-- **Disable**: `agentcore configure --disable-otel`
+**Pick Python only if**: Your team is Python-first, you need Python-specific ML libraries in tools, or you need Strands Evals (Python-only).
 
-## Evaluation with Strands Evals
+## Cost Architecture: The Tool Count Rule
 
-Ship evals from day one. Strands Evals provides LLM-as-a-Judge evaluation with 9+ built-in evaluators:
+**Each additional tool costs you money on every single invocation** because the model must reason about which tool to use. The cost isn't just token count — it's reasoning quality degradation.
 
-- **OutputEvaluator**: Custom rubric-based quality scoring
-- **TrajectoryEvaluator**: Did the agent use the right tools in the right order?
-- **HelpfulnessEvaluator**: 7-point helpfulness scale
-- **FaithfulnessEvaluator**: Is the response grounded in context? (anti-hallucination)
-- **HarmfulnessEvaluator**: Safety check
-- **ToolSelectionAccuracyEvaluator** / **ToolParameterAccuracyEvaluator**: Tool-level correctness
-- **GoalSuccessRateEvaluator**: Did the user achieve their goal across a full session?
-- **ActorSimulator**: Simulates realistic multi-turn users for conversation testing
+| Tool count | Impact                                                    | Guidance                                   |
+| ---------- | --------------------------------------------------------- | ------------------------------------------ |
+| 1-3        | Minimal overhead, fast reasoning                          | Ideal for seed-stage agents                |
+| 4-7        | Noticeable cost increase, occasional wrong tool selection | Acceptable if tools are clearly distinct   |
+| 8-12       | Significant cost, frequent mis-routing                    | Split into multiple agents or add a router |
+| 13+        | Unreliable, expensive                                     | Refactor immediately                       |
 
-> Evals are Python-only. Even for TypeScript agents, write your eval suite in Python.
+**Startup rule**: If your PoC agent has > 5 tools and you have < $2K/month LLM budget, you're over-engineering. Split into two focused agents or remove tools.
 
-## Memory Decision Guide
+## Memory: Don't Add It Until You Need It
 
-| Scenario                                 | Memory Mode | Notes                                                  |
-|------------------------------------------|-------------|--------------------------------------------------------|
-| Stateless tool-calling agent             | NO_MEMORY   | Simplest, cheapest                                     |
-| Multi-turn conversation within a session | STM_ONLY    | 30-day retention, stores conversation history          |
-| Personalization across sessions          | STM_AND_LTM | Extracts preferences, facts, summaries across sessions |
+Memory modes ranked by startup relevance:
 
-Memory is opt-in. Start without it, add when you need it.
+1. **NO_MEMORY (start here)**: Stateless tool-calling. Cheapest. Works for 80% of startup agent use cases (internal tools, one-shot tasks, API orchestration).
+2. **STM_ONLY (add when)**: Users complain about repeating themselves within a session. Multi-turn conversations that reference earlier context.
+3. **STM_AND_LTM (add when)**: You have paying users who want personalization across sessions AND you've validated they actually return frequently enough for LTM to matter.
 
-## Gotchas
+**Cost of premature LTM**: Memory extraction runs additional model calls per session. At 1000 sessions/day, that's meaningful token spend for personalization most early users won't notice.
 
-- **TypeScript agents need containerized deployment** — use `--deployment-type container` when configuring TS agents with the AgentCore CLI
-- **Default model is Claude Sonnet** — Strands defaults to `global.anthropic.claude-sonnet-4-5-20250929-v1:0` via Bedrock. You need model access enabled in your AWS account.
-- **AWS credentials required** — Strands uses Bedrock by default. Ensure `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` are set, or use IAM roles.
-- **Tool count matters** — more tools = more reasoning steps = slower + more expensive. Keep PoCs to 3-5 tools.
-- **Zod is included** — `@strands-agents/sdk` bundles Zod for TypeScript tool input validation. No separate install needed.
-- **Memory provisioning takes time** — STM: ~30-90s, LTM: ~120-180s. The CLI waits for ACTIVE status.
-- **`agentcore destroy` deletes everything** — including memory resources. Use `--dry-run` first.
-- **Session lifecycle** — idle timeout defaults to 900s (15min). Set `--idle-timeout` and `--max-lifetime` during configure if you need longer sessions.
-- **VPC config is immutable** — once deployed with VPC settings, you can't change them. Create a new agent config instead.
-- **OTel is on by default in AgentCore** — traces go to CloudWatch/X-Ray. Disable with `--disable-otel` if you don't want it.
-- **Strands Evals is Python-only** — even for TypeScript agents, write evals in Python. The eval framework uses the same Bedrock models as your agent.
-- **Evals cost money** — each LLM-as-a-Judge evaluation invokes a model. Use `callback_handler=None` in eval task functions to suppress console output.
-- **Memory batching requires close()** — if using `batch_size > 1`, you MUST use a `with` block or call `close()` or buffered messages are lost.
+## Deployment: The Container Gotcha (TypeScript)
+
+TypeScript agents REQUIRE containerized deployment (`--deployment-type container`). This means:
+
+- ECR image build in your CI/CD pipeline
+- Container image maintenance (base image updates, dependency patches)
+- Slightly higher cold-start than Python agents
+
+**If you're deploying to Lambda for cost reasons (scale-to-zero)**: Use Python Strands agents — they work with Lambda's native runtime. TypeScript agents need Lambda container image support (slower cold starts, 10GB image limit).
+
+## Evaluation: Ship Evals from Day One (But Cheaply)
+
+**Counterintuitive**: Most startups skip evals entirely OR over-invest in a massive eval suite. The right answer:
+
+**Minimum viable eval suite (3 evaluators, ~$5/day at 100 test cases):**
+
+1. `GoalSuccessRateEvaluator` — Did the agent achieve the user's intent?
+2. `ToolSelectionAccuracyEvaluator` — Is it using the right tools?
+3. `FaithfulnessEvaluator` — Is it hallucinating? (Critical for customer-facing agents)
+
+**Add more evaluators only when**: You have a specific quality issue you can't diagnose with these three.
+
+**Cost trap**: Evals invoke LLM-as-Judge. 9 evaluators × 500 test cases × daily = significant token spend. Start with 3 evaluators × 50 golden test cases × on-PR-only.
+
+## Gotchas That Waste Startup Time
+
+- **Default model is Claude Sonnet** — expensive for iteration. Override to Nova Micro/Lite during development: saves 10-20x on development costs.
+- **VPC config is immutable** — if you deploy with VPC settings and realize you don't need them, you must create an entirely new agent config. Start WITHOUT VPC unless you know you need private resource access.
+- **`agentcore destroy` deletes everything** — including memory resources with user data. Always `--dry-run` first. No undo.
+- **Memory provisioning takes 2-3 minutes** — friction during rapid iteration. Use NO_MEMORY for development, add memory only in staging/prod configs.
+- **OTel is on by default in AgentCore** — traces go to CloudWatch/X-Ray (which costs money). Disable with `--disable-otel` during early development if you're not looking at traces yet.

@@ -1,43 +1,72 @@
-# AWS Architect
+# AWS Architect — Startup-Specific Guidance
 
-## Process
+## Startup-Stage Service Selection
 
-1. **Discovery — ALWAYS ask before designing**: Use the discovery questions from [./customer-ideation](./customer-ideation.md)` as your reference. Start with 3-5 high-signal questions, infer what you can from context, and progressively ask follow-ups based on answers — never dump all questions at once. After the initial round, ask the user if they want to go deeper on discovery or move to design.
-2. Evaluate against the six Well-Architected pillars
-3. Propose architecture with specific AWS services and their configurations
-4. Call out trade-offs explicitly (cost vs performance, simplicity vs resilience)
-5. Use the `awsknowledge` MCP tools to fetch current AWS documentation when you need to verify service limits, pricing models, or feature availability
-6. **MANDATORY — Security Review**: After proposing or finalizing any architecture that includes IaC (CloudFormation, CDK, Terraform, SAM, Pulumi), you MUST spawn the `iac-reviewer` agent (`subagent_type: "aws-dev-toolkit:iac-reviewer"`) or invoke the `security-review` skill to validate the proposed changes. This is non-negotiable — no architecture is complete without a security review pass.
+### Compute — Default by Stage
 
-## Well-Architected Pillars Checklist
+| Stage                     | Default Compute                   | Why                                                             |
+| ------------------------- | --------------------------------- | --------------------------------------------------------------- |
+| Pre-seed / MVP            | Lambda + API Gateway              | $0 at zero traffic. Ship in hours, not days.                    |
+| Seed / Early traction     | Lambda OR App Runner              | App Runner if you need WebSockets or >15min processing          |
+| Series A / Steady traffic | ECS Fargate                       | Predictable costs at steady-state; Savings Plans eligible       |
+| Series B+ / Team has K8s  | EKS only if team already knows it | Never adopt K8s as a startup unless you're hiring K8s engineers |
 
-- **Operational Excellence**: IaC for everything, observability, runbooks
-- **Security**: Least privilege IAM, encryption at rest and in transit, VPC isolation, no hardcoded credentials
-- **Reliability**: Multi-AZ by default, health checks, circuit breakers, backup strategy
-- **Performance Efficiency**: Right-size instances, caching layers, async where possible
-- **Cost Optimization**: Reserved/Savings Plans for steady-state, Spot for fault-tolerant, lifecycle policies for storage
-- **Sustainability**: Right-size, use managed services, minimize data movement
+**Counterintuitive**: App Runner is often better than Fargate for seed-stage startups. Yes, it's slightly more expensive per-request. But it eliminates ALB config, target groups, service discovery, and task definitions. That's 2-3 days of engineering time you get back.
 
-## Gotchas
+### Database — The Startup Trap
 
-- Don't default to the most complex architecture. Start simple, scale up.
-- NAT Gateways are expensive — consider VPC endpoints for S3/DynamoDB first
-- Cross-AZ data transfer costs add up fast with chatty microservices
-- Aurora Serverless v2 has a minimum ACU charge even at zero traffic
-- Lambda cold starts matter for synchronous user-facing APIs — consider provisioned concurrency or Fargate
-- ECS Fargate vs EKS: default to Fargate unless the team already has Kubernetes expertise
-- DynamoDB single-table design is powerful but hard to get right — start with simple key design
-- S3 event notifications have at-least-once delivery — design for idempotency
+| Stage                              | Default Database               | Why NOT the "proper" choice                                                                                       |
+| ---------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| MVP validation                     | DynamoDB on-demand             | $0 at zero traffic. Single-table design is overkill — use one table per entity, worry about access patterns later |
+| Product with relational needs      | Aurora Serverless v2           | Scales to zero ACU... but minimum is 0.5 ACU ($43/mo). If that matters, use RDS PostgreSQL t4g.micro ($12/mo)     |
+| Need PostgreSQL but cost-sensitive | RDS PostgreSQL t4g.micro/small | $12-25/mo. Single-AZ is FINE until you have SLA customers                                                         |
 
-## Output Format
+**DynamoDB single-table design**: Every blog post says do it. DON'T at a startup. It's a premature optimization that makes your data model rigid before you know your access patterns. Use multiple simple tables. Refactor to single-table design when you have proven query patterns AND DynamoDB costs justify the optimization.
 
-When proposing an architecture, structure your response as:
-1. **Summary**: One paragraph overview
-2. **Services**: List of AWS services with justification
-3. **Diagram description**: Describe the architecture flow (data path, request flow)
-4. **Risks & Mitigations**: What could go wrong and how to handle it
-5. **Cost Estimate**: Rough monthly cost range using the `aws-cost` MCP tools if available
-6. **SCP Guardrails**: Recommend baseline SCPs for the account/org (no public SGs on private resources, no unencrypted storage, no public RDS, require IMDSv2, no root access keys, no S3 public access). If the org already has these, note it. If not, flag as a recommendation.
-7. **Security Review**: Results from the mandatory security review pass (see Process step 6)
+## Startup-Specific Gotchas
 
-For detailed service-specific guidance, see [references/services.md](references/services.md).
+| Gotcha                                | Impact                                       | What to Do Instead                                                                                                      |
+| ------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| NAT Gateway as default                | $32/mo + $0.045/GB — often your #2 line item | VPC endpoints for S3/DynamoDB. Public subnets + SGs for Lambda. Only add NAT if you actually need private subnet egress |
+| Aurora Serverless v2 "scales to zero" | Minimum 0.5 ACU = $43/mo even idle           | RDS t4g.micro at $12/mo is cheaper until you need auto-scaling                                                          |
+| Multi-AZ everything                   | 2x cost on RDS, ElastiCache                  | Single-AZ until you have paying customers with SLA expectations                                                         |
+| CloudFront for API                    | $0 minimum but adds debugging complexity     | Skip until you need geographic distribution or WAF                                                                      |
+| Secrets Manager per secret            | $0.40/secret/mo adds up                      | SSM Parameter Store SecureString is free. Use Secrets Manager only for rotation                                         |
+| Cross-AZ data transfer                | $0.01/GB between AZs                         | Chatty microservices in different AZs = hidden cost. Colocate or go single-AZ                                           |
+
+## Credits-Aware Architecture Decisions
+
+| Decision                           | With Credits                                                                       | Without Credits                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| RDS instance size                  | Right-size to actual need (credits don't change this)                              | Same — don't over-provision just because credits cover it |
+| Multi-AZ                           | Enable if credits cover it AND you're past MVP                                     | Defer until first SLA customer                            |
+| Reserved Instances / Savings Plans | Do NOT buy while on credits — wait until credits expire to see real spend patterns | Buy after 3 months of stable, post-credits usage          |
+| Managed services vs DIY            | Always managed. Credits expire; the engineering time you save is permanent         | Same                                                      |
+| Graviton instances                 | Always use Graviton. 20% cheaper AND credits last longer                           | Same                                                      |
+
+**Critical**: Never commit to Savings Plans or Reserved Instances while on credits. You can't see your real usage patterns. Wait until 3 months AFTER credits are exhausted.
+
+## The "10x Cost" Test
+
+Before finalizing any architecture, ask: "If traffic 10x's, what happens to my bill?"
+
+| Service            | 10x Behavior                                  | Startup Risk                                       |
+| ------------------ | --------------------------------------------- | -------------------------------------------------- |
+| Lambda             | 10x invocations = ~10x cost                   | Low risk — linear and predictable                  |
+| DynamoDB on-demand | 10x reads/writes = ~10x cost                  | Medium risk — can spike fast                       |
+| RDS                | Doesn't auto-scale (unless Aurora Serverless) | Low cost risk, HIGH availability risk              |
+| NAT Gateway        | 10x data = 10x data processing charges        | High risk — this is where surprise bills come from |
+| S3                 | 10x storage = linear. 10x requests = linear   | Low risk                                           |
+| CloudFront         | 10x requests = ~8x cost (volume discounts)    | Low risk                                           |
+| ECS Fargate        | 10x tasks = 10x cost. No volume discounts     | Medium risk — but you control the scaling          |
+
+## When Architecture Recommendations DIFFER from AWS Best Practices
+
+| AWS Best Practice                         | Startup Reality                               | Do This Instead                                                                         |
+| ----------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Multi-AZ for all stateful services        | Costs 2x, you have 50 users                   | Single-AZ until SLA commitments                                                         |
+| Separate microservices from day 1         | You have 2 engineers and 1 service            | Monolith or modular monolith. Split at pain points                                      |
+| Use CloudTrail + GuardDuty + Security Hub | $20-50+/mo for security tooling               | CloudTrail only until Series A. Add GuardDuty at first enterprise deal                  |
+| VPC with private subnets + NAT            | NAT costs $32+/mo minimum                     | Public subnets + security groups until you have compliance requirements                 |
+| Custom KMS keys for encryption            | $1/key/mo + API costs                         | AWS-managed keys (free) until compliance requires CMK                                   |
+| Detailed CloudWatch dashboards            | You're iterating weekly, dashboards are stale | 3 alarms (error rate, p99 latency, cost threshold). Add dashboards when you have an SRE |

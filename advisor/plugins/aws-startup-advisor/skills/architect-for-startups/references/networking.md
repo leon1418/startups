@@ -1,96 +1,87 @@
-# Networking
-## VPC Design Principles
+# Networking — Startup Decision Guide
 
-### Subnet Tiers
+## Stage-Based Recommendation
 
-Always design with three tiers:
+### Pre-PMF (Seed / <$1M ARR)
 
-- **Public subnets**: Resources that need direct internet access (ALBs, NAT Gateways, bastion hosts). Route table has 0.0.0.0/0 -> Internet Gateway.
-- **Private subnets**: Application workloads (EC2, ECS, Lambda). Route table has 0.0.0.0/0 -> NAT Gateway. Can reach the internet but are not reachable from it.
-- **Isolated subnets**: Databases and sensitive workloads. No route to the internet at all. Access AWS services only through VPC endpoints.
+- **Single NAT Gateway is fine.** The HA argument ($32/month per NAT Gateway × 3 AZs = $97/month) doesn't matter when your revenue is zero and downtime during an AZ failure costs you nothing in SLA penalties.
+- **2 AZs, not 3.** You don't need 99.99% availability. 2 AZs gives you 99.95% and costs 33% less in NAT Gateways and other AZ-distributed resources.
+- **Skip VPC entirely if you can.** Lambda, DynamoDB, S3, API Gateway, AppRunner — all work without VPC. Only add VPC when you need RDS, ElastiCache, or EC2.
+- **If you must VPC:** Use the CDK/CF starter template with /16 CIDR, 2 AZs, 1 NAT Gateway. Don't bikeshed on CIDR planning until you need multi-VPC.
 
-### Availability Zones
+### Post-PMF / Growth ($1M-$10M ARR)
 
-- Minimum 2 AZs for production. 3 AZs is the standard for high availability.
-- Each tier gets one subnet per AZ (e.g., 3 AZs x 3 tiers = 9 subnets)
+- Expand to 3 AZs when you have SLA commitments to customers.
+- Add NAT Gateway per AZ when a single AZ failure would breach your SLA.
+- Start planning CIDR allocation only when you need a second VPC (staging/prod split or microservice isolation).
 
-## Security Groups vs NACLs
+### Scale ($10M+ ARR)
 
-| Feature    | Security Groups                      | NACLs                              |
-|------------|--------------------------------------|------------------------------------|
-| Level      | ENI (instance)                       | Subnet                             |
-| State      | Stateful                             | Stateless                          |
-| Rules      | Allow only                           | Allow and Deny                     |
-| Evaluation | All rules evaluated                  | Rules evaluated in order by number |
-| Default    | Deny all inbound, allow all outbound | Allow all inbound and outbound     |
+- Transit Gateway when you hit 3+ VPCs.
+- Centralized egress through shared services VPC.
+- This is when you hire a network engineer.
 
-**Opinionated guidance:**
-- Security groups are your primary network control. Use them for everything.
-- NACLs are defense-in-depth only. Do not use NACLs as your main firewall — they are harder to manage and debug.
-- Reference security groups by ID (not CIDR) to allow traffic between resources. This is more maintainable and self-documenting.
-- One security group per logical role (e.g., `alb-sg`, `app-sg`, `db-sg`). Chain them: ALB -> App -> DB.
+## Cost Traps
 
-## VPC Endpoints
+| Trap                          | Impact                                                                                            | Fix                                                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NAT Gateway data processing   | $0.045/GB — invisible tax on ALL traffic from private subnets to internet or AWS services         | Add S3 + DynamoDB gateway endpoints (free). Add interface endpoints for services with >1GB/month traffic ($7.20/month per endpoint per AZ vs $0.045/GB via NAT) |
+| 3 NAT Gateways in dev/staging | $97/month × number of non-prod environments                                                       | 1 NAT Gateway for all non-prod. Accept the AZ risk.                                                                                                             |
+| VPC endpoints "just in case"  | $7.20/month per endpoint per AZ — 10 endpoints in 3 AZs = $216/month                              | Only add interface endpoints when the NAT Gateway data processing cost for that service exceeds the endpoint cost. Breakeven: ~160GB/month per service.         |
+| Unused Elastic IPs            | $3.60/month per unattached EIP (post-Feb 2024: $3.60/month for ALL public IPs including attached) | Audit monthly. Each public IPv4 costs money whether used or not.                                                                                                |
+| VPC for serverless workloads  | NAT Gateway cost for Lambda/ECS calling AWS services                                              | Use VPC endpoints or keep serverless outside VPC entirely                                                                                                       |
 
-### Gateway Endpoints (free)
-- **S3** and **DynamoDB** only
-- Added to route tables — no ENI, no security group
-- Always create these — they are free (no hourly charge, no per-GB data processing fee), they keep S3/DynamoDB traffic on the AWS backbone instead of traversing NAT Gateways (which charge $0.045/GB processed), and they reduce latency by avoiding the extra hop through NAT. The only cost is a route table entry.
+## Counterintuitive Advice
 
-### Interface Endpoints (cost per hour + data)
-- All other AWS services (STS, Secrets Manager, ECR, CloudWatch, KMS, etc.)
-- Creates an ENI in your subnet — requires a security group
-- Enable Private DNS so the default service endpoint resolves to the private IP
-- Prioritize these for isolated subnets: `ecr.api`, `ecr.dkr`, `s3` (gateway), `logs`, `sts`, `secretsmanager`, `kms`
+- **Don't follow the "3 AZs, 3 tiers" best practice until Series B.** That's 9 subnets minimum. For a seed-stage startup, 2 AZs with public + private subnets (4 subnets total) is correct. You can add the third AZ in 30 minutes when you need it.
+- **VPC endpoints have a breakeven point.** An interface endpoint costs $7.20/month/AZ. NAT Gateway processes data at $0.045/GB. If a service sends <160GB/month through NAT, the endpoint costs MORE than the NAT data processing. Only add interface endpoints when the math works (except for security-isolated subnets where there's no NAT alternative).
+- **NAT Gateway is your biggest hidden cost.** A startup running ECS in private subnets pulling Docker images from ECR can easily spend $50-100/month just on NAT data processing for image pulls alone. Add ECR VPC endpoints early.
+- **"No VPC" is a valid architecture.** API Gateway → Lambda → DynamoDB with IAM auth requires zero networking. Many startups don't need VPC until they add RDS or Redis.
 
-## Transit Gateway
+## VPC Endpoint Decision Framework
 
-Use Transit Gateway when:
-- You have more than 2 VPCs that need to communicate
-- You need hub-and-spoke or any-to-any connectivity
-- You need centralized egress or ingress through a shared services VPC
+Add these FREE endpoints always (zero cost):
 
-Do NOT use VPC peering for more than 2-3 VPCs — it does not scale (N*(N-1)/2 connections).
+- S3 Gateway Endpoint
+- DynamoDB Gateway Endpoint
 
-Key Transit Gateway patterns:
-- **Shared Services VPC**: Central VPC with DNS, logging, security tools. All spoke VPCs route through TGW.
-- **Centralized Egress**: Single NAT Gateway in a shared VPC. All private subnets route 0.0.0.0/0 through TGW to the shared VPC.
-- **Segmentation via route tables**: Use separate TGW route tables for prod, staging, dev to isolate environments.
+Add these PAID endpoints when math justifies (each $7.20/month/AZ):
 
-## VPC Peering
+| Endpoint          | Add when...                                                                            |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| ecr.api + ecr.dkr | Running containers in private subnets (saves ~$5-20/month in NAT data for image pulls) |
+| logs              | Sending >160GB/month of logs from private subnets                                      |
+| secretsmanager    | Running in isolated subnets (no NAT alternative)                                       |
+| sts               | Running in isolated subnets                                                            |
 
-- Point-to-point only. Not transitive — if A peers with B and B peers with C, A cannot reach C.
+## When to Graduate from Simple to Complex Networking
+
+| Trigger                         | Action                                           |
+| ------------------------------- | ------------------------------------------------ |
+| First SLA commitment (99.9%)    | Add 3rd AZ + NAT per AZ                          |
+| NAT data processing >$100/month | Add interface endpoints for top traffic services |
+| 3+ VPCs                         | Transit Gateway                                  |
+| SOC2/HIPAA requirement          | Isolated subnets + VPC Flow Logs + all endpoints |
+| Multi-region requirement        | CIDR planning, Transit Gateway Inter-Region      |
+
+## Key Design Decisions
+
+### Security Groups vs NACLs
+
+- **Security groups are your primary network control.** They're stateful, allow-only, and evaluated together.
+- **NACLs are defense-in-depth only.** Stateless, ordered rules, allow+deny — harder to manage and debug.
+- Reference security groups by ID (not CIDR) for inter-resource traffic. Chain them: ALB-sg → App-sg → DB-sg.
+- One security group per logical role. Never use 0.0.0.0/0 on port 22/3389 in production — use Systems Manager Session Manager.
+
+### VPC Peering (for 2-3 VPCs before Transit Gateway)
+
+- Point-to-point only, not transitive (A↔B and B↔C does NOT mean A↔C)
+- CIDRs must not overlap — plan allocation upfront
 - Works cross-region and cross-account
-- Good for 2-3 VPCs. Beyond that, use Transit Gateway.
-- CIDRs must not overlap
 
-## Route53
+### Route53
 
-### Hosted Zones
-- **Public hosted zone**: DNS for internet-facing resources. NS records must be registered with your domain registrar.
-- **Private hosted zone**: DNS for internal resources. Associated with one or more VPCs. Not resolvable from the internet.
-
-### Health Checks
-- Always attach health checks to failover and latency records
-- Health checks can monitor an endpoint, a CloudWatch alarm, or other health checks (calculated)
-- Health check interval: 30s standard, 10s fast (costs more)
-
-## NAT Gateway
-
-- One per AZ for high availability. A single NAT Gateway is a single point of failure.
-- Placed in public subnets
-- Costs: per-hour charge + per-GB data processing. This adds up fast.
-- For cost savings in dev/staging: use a single NAT Gateway (accept the AZ risk) or use NAT instances
-- If you only need AWS service access (not general internet), use VPC endpoints instead — cheaper and more secure
-
-## Anti-Patterns
-
-- **Single AZ NAT Gateway in production**: One AZ goes down, all private subnets lose internet access. Use one NAT per AZ.
-- **Using NACLs as primary firewall**: Stateless rules are error-prone. Use security groups. NACLs are backup only.
-- **Overly permissive security groups**: 0.0.0.0/0 on port 22 or 3389 is never acceptable in production. Use Systems Manager Session Manager instead.
-- **No VPC endpoints for S3/DynamoDB**: Gateway endpoints are free. Always create them.
-- **Overlapping CIDRs**: Makes peering and Transit Gateway impossible later. Plan CIDR allocation upfront.
-- **Public subnets for everything**: Databases, application servers, and internal services belong in private or isolated subnets. Only load balancers and NAT Gateways need public subnets.
-- **Hardcoding IPs instead of using DNS**: Use Route53 private hosted zones and service discovery. IPs change; DNS names persist.
-- **Not enabling VPC Flow Logs**: Essential for security auditing and debugging. Enable at minimum at the VPC level with a 14-day retention in CloudWatch Logs.
-- **Using VPC peering for 5+ VPCs**: The mesh becomes unmanageable. Switch to Transit Gateway.
+- **Public hosted zone** for internet-facing DNS. NS records must be at your registrar.
+- **Private hosted zone** for internal service discovery (associated with VPCs, not resolvable from internet).
+- Always attach health checks to failover and latency routing records.
+- Use Route53 + private hosted zones instead of hardcoding IPs. IPs change; DNS names persist.

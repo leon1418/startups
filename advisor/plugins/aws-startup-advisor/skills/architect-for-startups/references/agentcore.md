@@ -1,107 +1,70 @@
-# AgentCore
+# AgentCore — Startup Decision Guide
 
-## Runtime
-### Development vs Production Deployment
+## When to Use AgentCore (vs. Simpler Alternatives)
 
-**Development and testing**: Use the AgentCore CLI or Starter Toolkit for fast iteration — scaffolding, local dev, quick deploys, and testing.
+Most early-stage startups **should NOT start with AgentCore**. It's production infrastructure for agents you haven't built yet.
 
-**Production**: Define all AgentCore resources in IaC (CDK, Terraform, CloudFormation, or SAM). CLI-created resources are useful for prototyping but should not be the source of truth for production infrastructure. The Starter Toolkit's CDK templates are a solid starting point for production IaC.
+### Decision Framework
 
-### Deployment Options
-- **AgentCore CLI** (dev/test): Fastest path — `agentcore init` → `agentcore deploy` in minutes
-- **CDK / Terraform / SAM** (production): Define resources in IaC, deploy via CI/CD pipeline
-- **Container image** (manual): Docker image pushed to ECR, deployed to Runtime — full control over build
+| Signal                                                    | Recommendation                                                                     |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Building your first AI feature                            | Skip AgentCore. Use Bedrock `InvokeModel` directly or Strands locally.             |
+| Single agent, < 100 users                                 | Deploy on Lambda or ECS. AgentCore adds operational complexity you don't need yet. |
+| Multiple agents needing shared memory/policy              | AgentCore justified — this is what it's built for.                                 |
+| Need OAuth integration to 3rd-party APIs + access control | AgentCore Identity + Policy saves significant custom code.                         |
+| Multi-tenant SaaS with per-customer agent guardrails      | AgentCore Policy (Cedar) is the right tool — building this custom is painful.      |
 
-## AgentCore CLI
+### When to Graduate to AgentCore
 
-The [AgentCore CLI](https://github.com/aws/agentcore-cli) is the preferred tool for scaffolding, local development, and rapid iteration on agents. It abstracts away container builds, ECR pushes, and runtime configuration into simple commands. Use it for dev/test workflows — for production, define the same resources in IaC.
+- You have 3+ agents that need to share session context
+- You need Cedar-based policy enforcement (financial limits, role-based tool access)
+- You need managed OAuth token refresh for third-party integrations
+- You're spending engineering time building agent infrastructure instead of product features
 
-### Runtime Configuration
+## Cost Traps
 
-| Setting          | Recommendation                                | Notes                                                       |
-|------------------|-----------------------------------------------|-------------------------------------------------------------|
-| CPU/Memory       | Start with 1 vCPU / 2 GiB                     | Scale based on model inference needs and tool call overhead |
-| Session TTL      | 600s for real-time, up to 28,800s for async   | Idle sessions consume resources                             |
-| VPC connectivity | Enable for agents accessing private resources | Uses ENIs in your VPC                                       |
-| Endpoint type    | Use agent endpoints for routing               | Supports alias-based traffic splitting                      |
+- **AgentCore Runtime minimum: 1 vCPU / 2 GiB always-on.** Unlike Lambda, this doesn't scale to zero. At seed stage with 10 users, you're paying for idle capacity 23 hours/day.
+- **Memory (LTM) provisioning: ~120-180s.** Not a cost trap, but a DX friction that slows iteration. STM is faster (~30-90s).
+- **Session TTL defaults to 900s.** Idle sessions consume compute. For async/background agents, set short TTLs aggressively.
 
-### Production Deployment Pattern
-1. Define all AgentCore resources in IaC (CDK, Terraform, or CloudFormation) — Runtime, Gateway, Memory, Identity, Policy
-2. Build agent container with AgentCore SDK decorators (CI/CD pipeline)
-3. Push to ECR via pipeline (not manual `docker push`)
-4. Deploy via `cdk deploy` / `terraform apply` / CloudFormation changeset
-5. Create aliases for version management in IaC (never use TSTALIASID in production)
-6. Configure resource-based policies for cross-account access if needed
-7. Use the AgentCore CLI's `agentcore invoke` for smoke testing deployed agents
+## Startup-Specific Architecture Advice
 
-## Policy
+### Start Simple, Add Components Incrementally
 
-### Common Policy Patterns
+```
+Week 1-4:    Strands agent + Bedrock (no AgentCore)
+Month 2-3:   Add AgentCore Runtime when you need persistent sessions
+Month 3-6:   Add Policy when you have paying customers needing guardrails
+Month 6+:    Add Memory, Gateway, Identity as specific needs emerge
+```
 
-| Pattern            | Cedar Example                                                                  | Use Case                     |
-|--------------------|--------------------------------------------------------------------------------|------------------------------|
-| Amount limits      | `forbid when { resource.refundAmount > 1000 }`                                 | Financial guardrails         |
-| User-scoped access | `permit when { principal.department == "engineering" }`                        | Role-based tool access       |
-| Tool restriction   | `forbid action == Action::"invoke" when { resource.toolName == "deleteUser" }` | Prevent dangerous operations |
-| Time-based         | `permit when { context.hour >= 9 && context.hour <= 17 }`                      | Business-hours-only actions  |
+**Counter to standard AWS guidance**: AWS docs suggest setting up the full stack (Runtime + Memory + Gateway + Policy + Observability). For startups, each component is operational overhead. Add them one at a time, driven by specific customer pain.
 
-## Multi-Agent Architectures
+### Multi-Agent: Don't Go There Early
 
-### Bedrock Multi-Agent Collaboration (Managed)
-- Supervisor agent orchestrates collaborator agents
-- Built-in task delegation and response aggregation
-- Each agent has its own tools, knowledge bases, guardrails
-- Best for: teams wanting managed orchestration with minimal custom code
+| Team size     | Agent architecture                          | Why                                                                  |
+| ------------- | ------------------------------------------- | -------------------------------------------------------------------- |
+| 1-3 engineers | Single agent, direct Bedrock calls          | You can't debug multi-agent orchestration AND build product features |
+| 4-8 engineers | One supervisor + 2-3 specialist agents max  | Complexity grows exponentially with agent count                      |
+| 8+ engineers  | Multi-agent with A2A or Bedrock Multi-Agent | You have the team to own the operational complexity                  |
 
-### A2A Protocol (Agent-to-Agent)
-- Cross-framework interoperability (Strands + LangGraph + custom agents can communicate)
-- Agents advertise capabilities via Agent Cards
-- Task-based request lifecycle with artifacts
-- OAuth 2.0 and IAM authentication for secure inter-agent communication
-- Best for: heterogeneous agent ecosystems, cross-team agent integration
+### PoC to Production Pitfall
 
-### Agents-as-Tools Pattern
-- Specialized agents registered as tools of a supervisor agent
-- All agents run within the same AgentCore Runtime
-- Supervisor selects and delegates dynamically
-- Best for: monolithic deployments where all agents are owned by one team
+The AgentCore CLI (`agentcore init` → `agentcore deploy`) is fast for prototyping but creates resources that are NOT in IaC. Startups frequently build on CLI-deployed agents for months, then face a painful migration when they need CI/CD.
 
-### Architecture Decision
+**Rule**: If you expect to use AgentCore for more than 2 weeks, start with CDK from day one. The AgentCore Starter Toolkit provides CDK templates — use them.
 
-| Factor                | Multi-Agent Collaboration | A2A Protocol              | Agents-as-Tools              |
-|-----------------------|---------------------------|---------------------------|------------------------------|
-| Framework flexibility | Bedrock Agents only       | Any framework             | Any framework (same runtime) |
-| Cross-account         | No                        | Yes                       | No                           |
-| Managed orchestration | Yes                       | No (custom)               | Partial                      |
-| Setup complexity      | Low                       | Medium-High               | Low                          |
-| Best for              | All-in on Bedrock Agents  | Cross-team, heterogeneous | Single-team, single runtime  |
+## Credits Guidance
 
-## Anti-Patterns
+- AgentCore Runtime compute is covered by AWS Activate credits (it's ECS/Fargate under the hood)
+- Model invocations through agents still bill as Bedrock token usage (also credit-eligible)
+- **Don't over-provision "because credits cover it"** — you're building muscle memory for architectures you can't afford post-credits
 
-- **Using TSTALIASID in production.** Create proper aliases with version pinning. Test aliases have no SLA and no rollback capability.
-- **Skipping observability until "later".** Instrument from day one. Debugging an unobservable agent in production is flying blind.
-- **God agent that does everything.** If you need "and" in the agent's job description, you need two agents. Decompose into focused, composable agents.
-- **Embedding credentials in agent instructions or environment variables.** Use AgentCore Identity for OAuth/API keys, IAM roles for AWS resources.
-- **Not setting session TTLs.** Idle sessions consume compute resources. Set appropriate TTLs based on actual usage patterns.
-- **Skipping Policy for tool access.** Without Policy, any agent can call any tool with any parameters. In production, that is a compliance and security gap.
-- **Over-engineering the PoC.** Ship something that works with Runtime + Observability first. Add Memory, Gateway, Policy as needs emerge.
-- **Ignoring token costs during development.** Track token usage per agent/session from the start. Costs compound fast with multi-step reasoning loops.
-- **Manual prompt management.** Treat system prompts like code — version control, review, test. Prompt drift is a production incident waiting to happen.
-- **Not evaluating before production.** Run evals (built-in or DeepEval) in CI/CD. "It looks right" is not a quality gate.
-- **CLI-deployed resources as production infrastructure.** The AgentCore CLI is excellent for dev/test, but production resources should be defined in IaC (CDK, Terraform, CloudFormation). CLI-created resources are not version-controlled, not reproducible, and not auditable.
+## What AgentCore Solves That's Hard to Build Custom
 
-## Output Format
+Only adopt AgentCore for these specific capabilities when you actually need them:
 
-When recommending an AgentCore architecture, include:
-
-| Component     | Choice                                              | Rationale                             |
-|---------------|-----------------------------------------------------|---------------------------------------|
-| Runtime       | Container on ECR, 1 vCPU / 2 GiB                    | Standard agent workload               |
-| Framework     | Strands Agents                                      | Python-native, AWS-integrated         |
-| Model         | Claude Sonnet via Bedrock                           | Capable reasoning, tool calling       |
-| Memory        | Short-term + long-term (episodic)                   | Customer support needs continuity     |
-| Gateway       | 3 Lambda targets (orders, refunds, FAQ KB)          | Existing APIs wrapped as MCP tools    |
-| Identity      | OAuth2 for Salesforce, IAM for DynamoDB             | Third-party + AWS resource access     |
-| Policy        | Cedar: refund amount limits, role-based tool access | Financial compliance                  |
-| Observability | AgentCore native + Langfuse                         | Infra health + LLM behavior analytics |
-| Evaluations   | 5 built-in evaluators + custom tool-use eval        | CI/CD quality gate                    |
+1. **Cedar policy enforcement on tool calls** — building authorization logic per-tool is error-prone
+2. **Managed OAuth token lifecycle** — refresh tokens, secret rotation, multi-provider
+3. **Cross-session memory with automatic summarization** — LTM extraction is non-trivial to build
+4. **Built-in observability (OTel → X-Ray/CloudWatch)** — saves 1-2 weeks of instrumentation work

@@ -1,93 +1,64 @@
-# Bedrock
-## Model Selection
+# Bedrock — Startup Decision Guide
 
-The model choice is the single biggest cost and quality decision. Get this right first.
+## Model Selection: Cost-First Thinking
 
-| Need                                  | Recommended Model          | Why                                                   |
-|---------------------------------------|----------------------------|-------------------------------------------------------|
-| Classification, routing, extraction   | Nova Micro or Claude Haiku | Fast, cheap, accurate for structured tasks            |
-| General Q&A, summarization            | Nova Lite or Nova Pro      | Strong quality-to-cost ratio                          |
-| Multimodal (image + text)             | Nova Lite                  | Cost-effective vision without Sonnet pricing          |
-| Complex reasoning, nuanced generation | Claude Sonnet              | Best balance of capability and cost                   |
-| Hardest problems, highest quality bar | Claude Opus                | Reserve for tasks where Sonnet falls short            |
-| Embeddings                            | Titan Embed v2             | Cheaper than Cohere, solid quality for most use cases |
-| Code generation                       | Claude Sonnet              | Strong code quality without Opus pricing              |
+**The #1 startup cost trap**: Defaulting to Claude Sonnet/Opus "to be safe" during prototyping, then getting locked into those costs at scale.
 
-**Note**: Model availability and pricing change frequently. Verify current options via `awsknowledge` MCP tools before making final recommendations.
+### Stage-Specific Strategy
 
-### Model Selection Principles
-- Start with the smallest model that could work. Upgrade only when evidence shows it falls short.
-- Benchmark on real data, not generic benchmarks. A smaller well-prompted model often beats a larger general one.
-- Use Bedrock's intelligent prompt routing to auto-route requests to the right model tier.
-- Evaluate the Nova family before defaulting to third-party models — Nova Pro offers comparable quality to Claude Sonnet for many tasks at significantly lower cost per token, and Nova Lite/Micro provide sub-100ms latency for classification and routing tasks where you don't need full reasoning capability. Nova models also have no cross-provider data transfer fees and deeper native Bedrock integration (Guardrails, Knowledge Bases, Flows).
+| Stage         | Strategy                                               | Why                                                                                               |
+| ------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Pre-seed/Seed | Nova Micro/Lite for everything, Sonnet only for demos  | Credits burn fast on token-heavy workloads; prove the product logic works with cheap models first |
+| Series A      | Route 80% to Nova Micro/Lite, 20% to Sonnet            | Intelligent routing saves 60-70% vs blanket Sonnet usage                                          |
+| Series B+     | Optimize per-endpoint with measured quality thresholds | You have traffic data now — let it drive model selection                                          |
 
-## Bedrock Agents
+### Counterintuitive Advice
 
-### Design Principles
-- One agent, one job. If the agent description contains "and", consider splitting.
-- Fewer tools = fewer reasoning steps = faster + cheaper. 3-5 tools is the sweet spot.
-- Use direct `InvokeModel` for simple tasks. Not everything needs an agent.
+- **Don't start with the best model and optimize later.** Start with Nova Micro. If it fails, you've learned exactly what capability gap you need — and you'll prompt-engineer around it first. Most startups discover 70%+ of their calls work fine on the cheapest model.
+- **Nova Pro is underrated.** For most startup use cases (summarization, extraction, Q&A), Nova Pro matches Claude Sonnet quality at ~3-5x lower cost per token. Evaluate it before assuming you need Anthropic models.
+- **Batch API saves 50% — use it aggressively.** Any workload that doesn't need real-time response (nightly processing, background enrichment, evaluation runs) should use batch. Most startups leave this on the table.
 
-### Architecture Patterns
+## Architecture: What NOT to Build Early
 
-**Router + Specialists**: A lightweight classifier (Nova Micro) routes to specialized agents. Each specialist has a focused tool set and optimized prompt. This beats one mega-agent with 20 tools.
+### The Agent Tax
 
-**Knowledge Base + Guardrails**: For customer-facing Q&A — KB for retrieval, guardrails for safety, single model call for generation. No agent orchestration needed; use `RetrieveAndGenerate` API directly.
+Every agent step multiplies cost: tool selection reasoning + tool execution + result synthesis = 3-5x the token cost of a single invoke.
 
-**Agent with Session Memory**: For multi-turn conversations — use AgentCore sessions with memory. Let the agent maintain context across turns instead of stuffing history into the prompt each time.
+**Startup rule of thumb:**
 
-### Action Groups
-- Use Lambda-backed action groups for complex logic
-- Use Return Control for client-side tool execution (keeps agent stateless, avoids Lambda cost)
-- Define OpenAPI schemas tightly — vague schemas cause the model to guess (and guess wrong)
+- < $500/month LLM spend → Never use agents. Use `InvokeModel` with structured prompts.
+- $500-5K/month → One simple agent max. Router + specialist only if you have genuinely distinct domains.
+- $5K+/month → Agent architecture justified if you have evidence single-call can't do the job.
 
-## Knowledge Bases
+### Credits-Specific Guidance
 
-### Chunking Strategy
-- **Fixed-size chunking** (default): Good starting point. 300-500 tokens with 10-20% overlap.
-- **Semantic chunking**: Better quality, higher embedding cost. Use for high-value, heterogeneous documents.
-- **Hierarchical chunking**: Best for long documents with clear structure (manuals, legal docs).
-- Curate the data source — garbage in, garbage out applies doubly to RAG.
+- Bedrock on-demand pricing is token-based — AWS Activate credits cover it fully (no commitment needed)
+- **Don't buy Provisioned Throughput with credits.** Credits expire; provisioned commitments don't. You'll be stuck paying on-demand rates after credits burn down with capacity you may not need.
+- Prompt caching is automatic for supported models — structure your prompts with stable system prompts first to maximize cache hits (free repeated tokens)
 
-### Vector Store Selection
-- **OpenSearch Serverless**: Default choice. Managed, scales, integrates natively.
-- **Aurora PostgreSQL (pgvector)**: Good if already running Aurora — consolidates infrastructure.
-- **Pinecone / Redis**: If existing investments in these stores.
-- For PoCs, share a single OpenSearch Serverless collection across multiple KBs to minimize cost.
+## Knowledge Bases: PoC Cost Trap
 
-### Retrieval Tuning
-- Start with hybrid search (semantic + keyword) — outperforms pure semantic for most workloads
-- Tune retrieved chunk count (default 5). More chunks = more context = more input tokens. Find the minimum that gives good answers.
-- Use metadata filtering to scope retrieval — avoid searching everything when the document category is known.
+**OpenSearch Serverless minimum cost: ~$700/month** (2 OCU indexing + 2 OCU search minimum).
 
-## Guardrails
-- Apply to user-facing inputs and outputs. Skip for internal agent reasoning steps.
-- Content filters are cheaper than denied topic policies — use filters for broad categories, denied topics for specific restrictions.
-- Contextual grounding checks catch hallucination at inference time — useful for RAG apps.
-- PII detection/redaction is built in — use it instead of building custom regex.
+### Startup Alternatives
 
-## Anti-Patterns
+| Monthly queries | Vector store choice                                       | Monthly cost             |
+| --------------- | --------------------------------------------------------- | ------------------------ |
+| < 1,000         | Skip KB entirely — stuff context into prompt              | $0 (just token cost)     |
+| 1K-50K          | Aurora Serverless v2 with pgvector                        | $50-150 (scales to zero) |
+| 50K-500K        | Single OpenSearch Serverless collection shared across KBs | $700 minimum             |
+| 500K+           | Dedicated OpenSearch Serverless per KB                    | $700+ per collection     |
 
-- **Defaulting to the biggest model "just to be safe"** — start small, upgrade with evidence
-- **Building an agent when a single InvokeModel call would do** — agents compound cost per turn
-- **Stuffing entire documents into prompts instead of using Knowledge Bases** — RAG is cheaper and more maintainable
-- **Ignoring prompt caching** — it is automatic for supported models, just structure prompts correctly
-- **Using on-demand for bulk processing that could be batch** — 50% savings left on the table
-- **One massive Knowledge Base instead of scoped, curated collections** — hurts retrieval quality and costs more
-- **Skipping guardrails on user-facing apps** — "we'll add them later" becomes a security incident
-- **Not monitoring token usage** — costs sneak up fast during iteration, especially with agents
+**When to graduate from prompt-stuffing to RAG:**
 
-## Output Format
+- Source documents exceed 50K tokens total
+- Documents change frequently (weekly+)
+- You need citation/attribution in answers
+- Multiple distinct document collections need separate retrieval
 
-When advising on a Bedrock solution:
+## Anti-Patterns (Startup-Specific)
 
-| Component              | Choice                               | Rationale                                                      |
-|------------------------|--------------------------------------|----------------------------------------------------------------|
-| Primary model          | Claude Sonnet                        | Complex reasoning required, cost-effective for the quality bar |
-| Routing model          | Nova Micro                           | Cheap classifier for request triage                            |
-| Architecture           | Router + Specialist agents           | 3 focused agents vs 1 mega-agent                               |
-| Knowledge Base         | OpenSearch Serverless, hybrid search | Best retrieval quality, managed infrastructure                 |
-| Guardrails             | Content filters + PII redaction      | Customer-facing surface                                        |
-| Estimated monthly cost | $X,XXX                               | Use MCP servers available to estimate the cost                 |
-
-Include cost profile and watch-out-for items specific to the use case.
+- **Building "AI features" before product-market fit.** LLM costs scale with users. If you haven't validated demand, you're burning credits on a product nobody wants. Validate with a Wizard-of-Oz or rules-based MVP first.
+- **OpenSearch Serverless for a PoC.** $700/month minimum for something 50 users will touch. Use pgvector on Aurora Serverless or just stuff documents into prompts until scale demands RAG.
+- **Custom fine-tuning before exhausting prompt engineering.** Fine-tuning on Bedrock costs real money (training tokens + hosting custom model). 95% of startup use cases are solved with better prompts + few-shot examples. Fine-tune only when you have 10K+ labeled examples and measurable quality gap.
+- **Not tracking per-feature token costs.** When you have 5 AI features, one will be 80% of your bill. Without per-feature cost attribution, you can't make informed product decisions about which features to keep/kill/optimize.

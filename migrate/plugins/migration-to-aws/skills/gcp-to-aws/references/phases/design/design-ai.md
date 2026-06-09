@@ -10,7 +10,7 @@
 
 Read `$MIGRATION_DIR/ai-workload-profile.json`:
 
-- `summary.ai_source` — `"gemini"`, `"openai"`, `"both"`, `"other"`
+- `summary.ai_source` — `"gemini"`, `"openai"`, `"anthropic"`, `"both"`, `"other"`
 - `models[]` — Detected AI models with service, capabilities, evidence
 - `integration` — SDK, frameworks, languages, gateway type, capability summary
 - `infrastructure[]` — Terraform resources related to AI (may be empty)
@@ -24,8 +24,9 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 - `"gemini"` → load `references/design-refs/ai-gemini-to-bedrock.md`
 - `"openai"` → load `references/design-refs/ai-openai-to-bedrock.md`
-- `"both"` → load both files
-- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric)
+- `"anthropic"` → load `references/design-refs/ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use ai-openai-to-bedrock.md for Anthropic SDK users)
+- `"both"` → load both `ai-gemini-to-bedrock.md` and `ai-openai-to-bedrock.md`
+- `"other"` or absent → load `references/design-refs/ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
 
 ---
 
@@ -71,6 +72,56 @@ If `agentic_profile.is_agentic == true`:
 ---
 
 ## Part 1: Bedrock Model Selection
+
+**Multi-workload iteration (when `workloads[]` is present):**
+
+If `preferences.json` contains a non-empty `workloads[]` array (written by Clarify after user confirmation), iterate per workload instead of per model. **Design MUST read workloads from `preferences.json` (not `ai-workload-profile.json`)** because Clarify may have edited, dropped, or re-confirmed rows.
+
+Fallback: if `preferences.json` has no `workloads[]` field but `ai-workload-profile.json` does, use the profile's `workloads[]` directly (no user edits were made).
+
+For each `workloads[]` entry:
+
+1. **Use the workload's `capability` to select the Bedrock target class:**
+
+   | Capability          | Target Class                                           | Default Model                  |
+   | ------------------- | ------------------------------------------------------ | ------------------------------ |
+   | `text_generation`   | Text/reasoning                                         | Apply override hierarchy below |
+   | `structured_output` | Text/reasoning (same models support structured output) | Apply override hierarchy below |
+   | `image_generation`  | Image generation                                       | Amazon Nova Canvas             |
+   | `embedding`         | Embedding                                              | Amazon Titan Embed Text v2     |
+   | `speech_to_text`    | Speech-to-text                                         | Amazon Transcribe              |
+   | `text_to_speech`    | Text-to-speech                                         | Amazon Polly                   |
+   | `unknown`           | Text/reasoning (default)                               | Apply override hierarchy below |
+
+2. **For text/reasoning capabilities:** Apply the existing override hierarchy from `ai_constraints`:
+   - Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > source model baseline
+   - This ensures single-workload sophistication is preserved per workload
+
+3. **Emit one `design_block` per workload** in `aws-design-ai.json`:
+
+   ```json
+   "design_blocks": [
+     {
+       "workload_id": "wl_3a1f2c",
+       "model_id": "gemini-2.5-flash",
+       "target_bedrock_model": "amazon.nova-lite-v1:0",
+       "capability": "text_generation",
+       "capability_confidence": "medium",
+       "rationale": "text_generation + medium confidence + balanced priority → Nova Lite",
+       "confidence_warning": null
+     }
+   ]
+   ```
+
+4. **Confidence warning:** Set `confidence_warning` to a non-null string (identifying the workload and noting manual review required) when `capability_confidence == "low"`. Null for `high` and `medium`.
+
+5. **Preserve input order:** `design_blocks[]` order matches `workloads[]` order.
+
+6. **Empty workloads:** If `workloads[]` is empty, emit `aws-design-ai.json` with `"design_blocks": []` and proceed with the existing `models[]` path below as fallback.
+
+**Fallback (no `workloads[]` or single entry):** If `workloads[]` is absent or has exactly one entry, fall through to the existing per-model logic below (backward compatible).
+
+---
 
 For each model in `models[]`, select the best-fit Bedrock model using the loaded design reference mapping tables. Do NOT use a hardcoded mapping — the design-ref files contain tier-organized tables with pricing and competitive analysis.
 
@@ -125,6 +176,18 @@ If `ai_token_volume` is `"high"`, generate a `tiered_strategy`:
 
 Set `tiered_strategy: null` for low/medium volume.
 
+**Intelligent Prompt Routing — automated alternative to manual tiering:**
+If `ai_token_volume` is `"high"` AND the selected models are within the same family
+(e.g., Claude Haiku + Claude Sonnet, or Nova Lite + Nova Pro), note Bedrock Intelligent
+Prompt Routing as an option. It automatically routes each request to the cheapest model
+that can handle it at adequate quality — the AWS-native automation of the tiered strategy above.
+
+> Intelligent Prompt Routing only routes within a single model family. It does NOT replace
+> cross-provider routing (e.g., Claude ↔ GPT-4o). If the startup was using OpenRouter or
+> LiteLLM to route across providers, they still need app-level routing for cross-family calls.
+> One-line caveat: adds a routing-prediction latency hop; verify model support at
+> docs.aws.amazon.com/bedrock/latest/userguide/prompt-routing.html before recommending.
+
 ---
 
 ## Part 1C: Multi-Model Coordination Warnings
@@ -135,6 +198,7 @@ If `models[]` contains more than one model, check for coordination patterns and 
 
 1. **Embeddings + generation model detected** — If `models[]` contains both an embeddings model (capabilities_used includes `"embeddings"`) AND a text generation model:
    > ⚠️ "Migrating the embedding model (e.g., text-embedding-3-small → Titan Embeddings v2) requires re-embedding all documents in your vector store. Plan for re-indexing time and temporary storage. Test retrieval quality with the new embeddings before switching generation model."
+   > ⚠️ "Verify vector index dimension compatibility before cutover. OpenAI text-embedding-3-small outputs 1536 dimensions; Titan Embeddings v2 is configurable (256, 512, or 1024). A mismatch will cause insert failures at the vector store layer — your index must be rebuilt at the target dimension before any data is written."
 
 2. **Models at different price tiers** — If `models[]` contains both a mini/nano/lite model AND a flagship model (infer from model_id naming: `*-mini`, `*-nano`, `*-lite` vs flagship):
    > ⚠️ "These models appear to work as a cascade or routing pattern (cheap model for classification/filtering, expensive model for generation). Test the Bedrock replacement pair together — validate that the cheaper model's classification accuracy is preserved with its Bedrock equivalent before testing the expensive model."
@@ -218,6 +282,7 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 | Direct SDK (OpenAI)  | OpenAI                    | Mantle (OpenAI-compat) | Change `OPENAI_BASE_URL` + `OPENAI_API_KEY` + model string (zero code changes)                       |
 | Direct SDK           | Vertex AI                 | boto3 Converse API     | `generate_content()` → `converse()`                                                                  |
 | Direct SDK           | OpenAI                    | boto3 Converse API     | `completions.create()` → `converse()` (use if Mantle region unavailable or Converse features needed) |
+| Direct SDK           | Anthropic                 | boto3 Converse API     | `messages.create()` → `converse()` with Claude model ID on Bedrock                                   |
 | LangChain            | ChatVertexAI / ChatOpenAI | ChatBedrock            | Swap import and model_id                                                                             |
 | LlamaIndex           | Vertex / OpenAI LLM       | BedrockConverse        | Swap import                                                                                          |
 | LLM Router (LiteLLM) | Any                       | Config change          | `model="bedrock/<model_id>"` (1 line)                                                                |
@@ -226,11 +291,21 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 
 **Mantle (OpenAI-compatible endpoints):** If `ai_source = "openai"` and `integration.pattern = "direct_sdk"`, prefer the Mantle path as the primary migration option. Mantle provides OpenAI-compatible Chat Completions and Responses APIs on Bedrock — the existing OpenAI SDK code works with zero changes, only environment variable updates. Check [Mantle regional availability](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) — if the target region does not have Mantle, fall back to the boto3 Converse API path. Record `migration_path: "mantle"` or `migration_path: "converse"` in `aws-design-ai.json` → `ai_architecture.code_migration`.
 
+**Mantle throughput caveat (medium/high volume):** Mantle runs on a shared 10,000 RPM account limit. For workloads with `ai_token_volume = "medium"` or `"high"`, add a note in the design summary: "Mantle is subject to a shared 10K RPM account limit. At medium/high volume, monitor for 429s and consider migrating to `bedrock-runtime` (Converse API) for dedicated throughput." See `references/shared/ai-migration-guardrails.md` for the full risk table.
+
+**gpt-oss migration path:** If `ai_source = "openai"` and the user wants to preserve OpenAI model architecture while consolidating on AWS, offer `gpt-oss` on Bedrock as a fourth migration path alongside Mantle, Converse API, and framework swap. Record `migration_path: "gpt-oss"` in `aws-design-ai.json` → `ai_architecture.code_migration`. The gpt-oss path uses the Converse API with the gpt-oss Bedrock model ID — it is not an OpenAI-compatible endpoint. Note the Claude 4.7+ output TPM cap (2M) if the user is migrating from a high-output OpenAI workload.
+
 Generate concrete code examples using actual model IDs from the selected Bedrock models. Only include patterns matching the detected integration.
 
 **OpenRouter-specific guidance** (if `gateway_type == "llm_router"` AND `detection_signals` contains OpenRouter evidence):
 
 OpenRouter is a hosted routing service (not self-hosted like LiteLLM). It adds a margin on top of provider pricing. Present three options to the user:
+
+> **If the startup was using OpenRouter primarily for cost-based routing within one model family**
+> (e.g., routing between Claude Haiku and Claude Sonnet, or Nova Lite and Nova Pro),
+> Bedrock Intelligent Prompt Routing is the AWS-native replacement — no routing infrastructure
+> needed. If they routed across providers (e.g., Claude ↔ GPT-4o), they still need
+> app-level or LiteLLM routing after migration.
 
 | Option                          | Action                                                    | Effort    | Trade-off                                                                  |
 | ------------------------------- | --------------------------------------------------------- | --------- | -------------------------------------------------------------------------- |

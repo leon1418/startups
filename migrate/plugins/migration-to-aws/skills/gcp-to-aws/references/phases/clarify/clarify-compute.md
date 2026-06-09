@@ -75,11 +75,11 @@ E -> same as default — see IaC-signal default rule below
 
 **Default (IaC-signal driven):**
 
-- If `gcp-resource-inventory.json` contains `google_container_cluster` resources → Default **B** (`kubernetes: "eks-or-ecs"`). Discovery shows the team is running Kubernetes; defaulting to Fargate produces a wrong first-pass architecture for users who skip questions.
+- If `gcp-resource-inventory.json` contains `google_container_cluster` resources → Default **C** (`kubernetes: "ecs-fargate"`). Teams that answer "I don't know" are better served by Fargate's lower operational overhead; EKS remains available via explicit answers A and B.
 - If no `google_container_cluster` in inventory (Cloud Run, Cloud Functions, or billing-only) → Default **C** (`kubernetes: "ecs-fargate"`). No Kubernetes signal; Fargate is the lower-ops starting point.
 - If inventory is absent (billing-only mode) → Default **C** (`kubernetes: "ecs-fargate"`).
 
-**Rationale:** The default follows what discovery found, not a blanket product preference. Teams running GKE who answer E ("I don't know") are more likely to want EKS than Fargate — they already operate Kubernetes. Teams migrating from Cloud Run who answer E have no Kubernetes investment to preserve and are better served by Fargate. EKS and Fargate remain fully available via explicit answers A–C regardless of default.
+**Rationale:** Teams that answer E ("I don't know") have not expressed a Kubernetes preference. Defaulting to Fargate gives them a simpler, lower-ops starting point regardless of what discovery found. Teams who actively want EKS will answer A or B explicitly. EKS remains fully available via explicit answers A and B.
 
 ---
 
@@ -87,7 +87,9 @@ E -> same as default — see IaC-signal default rule below
 
 _Fire when:_ Compute resources present AND WebSocket usage cannot be determined from inventory.
 
-**Rationale:** WebSocket support affects load balancer configuration. App Runner is no longer recommended for any workload — this question confirms whether ALB WebSocket configuration is needed in templates.
+**Auto-extract signal:** Only when application code was analyzed (see Clarify Step 2 item 14). If code was scanned and no WebSocket patterns found, extract `websocket: false` and skip. **If no code was analyzed** (Terraform-only), always ask Q9 — do not infer absence of WebSockets.
+
+**Rationale:** WebSocket support affects load balancer configuration.
 
 > WebSocket support affects load balancer configuration. This confirms whether ALB WebSocket configuration is needed in the migration templates.
 >
@@ -116,7 +118,9 @@ Default: B — no constraint.
 
 _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 
-**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage. If traffic is constant, that advantage disappears and AWS becomes cost-competitive or cheaper. This drives whether we recommend migrating Cloud Run at all.
+**Auto-extract signal:** When Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` with `chosen_by: "extracted"` and **skip Q10**.
+
+**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage.
 
 > Cloud Run's scale-to-zero is its primary cost advantage. Understanding your traffic pattern helps me determine whether migrating Cloud Run to AWS makes financial sense.
 >

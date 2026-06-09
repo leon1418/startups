@@ -30,6 +30,15 @@ Recursively scan the entire target directory tree for source code and dependency
 
 **Exit gate:** If NO source code files or dependency manifests are found, **exit cleanly**. Return no output artifacts. Other sub-discovery files may still produce artifacts.
 
+**Secret file exclusion (HARD — no exceptions):** Before scanning any file, skip the following paths entirely — do NOT read, parse, or include their contents in any output artifact:
+
+- `.env*` (matches `.env`, `.env.local`, `.env.production`, `.env.staging`, and any other `.env` variant)
+- `credentials.json`, `service-account.json`, `*-service-account.json`
+- `*.pem`, `*.key`, `*.p12`, `*.pfx`
+- `secrets.yaml`, `secrets.yml`
+
+If any of these files are encountered during the recursive scan, log: "Skipped [filename] — potential secret file excluded from discovery scope." Do NOT include them in source file counts or any output.
+
 ---
 
 ## Step 0.5: Auth SDK Exclusion List
@@ -90,6 +99,26 @@ Confidence for inferred resources: 0.60-0.80 (inferring existence, not reading i
 
 ---
 
+## Step 2.5: WebSocket Signal Scan
+
+After Step 2 (Infer Resources from Code), scan source files for WebSocket / long-lived connection patterns:
+
+| Pattern         | Evidence                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------ |
+| WebSocket API   | `websocket`, `WebSocket`, `socket.io`, `@nestjs/websockets`, FastAPI `WebSocket`, `ws` package imports |
+| SSE / long-poll | `EventSource`, `text/event-stream`, long-polling handlers                                              |
+
+Record in discovery metadata (do not write a separate file):
+
+- `websocket_signals_found`: `true` if any pattern matches active (non-commented) code
+- `websocket_signal_files`: array of file paths where matches were found
+
+If **no matches**, set `websocket_signals_found: false`. Clarify Step 2 uses this to skip Q9 with `websocket: false` extracted **only when this step ran** (source files were found).
+
+If **no source code files were found** (Step 0 exit gate), do **not** set `websocket_signals_found` — Clarify must ask Q9; absence of a scan is not evidence of no WebSockets.
+
+---
+
 ## Step 3: Flag AI Signals
 
 Scan source code files and dependency manifests for AI-relevant patterns. For each match, record the pattern, file location, and confidence score.
@@ -130,6 +159,8 @@ Scan source code and dependency manifests for agentic framework patterns. These 
 | 3B.3 AutoGen           | `from autogen` imports, `AssistantAgent(`, `GroupChat(`, `ConversableAgent(`                                                                                   | 95%        |
 | 3B.4 OpenAI Agents SDK | `from openai.agents` or `from agents import`, `openai.beta.assistants`, `Runner(`                                                                              | 95%        |
 | 3B.5 Strands Agents    | `from strands` imports, `Agent(` with `tools=`, `Swarm(`, `GraphBuilder(`                                                                                      | 95%        |
+| 3B.5a Pydantic AI      | `from pydantic_ai import Agent`, `from pydantic_ai.models` imports, `Agent(model=`, `.run_sync(`, `.run(`                                                      | 95%        |
+| 3B.5b Agno             | `from agno.agent import Agent`, `from agno.models` imports, `Agent(model=`, `Team(`, `.print_response(`                                                        | 95%        |
 | 3B.6 Custom agent loop | `while` loop body containing BOTH an LLM call (completions/generate) AND tool execution (function dispatch from model output) AND result parsing back to model | 80%        |
 | 3B.7 Tool definitions  | `@tool` decorators, `function_declarations=`, `tools=[{...schema...}]`, tool schema objects with `name`+`description`+`parameters`                             | 90%        |
 | 3B.8 MCP integration   | `from mcp.server` or `from mcp.client`, `mcp.json` config files, `MCPClient(`                                                                                  | 90%        |
@@ -142,6 +173,8 @@ Also check dependency manifests for agentic framework dependencies:
 - `pyautogen` or `autogen` (AutoGen)
 - `openai` with agents imports (OpenAI Agents SDK — same package, different import path)
 - `strands-agents` (Strands Agents SDK)
+- `pydantic-ai` (Pydantic AI)
+- `agno` (Agno)
 - `mcp` (Model Context Protocol SDK)
 
 ---
@@ -150,7 +183,7 @@ Also check dependency manifests for agentic framework dependencies:
 
 Determine whether the codebase contains agentic workflows. Execute these rules in order:
 
-1. If ANY framework signal from 3B.1–3B.5 detected → set `is_agentic: true`, set `framework` to the detected framework name
+1. If ANY framework signal from 3B.1–3B.5b detected → set `is_agentic: true`, set `framework` to the detected framework name
 2. If NO framework signal BUT 3B.6 (custom agent loop) detected → set `is_agentic: true`, set `framework: "custom"`
 3. If 3B.7 (tool definitions) detected WITH an LLM call in a loop pattern → set `is_agentic: true`, set `framework: "custom"`
 4. If ONLY 3B.8 (MCP integration) detected WITHOUT an agent loop → set `is_agentic: false` (MCP alone does not imply agent orchestration)
@@ -224,8 +257,9 @@ Scan files that contained AI signals for specific model information:
   - Model strings in config files or environment variables: `OPENAI_MODEL`, `MODEL_NAME`, etc.
   - Look for model string patterns: `gpt-*`, `o1*`, `o3*`, `o4*`, `text-embedding-*`, `dall-e-*`, `gpt-image-*`, `whisper-*`, `tts-*`
 
-  **Other provider patterns:**
+  **Anthropic patterns:**
   - `anthropic.Anthropic().messages.create(model="claude-*")` -> model_id: `"claude-*"`
+  - Look for model string patterns: `claude-3-*`, `claude-sonnet-*`, `claude-haiku-*`, `claude-opus-*`
 
 - **Capabilities used** — Determine from API calls and method signatures:
   - `text_generation`: `generate_content()`, `predict()`, `messages.create()`, `chat.completions.create()`
@@ -258,7 +292,72 @@ Scan files that contained AI signals for specific model information:
 
 ---
 
-## Step 5.5: Extract Agentic Details (Only if `is_agentic: true`)
+## Step 5B: Disambiguate AI Workloads by SDK Method
+
+After extracting model details (Step 5), split the detected AI usage into distinct **workloads** — one per unique combination of `(model_id, sdk_method, structured_output)`. This enables downstream phases to produce one Bedrock recommendation per workload instead of collapsing multiple capabilities into a single recommendation.
+
+**Load** `data/sdk-capability-map.json` from the plugin source. If missing or malformed, halt with diagnostic: `"[Discover] Failed to load sdk-capability-map.json"`.
+
+**For each AI call site detected in Steps 3–5:**
+
+1. **Resolve the SDK method** — the fully qualified method name (e.g., `ai.models.generateContent`, `openai.chat.completions.create`, `openai.images.generate`). Match against `sdk-capability-map.json` entries using exact, case-sensitive equality.
+
+2. **Detect structured output** — for methods in `structured_output_trio` (`chat.completions.create`, `messages.create`, `generateContent`), check if the call passes any of: `response_format`, `responseSchema`, or `responseMimeType: 'application/json'`. If yes → `structured_output: true`, `capability: "structured_output"`, `confidence: "high"`. If no → `structured_output: false`, `capability: "text_generation"`, `confidence: "medium"`.
+
+3. **Assign capability from map** — for methods NOT in the structured-output trio, use the map value directly with `confidence: "high"`. For methods not in the map at all → `capability: "unknown"`, `confidence: "low"`.
+
+4. **Collapse by workload tuple** — group call sites sharing the same `(model_id, sdk_method, structured_output)` into a single workload entry. Record all `call_sites` (file + line).
+
+5. **Generate workload_id** — deterministic hash: `"wl_" + sha256(model_id + "|" + sdk_method + "|" + ("structured" if structured_output else "plain"))[:6]`
+
+**Output:** Add a `workloads` array to the `ai-workload-profile.json` output alongside the existing `models[]` field.
+
+```json
+"workloads": [
+  {
+    "workload_id": "wl_3a1f2c",
+    "model_id": "gemini-2.5-flash",
+    "sdk_method": "ai.models.generateContent",
+    "capability": "text_generation",
+    "capability_confidence": "medium",
+    "structured_output": false,
+    "call_sites": [
+      { "file": "lib/gemini.ts", "line": 11 }
+    ]
+  },
+  {
+    "workload_id": "wl_8e22b4",
+    "model_id": "gemini-2.5-flash",
+    "sdk_method": "ai.models.generateContent",
+    "capability": "structured_output",
+    "capability_confidence": "high",
+    "structured_output": true,
+    "call_sites": [
+      { "file": "lib/gemini.ts", "line": 27 }
+    ]
+  },
+  {
+    "workload_id": "wl_c97d10",
+    "model_id": "imagen-3.0-generate-001",
+    "sdk_method": "ai.models.generateImages",
+    "capability": "image_generation",
+    "capability_confidence": "high",
+    "structured_output": false,
+    "call_sites": [
+      { "file": "lib/imagen.ts", "line": 60 }
+    ]
+  }
+]
+```
+
+**Rules:**
+
+- `workloads[]` is an empty array when no AI call sites are detected
+- `call_sites[].file` uses repo-relative POSIX paths
+- Every model_id in `workloads[]` MUST also appear in `models[]` (backward compatibility)
+- If a method is in the structured-output trio AND the model is multimodal (Gemini, GPT-4o, Claude) AND structured output is NOT detected → set `capability_confidence: "medium"` (ambiguous — Clarify will confirm)
+
+---
 
 **Skip this step entirely if `is_agentic: false` from Step 3.5.**
 
@@ -352,19 +451,31 @@ Determine how the application integrates with AI services:
 
   Scan for these patterns and classify:
 
-  | Pattern                                                      | Gateway Type     | Evidence                           |
-  | ------------------------------------------------------------ | ---------------- | ---------------------------------- |
-  | `from litellm import completion` / `litellm` in dependencies | `llm_router`     | LiteLLM — multi-provider router    |
-  | `base_url` containing `openrouter.ai`                        | `llm_router`     | OpenRouter — multi-provider router |
-  | `portkey` imports or `x-portkey-` headers                    | `llm_router`     | Portkey — AI gateway               |
-  | `helicone` imports or `x-helicone-` headers                  | `llm_router`     | Helicone — AI gateway              |
-  | Kong, Apigee, or custom API gateway routing to AI endpoints  | `api_gateway`    | API gateway proxying AI calls      |
-  | `from vapi_python import Vapi` / Vapi SDK                    | `voice_platform` | Vapi — voice AI platform           |
-  | `bland` SDK or Bland.ai API calls                            | `voice_platform` | Bland.ai — voice AI platform       |
-  | `retell` SDK or Retell API calls                             | `voice_platform` | Retell — voice AI platform         |
-  | `from langchain` with provider imports                       | `framework`      | LangChain orchestration framework  |
-  | `from llama_index` with provider imports                     | `framework`      | LlamaIndex orchestration framework |
-  | Direct SDK calls only (no router/gateway/framework)          | `direct`         | Direct API integration             |
+  | Pattern                                                                                                           | Gateway Type     | Evidence                                  |
+  | ----------------------------------------------------------------------------------------------------------------- | ---------------- | ----------------------------------------- |
+  | `from litellm import completion` / `litellm` in dependencies                                                      | `llm_router`     | LiteLLM — multi-provider router           |
+  | `base_url` containing `openrouter.ai` in source code                                                              | `llm_router`     | OpenRouter — multi-provider router (code) |
+  | Env var `OPENAI_BASE_URL` containing `openrouter.ai` in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router`     | OpenRouter — env-configured router        |
+  | Env var `OPENROUTER_API_KEY` or `OR_API_KEY` present in `.env`, `docker-compose.yml`, CI config, or shell scripts | `llm_router`     | OpenRouter — API key detected             |
+  | Env var `LITELLM_PROXY_BASE_URL` or `LITELLM_API_KEY` present in any config file                                  | `llm_router`     | LiteLLM proxy — env-configured            |
+  | `portkey` imports or `x-portkey-` headers                                                                         | `llm_router`     | Portkey — AI gateway                      |
+  | `helicone` imports or `x-helicone-` headers                                                                       | `llm_router`     | Helicone — AI gateway                     |
+  | Kong, Apigee, or custom API gateway routing to AI endpoints                                                       | `api_gateway`    | API gateway proxying AI calls             |
+  | `from vapi_python import Vapi` / Vapi SDK                                                                         | `voice_platform` | Vapi — voice AI platform                  |
+  | `bland` SDK or Bland.ai API calls                                                                                 | `voice_platform` | Bland.ai — voice AI platform              |
+  | `retell` SDK or Retell API calls                                                                                  | `voice_platform` | Retell — voice AI platform                |
+  | `from langchain` with provider imports                                                                            | `framework`      | LangChain orchestration framework         |
+  | `from llama_index` with provider imports                                                                          | `framework`      | LlamaIndex orchestration framework        |
+  | Direct SDK calls only (no router/gateway/framework)                                                               | `direct`         | Direct API integration                    |
+
+  **Env var scan scope for gateway detection:** Check these files for `OPENAI_BASE_URL`, `OPENROUTER_API_KEY`, `OR_API_KEY`, `LITELLM_PROXY_BASE_URL`, `LITELLM_API_KEY`:
+  - `.env`, `.env.local`, `.env.production`, `.env.staging`, `.env.*` (any environment file)
+  - `docker-compose.yml`, `docker-compose.*.yml`
+  - `.github/workflows/*.yml`, `.gitlab-ci.yml`, `cloudbuild.yaml`, `Jenkinsfile`
+  - Shell scripts: `*.sh`, `Makefile`
+  - `fly.toml`, `railway.toml`, `render.yaml`, `vercel.json`, `netlify.toml`
+
+  **Do NOT read secret values** — only check for the presence of the key name. Log: "Detected [KEY_NAME] in [file] — classified as llm_router (OpenRouter/LiteLLM)."
 
   Set `gateway_type` to `null` if no AI signals were detected or detection is ambiguous.
 
@@ -467,8 +578,11 @@ If `$MIGRATION_DIR/ai-workload-profile.json` **already exists** with `metadata.p
 
 - `"gemini"` — Only Gemini/Vertex AI generative models detected (patterns 2.3)
 - `"openai"` — Only OpenAI SDK/models detected (patterns 2.4)
-- `"both"` — Both Gemini and OpenAI detected in the same codebase
-- `"other"` — Other LLM providers (Anthropic, Cohere, etc.) or traditional ML only (no LLM)
+- `"anthropic"` — Only Anthropic SDK detected (pattern 2.5, `anthropic` package, `claude-*` model strings) with no Gemini or OpenAI signals
+- `"both"` — Both Gemini and OpenAI detected in the same codebase; or Anthropic + any other provider
+- `"other"` — Traditional ML only (custom models, Vision API, Speech API, Document AI) with no LLM SDK detected
+
+**Note:** Anthropic SDK users are migrating to Bedrock-hosted Claude models, not to SageMaker. Setting `ai_source: "anthropic"` ensures Design routes to the correct Bedrock migration path rather than the traditional ML rubric.
 
 **Conditional sections:**
 
@@ -487,7 +601,7 @@ After generating the output file, the parent `discover.md` handles the phase sta
 - `metadata.sources_analyzed` reflects which data sources were actually provided
 - `summary.overall_confidence` matches the detection confidence from Step 4
 - `summary.total_models_detected` matches the length of `models` array
-- `summary.ai_source` is set correctly: `"gemini"`, `"openai"`, `"both"`, or `"other"` based on detected LLM SDKs
+- `summary.ai_source` is set correctly: `"gemini"`, `"openai"`, `"anthropic"`, `"both"`, or `"other"` based on detected LLM SDKs
 - Every entry in `models` has `model_id`, `service`, `detected_via`, `evidence`, `capabilities_used`, and `usage_context`
 - `models[].detected_via` only contains sources that were actually analyzed (`"code"`, `"terraform"`, `"billing"`)
 - `models[].evidence` array has at least one entry per source listed in `detected_via`
@@ -498,10 +612,14 @@ After generating the output file, the parent `discover.md` handles the phase sta
 - `current_costs` section is present ONLY if billing data was provided; omitted entirely otherwise
 - `detection_signals` matches the signals found in Step 3
 - All field names use EXACT required keys
+- `workloads[]` is present (empty array if no AI call sites; one entry per distinct `(model_id, sdk_method, structured_output)` tuple)
+- Every `workloads[].model_id` also appears in `models[].model_id`
+- `workloads[].capability_confidence` is one of: `"high"`, `"medium"`, `"low"`
+- `workloads[].workload_id` matches pattern `wl_[0-9a-f]{6}`
 - If `is_agentic: true`: `agentic_profile` section exists with all required fields
 - If `is_agentic: true`: `agentic_profile.agent_count` equals length of `agentic_profile.agents[]`
 - If `is_agentic: true`: `agentic_profile.tool_count` equals length of `tool_manifest[]` (deduplicated)
-- If `is_agentic: true`: `agentic_profile.framework` is one of: `"langgraph"`, `"crewai"`, `"autogen"`, `"openai_agents"`, `"strands"`, `"custom"`, `"none"`
+- If `is_agentic: true`: `agentic_profile.framework` is one of: `"langgraph"`, `"crewai"`, `"autogen"`, `"openai_agents"`, `"strands"`, `"pydantic_ai"`, `"agno"`, `"custom"`, `"none"`
 - If `is_agentic: true`: `agentic_profile.orchestration_pattern` is one of: `"single"`, `"hierarchical"`, `"swarm"`, `"graph"`, `"sequential"`, `"unknown"`
 - If `is_agentic: true`: every `agent_id` in `tool_manifest[].used_by_agents` exists in `agentic_profile.agents[].agent_id`
 - If `is_agentic: true`: `tool_manifest[].transport` is one of: `"function"`, `"api"`, `"mcp"`, `"unknown"`
@@ -514,7 +632,7 @@ After generating the output file, the parent `discover.md` handles the phase sta
 
 The Design phase (`references/phases/design/design.md`) uses `ai-workload-profile.json`:
 
-1. **`summary.ai_source`** — Routes to the correct design reference: `"gemini"` → `ai-gemini-to-bedrock.md`, `"openai"` → `ai-openai-to-bedrock.md`, `"both"` → load both, `"other"` → `ai.md` (traditional ML)
+1. **`summary.ai_source`** — Routes to the correct design reference: `"gemini"` → `ai-gemini-to-bedrock.md`, `"openai"` → `ai-openai-to-bedrock.md`, `"anthropic"` → `ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap), `"both"` → load both Gemini and OpenAI refs, `"other"` → `ai.md` (traditional ML / Vision API / Speech API only)
 2. **`models`** — Determines which Bedrock models to recommend via the model selection decision tree
 3. **`integration.capabilities_summary`** — Validates Bedrock feature parity (e.g., if `function_calling` is `true`, selected Bedrock model must support tool use)
 4. **`integration.pattern`** and **`integration.primary_sdk`** — Determines code migration guidance (direct SDK swap vs framework provider swap vs REST endpoint change)

@@ -1,11 +1,12 @@
 # AWS Pricing Cache
 
-**Last updated:** 2026-04-16
+**Last updated:** 2026-05-20
 **Region:** us-east-1
 **Currency:** USD
 **Accuracy:** ±5-10% for infrastructure services (sourced from AWS Price List API), ±15-25% for AI models (sourced from public pricing pages)
 
 > Prices may vary by region and change over time. Use for estimation only. For real-time pricing, fall back to the AWS Pricing MCP server. **Amazon Nova** figures in the Bedrock subsection often reference **US East (Ohio)** and **inference mode** (global vs geo); other services in this file default to **us-east-1** unless noted.
+> **Staleness warning:** If today's date is more than 30 days after the **Last updated** date above, treat AI model prices as potentially stale (±15-25% accuracy may widen). Infrastructure prices (Fargate, RDS, S3, etc.) change rarely and remain reliable longer. When staleness is detected, set `pricing_source: "cached_stale"` in the estimate output and note: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or [aws.amazon.com/bedrock/pricing](https://aws.amazon.com/bedrock/pricing/)."
 
 ---
 
@@ -247,12 +248,37 @@ VPC itself is free. Add-ons:
 
 ### CloudWatch
 
-| Metric                        | Rate   |
-| ----------------------------- | ------ |
-| Log ingestion per GB          | $0.50  |
-| Log storage per GB-month      | $0.03  |
-| Insights query per GB scanned | $0.005 |
-| Custom metric per month       | $0.30  |
+| Metric                                   | Rate   | Notes                                                                            |
+| ---------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| Log ingestion per GB (Standard)          | $0.50  |                                                                                  |
+| Log ingestion per GB (Infrequent Access) | $0.25  | 50% cheaper than Standard; no Live Tail, subscription filters, or metric filters |
+| Log storage per GB-month                 | $0.03  | Same for both Standard and Infrequent Access                                     |
+| Insights query per GB scanned            | $0.005 | Same for both log classes                                                        |
+| Custom metric per month (≤10K)           | $0.30  | Flat rate at startup scale; $0.10 for 10K–250K, $0.05 for 250K+                  |
+| Standard alarm per month                 | $0.10  |                                                                                  |
+| High-resolution alarm per month          | $0.30  |                                                                                  |
+| Dashboard per month (first 3 free)       | $3.00  |                                                                                  |
+
+Free tier (not subtracted in estimates — startup apps often exceed quickly):
+
+- 5 GB log ingestion + archive + Insights queries
+- 10 custom metrics + 10 standard alarms
+- 3 dashboards (50 metrics each)
+
+### X-Ray
+
+| Metric                       | Rate  | Notes                 |
+| ---------------------------- | ----- | --------------------- |
+| Traces recorded per million  | $5.00 | First 100K free/month |
+| Traces retrieved per million | $0.50 | First 1M free/month   |
+| Traces scanned per million   | $0.50 | First 1M free/month   |
+
+### CloudWatch Container Insights (ECS/Fargate)
+
+| Metric                       | Rate  | Notes                                      |
+| ---------------------------- | ----- | ------------------------------------------ |
+| Per-task performance log/GB  | $0.50 | Same as standard log ingestion             |
+| Cluster/service/task metrics | $0.30 | Per custom metric — can accumulate quickly |
 
 ### SQS
 
@@ -346,7 +372,7 @@ See `shared/ai-model-lifecycle.md` for lifecycle details. **Do not recommend Leg
 | Nova Premier                     | amazon.nova-premier-v1:0                 | Amazon    | 2.50       | 12.50       | 1M      | reasoning | legacy (EOL Sep 14, 2026)  |
 | Mistral Large 3                  | mistral.mistral-large-3-675b-instruct    | Mistral   | 0.50       | 1.50        | 256K    | flagship  | active                     |
 | DeepSeek-R1                      | deepseek.r1-v1:0                         | DeepSeek  | 1.35       | 5.40        | 128K    | reasoning | active                     |
-| DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active                     |
+| DeepSeek-V3.1                    | —                                        | DeepSeek  | 0.58       | 1.68        | —       | mid       | active (Sydney only)       |
 | gpt-oss-20b                      | openai.gpt-oss-20b-1:0                   | OpenAI    | 0.07       | 0.30        | 128K    | budget    | active                     |
 | gpt-oss-120b                     | openai.gpt-oss-120b-1:0                  | OpenAI    | 0.15       | 0.60        | 128K    | efficient | active                     |
 | Gemma 3 4B IT                    | google.gemma-3-4b-it                     | Google    | 0.04       | 0.08        | 128K    | budget    | active                     |
@@ -401,7 +427,7 @@ Prices per 1M input / output tokens.
 
 | Model               | Input $/1M | Output $/1M |
 | ------------------- | ---------- | ----------- |
-| Devstral 2 135B     | 0.40       | 2.00        |
+| Devstral 2 123B     | 0.40       | 2.00        |
 | Magistral Small 1.2 | 0.50       | 1.50        |
 | Voxtral Mini 1.0    | 0.04       | 0.04        |
 | Voxtral Small 1.0   | 0.10       | 0.30        |
@@ -410,7 +436,7 @@ Prices per 1M input / output tokens.
 | Ministral 14B 3.0   | 0.20       | 0.20        |
 | Mistral Large 3     | 0.50       | 1.50        |
 
-_Rates differ in **Asia Pacific (Mumbai)**, **São Paulo**, **Tokyo**, **Europe (Ireland/Milan/London)**, **Sydney**, **Jakarta**, **Frankfurt**, **Stockholm** (e.g. Mistral Large 3 Mumbai **$0.59 / $1.76**). **Devstral 2 135B** appears in Jakarta / Frankfurt / Stockholm at **$0.48 / $2.40** on the same page._
+_Rates differ in **Asia Pacific (Mumbai)**, **São Paulo**, **Tokyo**, **Europe (Ireland/Milan/London)**, **Sydney**, **Jakarta**, **Frankfurt**, **Stockholm** (e.g. Mistral Large 3 Mumbai **$0.59 / $1.76**). **Devstral 2 123B** appears in Jakarta / Frankfurt / Stockholm at **$0.48 / $2.40** on the same page._
 
 ### DeepSeek (Amazon Bedrock)
 
@@ -418,10 +444,11 @@ Per [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (DeepSeek)
 
 #### US East (Ohio) — Standard tier
 
-| Model         | Input $/1M | Output $/1M |
-| ------------- | ---------- | ----------- |
-| DeepSeek-R1   | 1.35       | 5.40        |
-| DeepSeek-V3.1 | 0.58       | 1.68        |
+> **Note:** DeepSeek-V3.1 is no longer listed for US East regions on the Bedrock pricing page as of May 2026. Use DeepSeek-V3.2 for US East deployments. DeepSeek-V3.1 remains available in Asia Pacific (Sydney).
+
+| Model       | Input $/1M | Output $/1M |
+| ----------- | ---------- | ----------- |
+| DeepSeek-R1 | 1.35       | 5.40        |
 
 #### US East (N. Virginia), US East (Ohio), US West (Oregon)
 
@@ -662,15 +689,20 @@ Use alongside Bedrock pricing to calculate migration ROI.
 
 ### Gemini (Standard Tier)
 
-Prices per 1M tokens.
+Prices per 1M tokens. Source: [ai.google.dev/gemini-api/docs/pricing](https://ai.google.dev/gemini-api/docs/pricing), verified May 2026.
 
-| Model                  | Input $/1M | Output $/1M | Context | Tier     |
-| ---------------------- | ---------- | ----------- | ------- | -------- |
-| Gemini 3.1 Pro Preview | 2.00       | 12.00       | 1M      | flagship |
-| Gemini 2.5 Pro         | 1.25       | 10.00       | 1M      | flagship |
-| Gemini 2.5 Flash       | 0.30       | 2.50        | 1M      | fast     |
-| Gemini 2.0 Flash       | 0.10       | 0.40        | 1M      | fast     |
-| Gemini 2.0 Flash Lite  | 0.075      | 0.30        | 1M      | budget   |
+| Model                 | Input $/1M | Output $/1M | Context | Tier     |
+| --------------------- | ---------- | ----------- | ------- | -------- |
+| Gemini 3.5 Flash      | 1.50       | 9.00        | 1M      | flagship |
+| Gemini 3.1 Pro        | 2.00       | 12.00       | 1M      | flagship |
+| Gemini 3.1 Flash-Lite | 0.25       | 1.50        | 1M      | budget   |
+| Gemini 2.5 Pro        | 1.25       | 10.00       | 1M      | flagship |
+| Gemini 2.5 Flash      | 0.30       | 2.50        | 1M      | fast     |
+| Gemini 2.0 Flash      | 0.10       | 0.40        | 1M      | fast     |
+| Gemini 2.0 Flash Lite | 0.075      | 0.30        | 1M      | budget   |
+
+> **Gemini 3.1 Pro breakpoint pricing:** $4.00/$18.00 per 1M for prompts >200k tokens (vs $2.00/$12.00 for ≤200k). Table above uses ≤200k rates.
+> **Gemini 3.5 Flash** is now GA and the current flagship Flash model, replacing Gemini 2.5 Flash as the primary Flash-tier recommendation. At $1.50/$9.00 it is 5x more expensive than Gemini 2.5 Flash — the Bedrock cost savings case is significantly stronger against 3.5 Flash.
 
 ### OpenAI (Standard Tier)
 

@@ -22,9 +22,11 @@ Check whether `migration-to-aws:gcp-to-aws` appears in your available-skills lis
 
 > "This plugin requires the `migration-to-aws` plugin for the Assess phase.
 > Install it with:
+>
 > ```
 > /plugin install migration-to-aws@startups-for-aws
 > ```
+>
 > Then re-run `/ai-to-aws:llm-to-bedrock`."
 
 Stop and wait for the user to install it.
@@ -50,9 +52,11 @@ If a GitHub URL, `git clone` it to a temp dir; use that path as `$REPO`.
 
 1. **Git-root check** (compare resolved paths — on macOS `/tmp` resolves to `/private/tmp`,
    so a raw string comparison false-positives):
+
    ```bash
    [ "$(git -C <REPO> rev-parse --show-toplevel 2>/dev/null)" = "$(cd <REPO> && pwd -P)" ] && echo GIT_ROOT_OK || echo GIT_ROOT_MISMATCH
    ```
+
    - `GIT_ROOT_OK` → proceed.
    - `GIT_ROOT_MISMATCH` and the command errored (not a git repo at all) → tell the user the
      path must be a git repository (the deliverable is a git branch); re-ask.
@@ -60,9 +64,11 @@ If a GitHub URL, `git clone` it to a temp dir; use that path as `$REPO`.
      "Use the repo root instead" (recommended) / "Continue with this subdirectory" / "Abort".
 
 2. **Dirty-tree check:**
+
    ```bash
    git -C <REPO> status --porcelain
    ```
+
    If uncommitted changes exist, show them and AskUserQuestion: "Continue anyway" or "Let me clean up first".
 
 Record `$REPO` for all subsequent steps.
@@ -81,6 +87,7 @@ wait for completion.**
 Call the **Skill** tool with skill name `migration-to-aws:gcp-to-aws`.
 
 Before invoking, tell the user:
+
 > "I'm now invoking the migration-to-aws Assess skill to discover your AI workloads and design
 > the Bedrock migration. It will ask you some questions — please answer them. (Don't be
 > confused by the skill's `gcp-to-aws` name — it also covers pure AI/LLM migrations with no
@@ -91,6 +98,7 @@ Follow those instructions exactly — they will drive the Discover, Clarify, Des
 and Generate phases. The source code to scan is at `$REPO`.
 
 **Important context for the gcp-to-aws skill execution:**
+
 - Source code is at `$REPO` — when the skill asks for GCP sources or scans for files, point it there
 - This is an AI/LLM workload migration — the AI path is the goal
 - Unless Terraform/IaC files are actually present in `$REPO`, skip IaC discovery
@@ -124,6 +132,7 @@ ls -td "$REPO/.migration"/*/ 2>/dev/null | head -1
 ```
 
 Verify these files exist in `$MIGRATION_DIR`:
+
 - `aws-design-ai.json` (model mapping + architecture)
 - `ai-workload-profile.json` (detected workloads)
 - `preferences.json` (user preferences from Clarify)
@@ -138,6 +147,7 @@ error and stop.
 ### B1 — Read Assess outputs
 
 Read `$MIGRATION_DIR/aws-design-ai.json` and extract:
+
 - `ai_architecture.bedrock_models[]` → array of `{source_model, aws_model_id, use_case}`
 - Collect all `aws_model_id` values into `$TARGET_MODELS` (array). Keep the `use_case` of each:
   the preflight script probes each model by the right API automatically (Converse for chat,
@@ -145,9 +155,11 @@ Read `$MIGRATION_DIR/aws-design-ai.json` and extract:
   embedding targets get format/dimension validation only.
 
 Read `$MIGRATION_DIR/ai-workload-profile.json` and extract:
+
 - `summary.ai_source` → source provider
 
 Read `$MIGRATION_DIR/preferences.json` and extract:
+
 - `design_constraints.target_region` → `$REGION` (default `us-east-1` if absent)
 
 **Validation:** If `aws-design-ai.json` has no `ai_architecture.bedrock_models[]` array, or the
@@ -167,6 +179,7 @@ On success, show Account, Arn, UserId via **AskUserQuestion**:
 "This AWS identity will be used for Bedrock calls. Is this correct?"
 
 Options:
+
 - **Yes, use this identity** → proceed
 - **Use a different AWS profile** → ask which profile, record it as `$AWS_PROFILE_CHOICE`,
   re-run B2 as `aws sts get-caller-identity --profile $AWS_PROFILE_CHOICE`, and re-confirm.
@@ -199,16 +212,21 @@ skill's parser expects — a bare key without the `NAME=` prefix will NOT be par
 Providing it enables side-by-side quality comparison. Without it, evaluation uses absolute scoring only."
 
 Options:
+
 - **Yes — I'll paste my key** → warn first: "Note: the key will pass through this chat
   transcript. If you prefer, choose 'I'll write it to a file myself' instead." Then a second
   AskUserQuestion to collect it (free-text via Other). Then write it in `KEY=VALUE` form:
+
   ```bash
   printf "%s=%s\n" "$KEY_ENV_VAR" "<key>" > "$REPO/.saws-migrate/.source-provider-env" && chmod 600 "$REPO/.saws-migrate/.source-provider-env"
   ```
+
   Verify the format before proceeding (catches a stray paste without the prefix):
+
   ```bash
   grep -qE '^(OPENAI|ANTHROPIC|GEMINI)_API_KEY=.+' "$REPO/.saws-migrate/.source-provider-env" && echo KEY_FORMAT_OK || echo KEY_FORMAT_BAD
   ```
+
   On `KEY_FORMAT_BAD`, rewrite the file (do not echo its contents). Then set
   `sourceBaselineAvailable = true`, `sourceKeyRef = "$REPO/.saws-migrate/.source-provider-env"`.
 - **I'll write it to a file myself** → tell the user to create
@@ -233,6 +251,7 @@ uv run --project $SCRIPTS python $SCRIPTS/preflight_bedrock.py --region $REGION 
 
 Parse the JSON output. On failure the TOP LEVEL carries `reason`/`detail` (lifted from the
 first failing model) plus `failing_models` (all failing ids); per-model verdicts are in `models[]`:
+
 - `ok == false` + `reason: credentials` → show the detail (configure/refresh credentials), stop; user re-runs after fixing.
 - `ok == false` + `reason: model_access` → model access not enabled in the Bedrock console (NOT an IAM problem): point the user at the console Model access page for the failing models, stop; re-run B4 after they enable it.
 - `ok == false` + `reason: authz` → IAM denies `bedrock:InvokeModel`: tell user the IAM action to grant; stop.
@@ -264,7 +283,7 @@ uv run --project $SCRIPTS python $SCRIPTS/validate_result.py --schema <analysis|
 - Exit 1 (`RESULT=invalid` + error lines) or exit 2 (file missing) → **stateless fixer retry**:
   dispatch a FRESH agent of the same type whose prompt is the original context block + the
   file path + the validator's verbatim error output + the instruction "fix ONLY the output
-  file at <path> so it validates; do not redo the phase's work unless a required field is
+  file at `<path>` so it validates; do not redo the phase's work unless a required field is
   genuinely missing from it". Cap 2 retries per phase; then stop and show the errors.
 
 ### The context block (instantiated at every dispatch)
@@ -324,7 +343,7 @@ Bedrock at their expense, capped at 200 cases.
 }
 ```
 
-2. **Stage 0 (post-C5 normalization).** If `$PHASE_DIR/rewrite.json` exists and validates as
+1. **Stage 0 (post-C5 normalization).** If `$PHASE_DIR/rewrite.json` exists and validates as
    a payload (`CONTROL=ok`), do NOT use live `repo_*` values. Run three integrity checks:
    (1) `rewrite.baseline_parent_sha` equals the SAVED `repo_head_sha`; (2) `git rev-parse
    <rewrite.branch_name>` equals `rewrite.branch_tip_sha`; (3) `git status --porcelain` (with
@@ -335,58 +354,59 @@ Bedrock at their expense, capped at 200 cases.
    (dirty tree) → STOP and ask: commit/stash (then re-check) or discard the edits. Check 1
    fails → treat as a full `repo_*` mismatch in step 3.
 
-3. If `$PHASE_DIR/run-context.json` exists, compare:
+2. If `$PHASE_DIR/run-context.json` exists, compare:
 
 ```bash
 uv run --project $SCRIPTS python $SCRIPTS/validate_result.py --check-run-context $PHASE_DIR/run-context.json --current $PHASE_DIR/current-context.json
 ```
 
-   - `RUN_CONTEXT=match` → resume: walk C1→C2→C3→(C4: delta-decisions.json)→C5→(C6: report
-     file) in order; a phase counts completed iff its file validates with `CONTROL=ok` (C6:
-     iff `MIGRATION_REPORT_<saved suffix>.md` exists while rewrite.json is payload-valid).
-     STOP the walk at the first missing/invalid/control-state file — blocked/partial files
-     route to their flows below, NEVER count as completed. Offer the user "skip completed
-     phases X..Y, resume at Z". Files after an unexplained gap: archive them with the gap.
-   - `RUN_CONTEXT=mismatch` → scoped invalidation. Map each MISMATCH line through this table,
-     archive the named units to `$REPO/.saws-migrate/phase-results-archive/<saved suffix>-$(date +%H%M%S)/`
-     (a SIBLING of phase-results/ — never nest it inside), **then immediately overwrite
-     run-context.json with current-context.json** (carrying forward the saved
-     `report_date_suffix` unless REPORT itself is being invalidated), then re-run the
-     invalidated phases in order. Tell the user which fields differed and what re-runs.
+- `RUN_CONTEXT=match` → resume: walk C1→C2→C3→(C4: delta-decisions.json)→C5→(C6: report
+  file) in order; a phase counts completed iff its file validates with `CONTROL=ok` (C6:
+  iff `MIGRATION_REPORT_<saved suffix>.md` exists while rewrite.json is payload-valid).
+  STOP the walk at the first missing/invalid/control-state file — blocked/partial files
+  route to their flows below, NEVER count as completed. Offer the user "skip completed
+  phases X..Y, resume at Z". Files after an unexplained gap: archive them with the gap.
+- `RUN_CONTEXT=mismatch` → scoped invalidation. Map each MISMATCH line through this table,
+  archive the named units to `$REPO/.saws-migrate/phase-results-archive/<saved suffix>-$(date +%H%M%S)/`
+  (a SIBLING of phase-results/ — never nest it inside), **then immediately overwrite
+  run-context.json with current-context.json** (carrying forward the saved
+  `report_date_suffix` unless REPORT itself is being invalidated), then re-run the
+  invalidated phases in order. Tell the user which fields differed and what re-runs.
 
-| Mismatched field(s) | Archive (units) | Keep |
-|---|---|---|
-| repo_root, migration_dir, region, aws_profile, aws_account, source_provider, assess_design_sha256, schema_version, plugin_version | everything | — |
-| repo_head_sha / repo_branch / repo_dirty_sha256 | everything | — |
-| target_models / resolved_model_overrides | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
-| log_files / max_golden_cases | everything | — |
-| source_key_sha256 / source_baseline_available | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
+| Mismatched field(s)                                                                                                               | Archive (units)                 | Keep      |
+| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------- |
+| repo_root, migration_dir, region, aws_profile, aws_account, source_provider, assess_design_sha256, schema_version, plugin_version | everything                      | —         |
+| repo_head_sha / repo_branch / repo_dirty_sha256                                                                                   | everything                      | —         |
+| target_models / resolved_model_overrides                                                                                          | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
+| log_files / max_golden_cases                                                                                                      | everything                      | —         |
+| source_key_sha256 / source_baseline_available                                                                                     | ANALYSIS, EVAL, REWRITE, REPORT | INGESTION |
 
-   Units: ANALYSIS = analysis.json · INGESTION = ingestion.json + `.saws-migrate/golden-dataset/`
-   · EVAL = eval.json + `.saws-migrate/eval-results/` (minus cost_compare.py) · REWRITE =
-   rewrite.json + delta-decisions.json · REPORT = `MIGRATION_REPORT_<saved suffix>.md`.
+Units: ANALYSIS = analysis.json · INGESTION = ingestion.json + `.saws-migrate/golden-dataset/`
+· EVAL = eval.json + `.saws-migrate/eval-results/` (minus cost_compare.py) · REWRITE =
+rewrite.json + delta-decisions.json · REPORT = `MIGRATION_REPORT_<saved suffix>.md`.
 
-   **Post-C5 reruns of C1–C3 need the pre-migration tree.** If rewrite.json was payload-valid
-   and the table invalidates ANALYSIS/INGESTION/EVAL: confirm with the user that the old
-   migration branch will be discarded (keep-or-reset flow first if the tip moved), then
-   `git checkout <saved repo_branch>`, delete the old branch and the `saws-migrate-baseline`
-   tag, and re-run from C1. If the user declines, stop — re-analyzing a tree that contains
-   the rewrite produces garbage.
+**Post-C5 reruns of C1–C3 need the pre-migration tree.** If rewrite.json was payload-valid
+and the table invalidates ANALYSIS/INGESTION/EVAL: confirm with the user that the old
+migration branch will be discarded (keep-or-reset flow first if the tip moved), then
+`git checkout <saved repo_branch>`, delete the old branch and the `saws-migrate-baseline`
+tag, and re-run from C1. If the user declines, stop — re-analyzing a tree that contains
+the rewrite produces garbage.
 
-4. No saved run-context → fresh run: write current-context.json as run-context.json, dispatch C1.
+1. No saved run-context → fresh run: write current-context.json as run-context.json, dispatch C1.
 
 ### C1 — Analyzer · C2 — Ingestor · C3 — Evaluator
 
 For each phase in order, dispatch the agent with the context block (listing all
 prior-phase file paths), then validate its output file:
 
-| Step | agentType | Output file | Schema |
-|---|---|---|---|
-| C1 | `ai-to-aws:ai-code-analyzer` | `$PHASE_DIR/analysis.json` | analysis |
-| C2 | `ai-to-aws:ai-log-ingestor` | `$PHASE_DIR/ingestion.json` | ingestion |
-| C3 | `ai-to-aws:ai-prompt-evaluator` | `$PHASE_DIR/eval.json` | eval |
+| Step | agentType                       | Output file                 | Schema    |
+| ---- | ------------------------------- | --------------------------- | --------- |
+| C1   | `ai-to-aws:ai-code-analyzer`    | `$PHASE_DIR/analysis.json`  | analysis  |
+| C2   | `ai-to-aws:ai-log-ingestor`     | `$PHASE_DIR/ingestion.json` | ingestion |
+| C3   | `ai-to-aws:ai-prompt-evaluator` | `$PHASE_DIR/eval.json`      | eval      |
 
 **Blocked flow** (`CONTROL=blocked`): resolve with the user per REASON —
+
 - `model_access` → user enables the model in the Bedrock console (nothing fingerprinted
   changes; re-dispatch the blocked phase only)
 - `model_unresolvable` → user picks/pastes an ID → record it in
@@ -399,6 +419,7 @@ table, overwrite run-context) and re-dispatch **from the earliest invalidated ph
 table, not the block location, decides where execution resumes.
 
 **Partial flow** (eval only, `CONTROL=partial`): AskUserQuestion —
+
 - **Continue remaining cases** → re-dispatch the evaluator with the extra context line:
   `Resume: raw_results.jsonl already contains completed cases — evaluate only prompts whose
   ids are not present in it, then re-score and overwrite eval.json`
@@ -414,6 +435,7 @@ table, not the block location, decides where execution resumes.
 **pass rate >= 0.9 AND `source_baseline_quality != 'poor'`** (with `no_golden_cases: true`
 in the notes there is no quality signal — always ask). At or above → proceed silently.
 Below, AskUserQuestion:
+
 - **Proceed anyway** → gate (b)
 - **Change target model** → record in `resolved_model_overrides`, re-run C0 (the table
   invalidates ANALYSIS/EVAL and execution resumes at C1). Cap: 2 retries.
@@ -429,10 +451,10 @@ makes a C5 retry or a post-crash resume self-sufficient.
 
 ### C5 — Rewriter · C6 — Report
 
-| Step | agentType | Output | Schema |
-|---|---|---|---|
-| C5 | `ai-to-aws:ai-code-rewriter` | `$PHASE_DIR/rewrite.json` | rewrite |
-| C6 | `ai-to-aws:ai-report-generator` | `MIGRATION_REPORT_<saved suffix>.md` in repo root | (none — file existence is the completion check) |
+| Step | agentType                       | Output                                            | Schema                                          |
+| ---- | ------------------------------- | ------------------------------------------------- | ----------------------------------------------- |
+| C5   | `ai-to-aws:ai-code-rewriter`    | `$PHASE_DIR/rewrite.json`                         | rewrite                                         |
+| C6   | `ai-to-aws:ai-report-generator` | `MIGRATION_REPORT_<saved suffix>.md` in repo root | (none — file existence is the completion check) |
 
 C5's context block includes the `Confirmed behavior-delta decisions file` line and the
 `Report date suffix` line (from run-context, NOT today's date on a resume). C6's context

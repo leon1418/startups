@@ -30,6 +30,7 @@ grep -rEn 'temperature[[:space:]]*=[[:space:]]*1\.[2-9]|temperature[[:space:]]*=
 ```
 
 `user_visible` classification:
+
 - `true` if hit is inside a `Slider(...)`, `NumberInput(...)`, form field config, env var read by user, or CLI flag definition.
 - `false` if hit is a hardcoded constant in backend code with no UI/config exposure.
 
@@ -277,6 +278,7 @@ response_format: switched to tool_use (schema present at app.py:42); see bedrock
 ## Adding a new delta
 
 When adding a delta to this reference:
+
 1. Pick `resolution_kind` and (if `ux_choice`) `option_set_id` from the skill's defined sets.
 2. Provide a `detect_grep` recipe narrow enough to avoid false positives. Test it on at least one real code sample.
 3. For `ux_choice`, provide a code template per option in at least Python (and TS/JS if applicable).

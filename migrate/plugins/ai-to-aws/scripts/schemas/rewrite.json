@@ -5,8 +5,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "branch_name", "files_changed", "dependencies_updated", "notes",
-        "behavior_delta_decisions", "baseline_parent_sha", "branch_tip_sha"
+        "branch_name",
+        "files_changed",
+        "dependencies_updated",
+        "notes",
+        "behavior_delta_decisions",
+        "baseline_parent_sha",
+        "branch_tip_sha"
       ],
       "properties": {
         "summary": { "type": "string" },

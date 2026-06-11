@@ -9,6 +9,7 @@ You are migrating a Python service that calls a non-Bedrock vision API (Gemini `
 **Replaces**: Gemini/other AI vision API calls.
 
 **How to use**:
+
 1. Read the template file `references/bedrock-vision.py.template` (located in this skill's `references/` directory).
 2. Copy the `_normalize_image()` function — this is critical, Bedrock rejects non-standard images.
 3. Keep your existing `PROMPT` and `_parse_response()` logic from the original Gemini service.
@@ -20,6 +21,7 @@ You are migrating a Python service that calls a non-Bedrock vision API (Gemini `
 ## Verification
 
 After applying, the migrated service must:
+
 1. Call `_normalize_image()` before passing image bytes to `invoke_model`.
 2. Have `pillow>=10.0.0` declared in `pyproject.toml`.
 3. Successfully process a non-JPEG/PNG user upload (e.g., a HEIC photo) without `Image format not supported`.

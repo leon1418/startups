@@ -23,9 +23,9 @@ Point this plugin at your Terraform files, application code, or GCP billing data
 
 ## Plugins
 
-| Plugin               | Description                                                                                   | Status    |
-| -------------------- | --------------------------------------------------------------------------------------------- | --------- |
-| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning     | Available |
+| Plugin               | Description                                                                                                              | Status    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning                               | Available |
 | **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
 
 ## Installation

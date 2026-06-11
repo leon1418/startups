@@ -3,10 +3,20 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "golden_dataset_path", "prompt_template_path", "total_golden_cases",
-    "golden_from_logs", "golden_from_user", "golden_from_code_confirmed",
-    "vision_test_images", "log_format", "coverage_level", "use_case_type",
-    "gaps", "pii_detected", "pii_action", "errors"
+    "golden_dataset_path",
+    "prompt_template_path",
+    "total_golden_cases",
+    "golden_from_logs",
+    "golden_from_user",
+    "golden_from_code_confirmed",
+    "vision_test_images",
+    "log_format",
+    "coverage_level",
+    "use_case_type",
+    "gaps",
+    "pii_detected",
+    "pii_action",
+    "errors"
   ],
   "properties": {
     "summary": { "type": "string" },
@@ -19,7 +29,10 @@
     "vision_test_images": { "type": "integer", "minimum": 0 },
     "log_format": { "type": "string" },
     "coverage_level": { "type": "string", "enum": ["production-logs", "user-provided", "code-confirmed", "none"] },
-    "use_case_type": { "type": "string", "enum": ["text-only", "vision", "tool-calls", "embeddings", "multi-modal", "unknown"] },
+    "use_case_type": {
+      "type": "string",
+      "enum": ["text-only", "vision", "tool-calls", "embeddings", "multi-modal", "unknown"]
+    },
     "gaps": { "type": "array", "items": { "type": "string" } },
     "pii_detected": { "type": "boolean" },
     "pii_action": { "type": "string" },

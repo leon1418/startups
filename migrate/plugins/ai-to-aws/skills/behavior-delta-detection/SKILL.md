@@ -19,10 +19,10 @@ For Anthropic 1P → Bedrock (`same_model_family: true`), parameter surfaces are
 
 ## Choose the right reference
 
-| source_provider | reference file |
-|---|---|
-| openai | references/openai-to-bedrock.md |
-| google | references/gemini-to-bedrock.md |
+| source_provider | reference file                  |
+| --------------- | ------------------------------- |
+| openai          | references/openai-to-bedrock.md |
+| google          | references/gemini-to-bedrock.md |
 
 Read ONLY the matching reference. Do not read both.
 
@@ -107,6 +107,7 @@ After asking the user (or applying an `impl_path` default, or running the fallba
 `resolution_chosen` is a typed enum: `"{option_set_id}_{1-indexed_option_number}"` for ux_choice and fallback paths, or `"impl_path_default"` for impl_path defaults. The `behavior_deltas` item schema inside `scripts/schemas/analysis.json` is the authoritative field contract (the recording shape is `scripts/schemas/delta-decisions.json`).
 
 `source` indicates how the decision was reached:
+
 - `"user_question"` — user picked one of the numbered options.
 - `"skill_default"` — `impl_path` delta, default from skill reference.
 - `"fallback_question"` — fallback rule fired and user picked an option from the `fallback` set.
@@ -122,9 +123,10 @@ The orchestration checkpoint (not the rewriter) presents the options to the user
 2. If the second answer is still ambiguous, falls back to **option 1 (Recommended)** for that delta.
 
 The rewriter then receives — and records — whatever resolution the checkpoint produced:
-   - `resolution_chosen` = the chosen option's enum value (e.g., `"range_narrowed_1"`)
-   - `source` = `"ambiguous_user_answer_recommended"` when the (Recommended) fallback fired
-   - `user_verbatim_answer` = both attempts joined with `" | "`
+
+- `resolution_chosen` = the chosen option's enum value (e.g., `"range_narrowed_1"`)
+- `source` = `"ambiguous_user_answer_recommended"` when the (Recommended) fallback fired
+- `user_verbatim_answer` = both attempts joined with `" | "`
 
 Rationale: a customer waiting on a migration shouldn't be blocked by an LLM that can't parse free text. The Recommended option is documented as safe; the verbatim record makes the divergence auditable.
 

@@ -3,6 +3,7 @@
 ## Symptom
 
 Bedrock returns:
+
 ```
 ValidationException: Invocation of model ID <bare-model-id> with on-demand throughput isn't supported. Retry your request with the ID or ARN of an inference profile that contains this model.
 ```
@@ -14,11 +15,13 @@ This affects newer Claude models (Haiku 4.5, Sonnet 4.5+, Opus 4+) and some othe
 ### Step 1: Use inference profile prefix in model ID
 
 Replace bare model ID with the cross-region inference profile prefix:
+
 ```
 anthropic.claude-haiku-4-5-20251001-v1:0  →  us.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
 Update `variables.tf` default:
+
 ```hcl
 variable "bedrock_model_id" {
   default = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
@@ -28,6 +31,7 @@ variable "bedrock_model_id" {
 ### Step 2: IAM policy must cover inference profile ARNs
 
 The IAM policy resource must include BOTH foundation-model AND inference-profile ARNs:
+
 ```hcl
 resource "aws_iam_role_policy" "bedrock_access" {
   policy = jsonencode({

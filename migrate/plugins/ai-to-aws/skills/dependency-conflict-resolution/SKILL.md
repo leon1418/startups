@@ -17,7 +17,7 @@ The skill is also useful any time another agent (`infra-deployer`, `app-migrator
 
 ## The rule
 
-A removal of `<pkg>` from `pyproject.toml` / `requirements*.txt` / `setup.py` / `setup.cfg` / `package.json` is permitted **only if** `<pkg>` was *added in this rewrite session*. If `<pkg>` existed before the rewriter began, the agent must NOT delete it — even if removing it would make the resolver pass.
+A removal of `<pkg>` from `pyproject.toml` / `requirements*.txt` / `setup.py` / `setup.cfg` / `package.json` is permitted **only if** `<pkg>` was _added in this rewrite session_. If `<pkg>` existed before the rewriter began, the agent must NOT delete it — even if removing it would make the resolver pass.
 
 Why: a name-based "is this package still imported anywhere?" blocklist is unreliable. Package name ≠ import name in many ecosystems (`beautifulsoup4` → `import bs4`, `Pillow` → `import PIL`, `google-cloud-storage` → `import google.cloud.storage`). The allowlist (only allow removing what we just added) requires no name-mapping table and handles namespace packages and JS scoped packages by construction.
 
@@ -71,5 +71,5 @@ A legitimate package rename (`pkg-A` removed in the same edit that adds `pkg-A-n
 ## What this skill is NOT responsible for
 
 - Picking the right solver (`poetry lock` vs `uv lock` vs `npm install` etc.) — ai-code-rewriter §12.3 handles that.
-- Diagnosing or auto-fixing resolver failures — §12.4's policy is "stop and report; do not modify the manifest further to make resolution succeed." This skill aligns with that policy and only adds a safety check on the *kind* of edit the agent is allowed to commit.
+- Diagnosing or auto-fixing resolver failures — §12.4's policy is "stop and report; do not modify the manifest further to make resolution succeed." This skill aligns with that policy and only adds a safety check on the _kind_ of edit the agent is allowed to commit.
 - Managing retry budgets for resolver failures — there is no auto-retry in this flow by design.

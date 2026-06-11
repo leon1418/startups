@@ -5,8 +5,14 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "eval_report_path", "pass_rate", "total_cases", "failures", "notes",
-        "live_source_baseline", "judge_model", "source_baseline_quality"
+        "eval_report_path",
+        "pass_rate",
+        "total_cases",
+        "failures",
+        "notes",
+        "live_source_baseline",
+        "judge_model",
+        "source_baseline_quality"
       ],
       "properties": {
         "summary": { "type": "string" },

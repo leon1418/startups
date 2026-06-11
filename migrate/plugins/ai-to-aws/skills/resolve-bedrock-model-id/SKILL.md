@@ -45,6 +45,7 @@ date stamps like `20250514` or version tags like `v1`).
 For each live profile, compute the size of the intersection of its token set
 with the plan ID's token set. Keep the top 3 by intersection size, breaking
 ties in this order:
+
 1. Prefer profiles whose ID starts with `us.`
 2. Then `global.`
 3. Then no prefix
@@ -70,8 +71,9 @@ plan first.
 ```
 
 Include fewer candidates if fewer exist. If zero candidates have token overlap
+
 > 0, omit the candidate rows and note only that the user must supply a correct
-ID or abort.
+> ID or abort.
 
 ### Step 5: Return
 

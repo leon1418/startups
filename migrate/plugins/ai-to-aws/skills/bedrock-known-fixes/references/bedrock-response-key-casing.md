@@ -7,6 +7,7 @@ A Python file accesses the Bedrock response body with `response["Body"]` (upperc
 ## Fix
 
 **Pattern**:
+
 ```python
 # WRONG — will crash with KeyError
 result = json.loads(response["Body"].read())
@@ -22,4 +23,5 @@ result = json.loads(response["body"].read())
 ```bash
 grep -rn 'response\[.Body.\]\.read' .
 ```
+
 Expected: no matches. Every Bedrock invocation reads from `response["body"]` (lowercase). Re-run any failing test that exercised the Bedrock call path — the `KeyError` is gone.

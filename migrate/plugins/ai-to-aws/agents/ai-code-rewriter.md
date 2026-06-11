@@ -48,7 +48,7 @@ Load in this order:
 
 1. **`bedrock-known-fixes`** — at session start. Pre-verified templates for Bedrock patterns (model ID format, response parsing). Use these instead of writing from scratch.
 2. **`behavior-delta-detection`** — at §9 if `behavior_deltas` is non-empty. Read the reference matching `source_provider` to confirm how each confirmed resolution maps to code. You no longer ASK — you APPLY.
-3. **`dependency-conflict-resolution`** — at §14 BEFORE committing. Inspects the staged manifest diff and blocks the commit if any *removed* dependency was not introduced by this rewrite session.
+3. **`dependency-conflict-resolution`** — at §14 BEFORE committing. Inspects the staged manifest diff and blocks the commit if any _removed_ dependency was not introduced by this rewrite session.
 
 # 5. Test portability charter (read before §17)
 
@@ -95,7 +95,7 @@ git checkout -b bedrock-migration
 
 **On `BRANCH_EXISTS`** — the upstream repo already has a `bedrock-migration` branch. Do NOT silently delete and recreate it — the existing branch may be the customer's work in progress. Use a different, non-colliding name (e.g. `bedrock-migration-2`), `git checkout -b` that instead, and set `branch_name` in §27's payload accordingly. Record the collision and the name you used in `notes`. Reserve `blocked` only if you cannot make forward progress at all.
 
-Then, ON the new branch, exclude the plugin's own artifact directories from git and strip junk that the upstream repo may have tracked (e.g., `.DS_Store` from macOS contributors, stray `__pycache__/` from a forgotten run). Otherwise that junk lives forever in `bedrock-migration` history — §16's `.gitignore` only stops *new* additions; it can't retroactively untrack what's already in HEAD. Clean both the git index (`git rm --cached`) and the working tree (`find ... -delete`); skipping the working-tree pass would let the next `git add -A` re-add them.
+Then, ON the new branch, exclude the plugin's own artifact directories from git and strip junk that the upstream repo may have tracked (e.g., `.DS_Store` from macOS contributors, stray `__pycache__/` from a forgotten run). Otherwise that junk lives forever in `bedrock-migration` history — §16's `.gitignore` only stops _new_ additions; it can't retroactively untrack what's already in HEAD. Clean both the git index (`git rm --cached`) and the working tree (`find ... -delete`); skipping the working-tree pass would let the next `git add -A` re-add them.
 
 ```bash
 # 7.1 Make the migration-artifact dirs self-ignoring (a `.gitignore` containing `*`
@@ -145,11 +145,12 @@ Conservative scope — only universally-junk patterns; `.venv/` / `node_modules/
 
 Choose the rewrite approach based on framework:
 
-### Framework WITH Bedrock Provider (Vercel AI SDK, LangChain, LlamaIndex)
+## Framework WITH Bedrock Provider (Vercel AI SDK, LangChain, LlamaIndex)
 
 Minimal changes — swap provider configuration only:
 
 **Vercel AI SDK example:**
+
 ```typescript
 // Before
 import { openai } from '@ai-sdk/openai';
@@ -161,6 +162,7 @@ const model = bedrock('us.anthropic.claude-sonnet-4-20250514-v1:0');
 ```
 
 **LangChain example:**
+
 ```python
 # Before
 from langchain_openai import ChatOpenAI
@@ -171,11 +173,12 @@ from langchain_aws import ChatBedrockConverse
 llm = ChatBedrockConverse(model_id="us.anthropic.claude-sonnet-4-20250514-v1:0", region_name="us-east-1")
 ```
 
-### Raw SDK (OpenAI, Anthropic, Gemini)
+## Raw SDK (OpenAI, Anthropic, Gemini)
 
 Full rewrite to boto3 / AWS SDK:
 
 **OpenAI Python → Bedrock:**
+
 ```python
 # Before
 from openai import OpenAI
@@ -199,6 +202,7 @@ output = response["output"]["message"]["content"][0]["text"]
 ```
 
 **OpenAI Streaming → Bedrock Streaming:**
+
 ```python
 # Before
 stream = client.chat.completions.create(model="gpt-4o", messages=messages, stream=True)
@@ -217,6 +221,7 @@ for event in response["stream"]:
 ```
 
 **OpenAI Function Calling → Bedrock Tool Use:**
+
 ```python
 # Before (OpenAI)
 tools = [{"type": "function", "function": {"name": "get_weather", "parameters": {...}}}]
@@ -262,7 +267,7 @@ If the orchestrator passed a non-empty `behavior_deltas` list (from ai-code-anal
 
 5. Include `behavior_delta_decisions` in the returned `data` and summarize the choices in `notes` so the user has a written audit trail. Echo back what was applied (delta_type, location, resolution_chosen) for each confirmed decision.
 
-### Missing / unrecognized decision rule (defense-in-depth)
+## Missing / unrecognized decision rule (defense-in-depth)
 
 While rewriting in §10, if you encounter a parameter modification that affects user-visible behavior (UI control / form / env var the user controls) but has NO confirmed decision in the `Confirmed behavior-delta decisions` block — or the analyzer emitted a delta with an unrecognized `delta_type` / `option_set_id` (version skew) — do NOT guess and do NOT invent a resolution. Apply the safe default: skip the change, leave the original code in place, add a TODO comment at the site, and record it in `notes` (and in `behavior_delta_decisions` with `source: "missing_confirmation_safe_default"`) so the user knows it needs a follow-up. The whole point is the orchestration checkpoint owns these decisions — this agent only applies them.
 
@@ -288,6 +293,7 @@ grep -rn "OPENAI_API_KEY\|ANTHROPIC_API_KEY\|GOOGLE_API_KEY\|GEMINI_API_KEY" . -
 ```
 
 Replace with AWS credential configuration:
+
 - Remove `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` env var usage
 - Use boto3 default credential chain (env vars, IAM role, etc.)
 - Add `AWS_REGION` and `AWS_DEFAULT_REGION` to config
@@ -435,6 +441,7 @@ BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-20250514-v1:0
 # 14. Commit code-only changes; verify clean working tree
 
 <!-- SKILL:dependency-conflict-resolution -->
+
 Tests will be written in a separate `git worktree`, which requires the current working directory to be on a real branch with a clean tree.
 
 **Step 1 — stage all changes** (so the skill in step 2 has a diff to read), then re-run the secret guard from §7.3:
@@ -446,7 +453,7 @@ git diff --cached --name-only | grep -E '^\.saws-migrate/|^\.migration/|\.source
 
 If `SECRET_GUARD_FAILED`: STOP, `git reset` the offending paths, verify the `.gitignore` files from §7.1 are intact, and do not commit until the guard passes.
 
-**Step 2 — run the dependency-conflict-resolution skill gate.** Load the `dependency-conflict-resolution` skill and run its gate against the now-staged diff. The gate blocks the commit if any *removed* dependency was not introduced by this rewrite session — it complements §12.4's lockfile regeneration by ensuring resolver-failure recovery never silently deletes a customer-pre-existing package. Follow the skill's procedure exactly; on a block, do NOT commit — record the block in `notes` and surface it per the skill's instructions instead.
+**Step 2 — run the dependency-conflict-resolution skill gate.** Load the `dependency-conflict-resolution` skill and run its gate against the now-staged diff. The gate blocks the commit if any _removed_ dependency was not introduced by this rewrite session — it complements §12.4's lockfile regeneration by ensuring resolver-failure recovery never silently deletes a customer-pre-existing package. Follow the skill's procedure exactly; on a block, do NOT commit — record the block in `notes` and surface it per the skill's instructions instead.
 
 **Step 3 — commit** (only if the gate passed):
 
@@ -483,28 +490,36 @@ If no manifest is found (no `pyproject.toml`, `requirements.txt`, or `package.js
 Choose the matching install command. More-specific lockfile presence wins (e.g. `poetry.lock` beats bare `pyproject.toml`). Entries for poetry / pdm / pnpm / yarn include a `command -v X || install` guard for tools not preinstalled — defensive against running in a fresh shell where §12's globals may not be on PATH. Tools that ARE preinstalled (uv, plain pip, npm) skip the guard:
 
 - **Python with `pyproject.toml` + `poetry.lock`:**
+
   ```
   command -v poetry || uv tool install --quiet 'poetry>=1.7,<3'
   poetry install --quiet
   ```
+
 - **Python with `pyproject.toml` + `uv.lock`:** `uv sync --quiet`
 - **Python with `pyproject.toml` + `pdm.lock`:**
+
   ```
   command -v pdm || uv tool install --quiet pdm
   pdm install --quiet
   ```
+
 - **Python with `pyproject.toml` (no lockfile, PEP 621 / pip):** `python3 -m venv .venv && .venv/bin/pip install --quiet -e . && .venv/bin/pip install --quiet pytest`
 - **Python with `requirements.txt`:** `python3 -m venv .venv && .venv/bin/pip install --quiet -r requirements.txt && .venv/bin/pip install --quiet pytest`
 - **Node.js with `pnpm-lock.yaml`:**
+
   ```
   command -v pnpm || npm install -g pnpm
   pnpm install --frozen-lockfile
   ```
+
 - **Node.js with `yarn.lock`:**
+
   ```
   command -v yarn || npm install -g yarn
   yarn install --frozen-lockfile
   ```
+
   (Yarn 1.x supports `--frozen-lockfile` natively; Yarn Berry treats it as a deprecated alias that still works.)
 - **Node.js with `package.json` + `package-lock.json`:** `npm ci`
 - **Node.js with `package.json` only:** `npm install`
@@ -543,6 +558,7 @@ If the customer already ignored some of these patterns, the duplicate lines are 
 # 17. Write tests inside /tmp/clean-checkout
 
 For each rewritten LLM call, generate a unit test that:
+
 - Mocks the Bedrock client (`unittest.mock.patch("boto3.client")` / `botocore.stub.Stubber` / framework-equivalent — see §5 axis 2).
 - Verifies the correct model ID is passed.
 - Verifies request format matches Bedrock API.
@@ -551,6 +567,7 @@ For each rewritten LLM call, generate a unit test that:
 Generate ONE integration test stub in a separate file (e.g., `tests/test_bedrock_integration.py` or `__tests__/bedrock.integration.test.ts`) that does call Bedrock for real. Mark it skipped-by-default with a pytest marker (`@pytest.mark.integration`, plus a config-time skip when AWS creds are absent) or jest equivalent. The customer opts in by running with `--run-integration` or by exporting credentials.
 
 **Path rules — non-negotiable** (also enforced by the grep guard in §19):
+
 - Write the test file to `tests/test_bedrock_migration.py` (or `__tests__/bedrock.test.ts`) **inside `/tmp/clean-checkout`** using the `Write` tool.
 - Inside the test code: no absolute paths — see §5 axis 1.
 - For env vars the test needs: set them inside the test with `monkeypatch.setenv` / `monkeypatch.delenv` — see §5 axis 3.
@@ -614,6 +631,7 @@ After tests pass in §18, run the portability guard. It rejects double-quoted **
 The regex matches a literal double quote immediately followed by `/` and one of the known top-level filesystem directories that wouldn't exist on the customer's machine in the same form. URL routes start with `/api`, `/v1`, `/health` etc. and are intentionally not in the list. If grep returns ANY match, the portability guard rejects the test file; the customer's `pytest` will fail. (If a test legitimately needs to reference one of these directories, anchor it via `Path(__file__)` / `__dirname` instead — see the portability rule in §5.) Note: this guard only catches double-quoted absolute paths. Single-quoted absolute paths (e.g., `'/tmp/clean-checkout/x.py'`) will slip through — accepted tradeoff; the §5 portability rule still forbids them, and the more common Python style uses double quotes.
 
 **Retry policy:**
+
 - The cap counts **post-write** attempts: one "attempt" = one rewrite of the test file + one re-run of §18 + §19 for that file. Initial-write failures do NOT count against this cap — fix the write and proceed.
 - You have **at most 3 attempts per test file** to (a) make §18 green AND (b) pass this portability guard. The budget is per file, not shared — if you have 3 test files, each gets its own 3 attempts. (The typical case is one consolidated test file per language; if you split tests across multiple files, each file gets its own budget.)
 - If after 3 attempts on a given file either is still failing, STOP retrying that file. Do not loop further on it. Continue with the remaining files, then proceed to §20 and §21, and report the still-failing file honestly in `notes` (e.g., `notes: "tests/test_bedrock_migration.py: 8/10 passing; 2 failures left after 3 portability/correctness retries — needs human review"`). A truthful partial result is better than fabricated success.
@@ -705,6 +723,7 @@ If `git status` is NOT clean (uncommitted files appear), something earlier went 
 # 26. Summary to user
 
 The branch is the deliverable. In your `summary` and `notes`, capture for the user:
+
 - Branch name: `bedrock-migration`
 - Files modified (count)
 - Dependencies changed

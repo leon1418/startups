@@ -3,6 +3,7 @@
 ## Symptom
 
 At runtime, Bedrock invocations fail with:
+
 ```
 AccessDeniedException: User: <role-arn> is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:<region>:<account>:inference-profile/<id>
 ```

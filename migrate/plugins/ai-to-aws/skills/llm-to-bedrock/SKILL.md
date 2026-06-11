@@ -82,7 +82,9 @@ Call the **Skill** tool with skill name `migration-to-aws:gcp-to-aws`.
 
 Before invoking, tell the user:
 > "I'm now invoking the migration-to-aws Assess skill to discover your AI workloads and design
-> the Bedrock migration. It will ask you some questions — please answer them."
+> the Bedrock migration. It will ask you some questions — please answer them. (Don't be
+> confused by the skill's `gcp-to-aws` name — it also covers pure AI/LLM migrations with no
+> GCP or infrastructure component, which is how it's being used here.)"
 
 After invoking the Skill tool, the `gcp-to-aws` skill instructions will load into context.
 Follow those instructions exactly — they will drive the Discover, Clarify, Design, Estimate,

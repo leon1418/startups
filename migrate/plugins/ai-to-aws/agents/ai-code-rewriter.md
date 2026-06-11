@@ -167,8 +167,8 @@ from langchain_openai import ChatOpenAI
 llm = ChatOpenAI(model="gpt-4o")
 
 # After
-from langchain_aws import ChatBedrock
-llm = ChatBedrock(model_id="us.anthropic.claude-sonnet-4-20250514-v1:0", region_name="us-east-1")
+from langchain_aws import ChatBedrockConverse
+llm = ChatBedrockConverse(model_id="us.anthropic.claude-sonnet-4-20250514-v1:0", region_name="us-east-1")
 ```
 
 ### Raw SDK (OpenAI, Anthropic, Gemini)

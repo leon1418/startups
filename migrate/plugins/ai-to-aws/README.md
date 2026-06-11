@@ -8,7 +8,7 @@ Single `/ai-to-aws:llm-to-bedrock` command that assesses AI workloads (OpenAI, G
   `/plugin install migration-to-aws@startups-for-aws`
 - Python 3.10+ and [uv](https://docs.astral.sh/uv/)
 - AWS CLI configured (`aws configure` or SSO)
-- AWS credentials with `bedrock:InvokeModel` permission
+- AWS credentials with `bedrock:InvokeModel*` permissions (covers both `InvokeModel` and `InvokeModelWithResponseStream` — the latter is required for streaming migrations)
 - **Bedrock model access enabled** for your target models — this is a separate console step
   from IAM: [Bedrock console → Model access](https://console.aws.amazon.com/bedrock/home#/modelaccess)
 - Your source code in a **git repository** (the deliverable is a git branch)
@@ -24,10 +24,31 @@ after every phase either way).
 
 ## Install
 
+### Claude Code
+
 ```
 /plugin marketplace add awslabs/startups
 /plugin install ai-to-aws@startups-for-aws
+/plugin install migration-to-aws@startups-for-aws
 ```
+
+### Codex
+
+```bash
+codex plugin marketplace add awslabs/startups
+codex plugin install ai-to-aws
+codex plugin install migration-to-aws
+```
+
+Note: on Codex the Execute phase runs in **inline mode** — phases execute one at a
+time in the main session with a checkpoint between each (slower and more
+context-intensive than Claude Code's subagent dispatch, but fully functional;
+progress is checkpointed to disk after every phase either way).
+
+### Cursor
+
+> Install via the Cursor plugin marketplace once published, or point Cursor to the
+> local plugin directory. The same inline-mode note as Codex applies.
 
 ## Usage
 
@@ -50,7 +71,9 @@ The report includes a "How to Undo" section for discarding everything.
 ## What it costs
 
 - Evaluation invokes Bedrock once per golden-dataset case (capped at 200 cases,
-  up to 4096 output tokens each) — typically cents to a few dollars
+  up to 4096 output tokens each). Cost depends on the target model:
+  - **Haiku-class targets:** typically cents to a few dollars
+  - **Sonnet/Opus-class targets:** up to ~$12–15 worst case at the full 200-case cap
 - If you provide a source-provider API key for side-by-side comparison, each case is
   also run once against the source provider at your expense
 - A 1-token preflight probe per target model (~$0.00001 each)

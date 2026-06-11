@@ -70,7 +70,7 @@ def to_bedrock_temperature(ui_value: float) -> float:
     return ui_value * (TARGET_MAX / SOURCE_MAX)
 
 temperature = to_bedrock_temperature(cl.user_session.get("temperature"))
-chat_llm = ChatBedrock(model_id=model_id, model_kwargs={"temperature": temperature}, ...)
+chat_llm = ChatBedrockConverse(model_id=model_id, temperature=temperature, ...)
 ```
 
 ```typescript

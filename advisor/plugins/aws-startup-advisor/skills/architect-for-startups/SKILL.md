@@ -143,6 +143,7 @@ See [references/rapid-patterns.md](references/rapid-patterns.md).
 See [references/team-scaling.md](references/team-scaling.md). **This is a constraint, not a suggestion.**
 
 Before recommending ANY architecture, check it against the team capacity limits:
+
 - 1 engineer → managed services only, zero ops
 - 2-3 engineers → managed + 1 complex service max
 - 4-7 engineers → add ECS, custom networking, CI/CD
@@ -155,12 +156,14 @@ Before recommending ANY architecture, check it against the team capacity limits:
 See [references/investor-readiness.md](references/investor-readiness.md).
 
 Trigger this overlay when ANY of these signals appear in the conversation:
+
 - User mentions fundraising, pitch, investors, board, or due diligence
 - User asks about scaling narrative or growth projections
 - User asks about cost per user, unit economics, or gross margins
 - Architecture discussion involves cost framing relative to revenue
 
 Frame architecture decisions in terms investors understand:
+
 - "This scales to 1M users without re-architecting"
 - "Infrastructure costs grow linearly with revenue"
 - Cost as % of MRR, cost per active user
@@ -178,6 +181,7 @@ Apply these tests in order:
 5. **"Premature optimization?"** — If pre-PMF, challenge any multi-region, Kubernetes, data lake, event sourcing, CQRS, or service mesh components
 
 Issue a verdict:
+
 - **SHIP IT** — matches stage, team, and budget
 - **SIMPLIFY** — right direction, over-engineered for now
 - **RETHINK** — fundamental mismatch

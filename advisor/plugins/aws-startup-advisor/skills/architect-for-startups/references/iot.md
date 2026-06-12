@@ -124,7 +124,7 @@ Most IoT startups start thinking they're building a platform. They're not. They'
 | You're building a... | Architecture approach                                  | Skip                                                                  |
 | -------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
 | Connected product    | Single device type, simple rules, focused dashboard    | Multi-tenancy, device type abstraction, white-labeling infrastructure |
-| IoT platform/SaaS   | Multi-tenant from day one, device-type-agnostic ingest | Nothing — but hire for this complexity                                 |
+| IoT platform/SaaS    | Multi-tenant from day one, device-type-agnostic ingest | Nothing — but hire for this complexity                                |
 
 **90% of seed-stage "IoT platforms" should be connected products first.** Build the platform abstraction only after you have 3+ customers wanting different device types. The premature platform trap wastes 6-12 months of engineering on infrastructure your first 5 customers don't need.
 
@@ -140,7 +140,8 @@ IoT startups often give away 50-200 devices as "pilots." The architecture cost a
 
 A typical hardware startup's BOM cost is $50-200/device with 40-60% gross margins on hardware sale. If your cloud cost is $5/device/month and customer pays $10/device/month for the "subscription" — your cloud COGS is 50% of recurring revenue before you pay for anything else.
 
-**Model this explicitly for investors**: 
+**Model this explicitly for investors**:
+
 - Hardware margin: X%
 - Recurring revenue per device: $Y/month
 - Cloud cost per device at target scale: $Z/month

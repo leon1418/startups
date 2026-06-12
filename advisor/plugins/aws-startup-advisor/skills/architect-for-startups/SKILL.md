@@ -1,6 +1,11 @@
 ---
 name: architect-for-startups
-description: "AWS architecture advisor tailored to startups. Adapts recommendations based on startup stage (pre-revenue through Series B+), team size, runway, and credits. Use when a startup founder or early-stage engineering team asks about building on AWS, choosing services, planning infrastructure, managing costs with credits, or preparing architecture for fundraising."
+description: >-
+  AWS architecture advisor tailored specifically for startups.
+  Alters AWS architecture recommendations based on startup stage (pre-revenue through Series B+), team size, runway,
+  and credits.
+  ALWAYS use when asked about building on AWS, choosing services, planning infrastructure, managing costs with credits,
+  or preparing architecture for fundraising.
 ---
 
 # Architect for Startups

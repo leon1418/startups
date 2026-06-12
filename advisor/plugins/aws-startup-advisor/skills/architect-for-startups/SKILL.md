@@ -58,69 +58,71 @@ Once you know the stage, apply the framework from [references/stage-frameworks.m
 
 ## Step 3: Route to Service Guidance
 
-Use the service-specific references for deep AWS knowledge, but always filter through the startup stage:
+You MUST read these service-specific references whenever their technology type is applicable. 
+These reference will ensure you're architecting through a startup's lens and using the best possible startup-specific 
+guidance.
 
 ### Compute
 
-- [references/lambda.md](references/lambda.md) — Serverless functions (default for pre-revenue and seed)
-- [references/ecs.md](references/ecs.md) — Container orchestration (Series A+)
-- [references/ec2.md](references/ec2.md) — Virtual machines (rarely needed before Series B)
-- [references/eks.md](references/eks.md) — Kubernetes (Series B+ only, requires dedicated platform team)
+- [Serverless functions (default for pre-revenue and seed)](references/lambda.md)
+- [Container orchestration (Series A+)](references/ecs.md)
+- [Virtual machines (rarely needed before Series B)](references/ec2.md)
+- [Kubernetes (Series B+ only, requires dedicated platform team)](references/eks.md) 
 
 ### Data
 
-- [references/dynamodb.md](references/dynamodb.md) — NoSQL (when access patterns are clear)
-- [references/rds-aurora.md](references/rds-aurora.md) — Relational databases (when you need SQL)
-- [references/s3.md](references/s3.md) — Object storage
+- [NoSQL (when access patterns are clear)](references/dynamodb.md) — 
+- [Relational databases (when you need SQL)](references/rds-aurora.md)
+- [Object storage](references/s3.md)
 
 ### Networking & Delivery
 
-- [references/api-gateway.md](references/api-gateway.md) — API management
-- [references/cloudfront.md](references/cloudfront.md) — CDN and edge delivery
-- [references/networking.md](references/networking.md) — VPC architecture (keep simple until Series A)
+- [API management](references/api-gateway.md)
+- [CDN and edge delivery](references/cloudfront.md)
+- [VPC architecture (keep simple until Series A)](references/networking.md)
 
 ### Security & Identity
 
-- [references/iam.md](references/iam.md) — Access control
-- [references/security-review.md](references/security-review.md) — Security auditing
+- [Access control](references/iam.md)
+- [Security auditing](references/security-review.md)
 
 ### Messaging & Orchestration
 
-- [references/messaging.md](references/messaging.md) — SQS, SNS, EventBridge
-- [references/step-functions.md](references/step-functions.md) — Workflow orchestration
+- [SQS, SNS, EventBridge](references/messaging.md) 
+- [Workflow orchestration](references/step-functions.md) 
 
 ### Observability
 
-- [references/observability.md](references/observability.md) — Monitoring, logging, tracing
+- [Monitoring, logging, tracing](references/observability.md)
 
 ### AI/ML
 
-- [references/bedrock.md](references/bedrock.md) — Foundation models and AI agents
-- [references/agentcore.md](references/agentcore.md) — Agent runtime platform
-- [references/mlops.md](references/mlops.md) — ML pipelines and model serving
-- [references/strands-agent.md](references/strands-agent.md) — Strands SDK agent scaffolding
+- [Foundation models and AI agents](references/bedrock.md)
+- [Agent runtime platform](references/agentcore.md)
+- [ML pipelines and model serving](references/mlops.md)
+- [Strands SDK agent scaffolding](references/strands-agent.md) 
 
 ### Cost
 
-- [references/cost-check.md](references/cost-check.md) — Cost analysis and optimization
+- [Cost analysis and optimization](references/cost-check.md)
 
 ### Architecture & Planning
 
-- [references/aws-plan.md](references/aws-plan.md) — End-to-end architecture planning
-- [references/aws-architect.md](references/aws-architect.md) — Well-Architected design
+- [End-to-end architecture planning](references/aws-plan.md)
+- [Well-Architected design](references/aws-architect.md)
 
 ### Scaffolding
 
-- [references/iac-scaffold.md](references/iac-scaffold.md) — IaC project generation
+- [IaC project generation](references/iac-scaffold.md)
 
 ### Migration
 
-- [references/migration-azure-to-aws.md](references/migration-azure-to-aws.md) — Azure to AWS
-- [references/migration-apprunner-to-ecs-express.md](references/migration-apprunner-to-ecs-express.md) — App Runner to ECS
+- [Azure to AWS](references/migration-azure-to-aws.md)
+- [App Runner to ECS](references/migration-apprunner-to-ecs-express.md)
 
 ### IoT
 
-- [references/iot.md](references/iot.md) — IoT device connectivity and fleet management
+- [IoT device connectivity and fleet management](references/iot.md)
 
 ## Step 4: Startup-Specific Overlays
 
@@ -128,16 +130,11 @@ Always layer these startup-specific concerns on top of the service guidance:
 
 ### Credits & Cost
 
-See [references/credits-strategy.md](references/credits-strategy.md). For detailed Activate program information, reference the `knowledge-base-for-startups` skill.
-
-- Model costs against credits balance and runway
-- Flag services that burn credits fast (NAT Gateways, multi-AZ RDS, EKS control plane)
-- Recommend free-tier-eligible alternatives when possible
-- Project "months of runway at this architecture"
+See [Credits Strategy](references/credits-strategy.md). For detailed Activate program information, reference the `knowledge-base-for-startups` skill.
 
 ### Speed to Ship
 
-See [references/rapid-patterns.md](references/rapid-patterns.md).
+See [Rapid Patterns](references/rapid-patterns.md).
 
 - Pre-revenue and seed: recommend the fastest path to working software
 - Favor pre-built solutions (AWS Solutions Library, Amplify, App Runner) over custom builds
@@ -145,20 +142,13 @@ See [references/rapid-patterns.md](references/rapid-patterns.md).
 
 ### Team Capacity (HARD GATE)
 
-See [references/team-scaling.md](references/team-scaling.md). **This is a constraint, not a suggestion.**
+See [Team Scaling](references/team-scaling.md). **This is a constraint, not a suggestion.**
 
-Before recommending ANY architecture, check it against the team capacity limits:
-
-- 1 engineer → managed services only, zero ops
-- 2-3 engineers → managed + 1 complex service max
-- 4-7 engineers → add ECS, custom networking, CI/CD
-- 8+ engineers → can consider EKS, multi-region
-
-**If the recommendation exceeds what the team can operate, reject it regardless of technical correctness.** A perfect architecture the team can't run is worse than a simple one they can.
+Before recommending ANY architecture, check it against the team capacity limits.
 
 ### Investor Readiness
 
-See [references/investor-readiness.md](references/investor-readiness.md).
+See [Investor Readiness](references/investor-readiness.md).
 
 Trigger this overlay when ANY of these signals appear in the conversation:
 
@@ -167,47 +157,13 @@ Trigger this overlay when ANY of these signals appear in the conversation:
 - User asks about cost per user, unit economics, or gross margins
 - Architecture discussion involves cost framing relative to revenue
 
-Frame architecture decisions in terms investors understand:
-
-- "This scales to 1M users without re-architecting"
-- "Infrastructure costs grow linearly with revenue"
-- Cost as % of MRR, cost per active user
-
 ## Step 5: Challenge Your Own Recommendation
 
-**Before delivering any architecture recommendation, run it through the challenger framework** from [references/challenger.md](references/challenger.md). This is not optional.
-
-Apply these tests in order:
-
-1. **"Can they operate this?"** — Does the proposed architecture exceed the team's operational budget? (Reference the team-scaling limits above)
-2. **"What if they succeed?"** — If traffic 10x's next month, what breaks and what does it cost?
-3. **"What if credits expire tomorrow?"** — Is the monthly cost sustainable on revenue alone?
-4. **"Is there a simpler alternative?"** — For every complex component, name the simpler option and what you give up
-5. **"Premature optimization?"** — If pre-PMF, challenge any multi-region, Kubernetes, data lake, event sourcing, CQRS, or service mesh components
-
-Issue a verdict:
-
-- **SHIP IT** — matches stage, team, and budget
-- **SIMPLIFY** — right direction, over-engineered for now
-- **RETHINK** — fundamental mismatch
-- **DANGEROUS** — cost cliff, operational burden, or security gap
-
-You don't need to show this verdict to the user explicitly, but it should shape your final recommendation. If your initial instinct is SIMPLIFY or RETHINK, revise before presenting.
+**Before delivering any architecture recommendation, run it through the challenger framework** from [Challenger](references/challenger.md). This is not optional.
 
 ## Step 6: Security Baseline Check
 
-See [references/well-architected.md](references/well-architected.md) and [references/security-review.md](references/security-review.md).
-
-Regardless of what the user asked about, if you're recommending an architecture that handles user data or is production-facing, verify these non-negotiables are covered:
-
-- S3 Block Public Access enabled
-- No hardcoded credentials in code
-- Database backups enabled
-- Root account MFA
-- Budget alert configured
-- Secrets in SSM/Secrets Manager
-
-These take <30 minutes combined and prevent company-ending events. If the user's proposal omits them, mention it — but briefly, not as a lecture.
+See [Well Architected](references/well-architected.md) and [Security Reivew](references/security-review.md).
 
 ## Anti-Patterns for Startups
 

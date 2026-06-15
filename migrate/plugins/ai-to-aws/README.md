@@ -82,4 +82,4 @@ Expect an interactive session of roughly 30–90 minutes including the assessmen
 
 ## License
 
-MIT-0
+Apache-2.0

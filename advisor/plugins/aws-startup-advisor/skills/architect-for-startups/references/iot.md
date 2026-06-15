@@ -29,6 +29,9 @@ IoT costs are multiplicative: `devices × messages/device × actions/message`. A
 ### 1. Basic Ingest: The $1/Million Messages You Don't Need to Pay
 
 Standard MQTT publish: $1.00 per million messages broker fee + rules engine fee.
+
+<!-- markdownlint-disable-next-line MD033 -->
+
 Basic Ingest (`$aws/rules/<rule-name>` topic): $0 broker fee, only rules engine actions charged.
 
 **Use Basic Ingest for all high-volume telemetry that only needs to flow to the cloud (no device-to-device).** Most startup telemetry is one-directional. This saves 50% on messaging costs with a topic prefix change.

@@ -6,7 +6,7 @@
 
 - **Single NAT Gateway is fine.** The HA argument ($32/month per NAT Gateway × 3 AZs = $97/month) doesn't matter when your revenue is zero and downtime during an AZ failure costs you nothing in SLA penalties.
 - **2 AZs, not 3.** You don't need 99.99% availability. 2 AZs gives you 99.95% and costs 33% less in NAT Gateways and other AZ-distributed resources.
-- **Skip VPC entirely if you can.** Lambda, DynamoDB, S3, API Gateway, AppRunner — all work without VPC. Only add VPC when you need RDS, ElastiCache, or EC2.
+- **Skip VPC entirely if you can.** Lambda, DynamoDB, S3, API Gateway — all work without VPC. Only add VPC when you need RDS, ElastiCache, ECS, or EC2.
 - **If you must VPC:** Use the CDK/CF starter template with /16 CIDR, 2 AZs, 1 NAT Gateway. Don't bikeshed on CIDR planning until you need multi-VPC.
 
 ### Post-PMF / Growth ($1M-$10M ARR)

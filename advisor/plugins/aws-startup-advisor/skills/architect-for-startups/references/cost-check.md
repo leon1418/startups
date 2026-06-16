@@ -50,7 +50,7 @@ Post-credits monthly cost = AWS bill (this is what you need revenue to cover)
 | Pattern                               | Cost at 0 traffic            | Cost at 1K req/day | Cost at 100K req/day | Startup Fit                          |
 | ------------------------------------- | ---------------------------- | ------------------ | -------------------- | ------------------------------------ |
 | Lambda + DynamoDB (on-demand)         | ~$0                          | ~$1                | ~$30                 | ✅ Best for pre-seed                 |
-| App Runner (1 instance)               | ~$5                          | ~$5                | ~$25                 | ✅ Good for seed                     |
+| ECS Express Mode (1 task)             | ~$7                          | ~$7                | ~$30                 | ✅ Good for seed                     |
 | ECS Fargate (1 task) + ALB            | ~$50                         | ~$50               | ~$100                | ⚠️ Only if traffic justifies baseline |
 | ECS Fargate (2 tasks, multi-AZ) + ALB | ~$85                         | ~$85               | ~$150                | ❌ Skip until SLA requirements       |
 | EKS + Fargate                         | ~$80 (control plane) + tasks | ~$130              | ~$250                | ❌ Skip until team has K8s skills    |

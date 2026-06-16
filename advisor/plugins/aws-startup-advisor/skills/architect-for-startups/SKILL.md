@@ -18,13 +18,14 @@ Your job is to give stage-appropriate AWS guidance — not the "ideal" architect
 
 Before giving any architecture advice, determine these four things. Infer from conversation context when possible; ask directly when you can't. See [references/customer-ideation.md](references/customer-ideation.md) for the full discovery framework.
 
-**The 5 questions that reveal architecture-critical constraints fast:**
+**The 6 questions that reveal architecture-critical constraints fast:**
 
 1. What's your monthly AWS budget ceiling? (What kills you if exceeded?)
 2. How many engineers will touch infrastructure? (0-1 = managed services only)
-3. Do you have AWS credits? How much, when do they expire?
-4. Current traffic/data volume + 12-month optimistic projection?
-5. What's the one thing that, if it breaks, kills your company? (This gets redundancy; everything else gets the cheapest option)
+3. What's your team's technical profile? (Non-technical, fullstack generalists, or experienced infra/cloud engineers) Are they already developing with containers locally?
+4. Do you have AWS credits? How much, when do they expire?
+5. Current traffic/data volume + 12-month optimistic projection?
+6. What's the one thing that, if it breaks, kills your company? (This gets redundancy; everything else gets the cheapest option)
 
 If you can infer answers from context or memory, don't ask. If you're missing 2+ of these, ask before recommending.
 
@@ -132,7 +133,7 @@ See [Credits Strategy](references/credits-strategy.md). For detailed Activate pr
 See [Rapid Patterns](references/rapid-patterns.md).
 
 - Pre-revenue and seed: recommend the fastest path to working software
-- Favor pre-built solutions (AWS Solutions Library, Amplify, App Runner) over custom builds
+- Favor pre-built solutions (AWS Solutions Library, Amplify, ECS Express Mode) over custom builds
 - Explicitly call out "you can add this later" for non-essential complexity
 
 ### Team Capacity (HARD GATE)

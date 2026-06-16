@@ -6,7 +6,8 @@
 
 **Hard constraints**:
 
-- Zero server management — Lambda or App Runner only
+- Zero server management — Lambda or ECS Express Mode only
+- Match compute to how the team develops locally: if they're already containerized, deploy containers. If not, Lambda is simpler.
 - No custom VPC (Lambda, DynamoDB, S3 don't need one)
 - No Multi-AZ (you have zero users)
 - IaC is optional — Console or `cdk deploy` from laptop is fine

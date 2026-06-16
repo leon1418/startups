@@ -38,16 +38,3 @@ These are the specific signals to move from the rapid/cheap pattern to something
 - Store conversation history in DynamoDB, not in-memory (Lambda is stateless) and not S3 (too slow for chat).
 - Don't build an agent unless you need tool use — `InvokeModel` directly is simpler and cheaper.
 
----
-
-## Time-to-Ship Estimates
-
-| What You're Building  | Pattern                                        | Ship In  |
-| --------------------- | ---------------------------------------------- | -------- |
-| API backend           | API GW + Lambda + DynamoDB                     | 1-2 days |
-| Web app with login    | S3/CloudFront + Cognito + API                  | 1 day    |
-| AI/chatbot feature    | API GW + Lambda + Bedrock                      | 1-2 days |
-| Background processing | SQS + Lambda                                   | 1 day    |
-| WebSocket/real-time   | API GW WebSocket + Lambda + DynamoDB           | 2-3 days |
-| Analytics pipeline    | Firehose + S3 + Athena                         | 1-2 days |
-| Multi-tenant SaaS     | CloudFront + ALB + Fargate + Aurora Serverless | 3-5 days |

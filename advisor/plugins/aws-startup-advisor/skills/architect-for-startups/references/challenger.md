@@ -10,7 +10,7 @@ For a team of N engineers, how many services require operational expertise?
 
 | Team Size     | Max Operational Complexity                                     |
 | ------------- | -------------------------------------------------------------- |
-| 1 engineer    | Fully managed services only (Lambda, DynamoDB, S3, App Runner) |
+| 1 engineer    | Fully managed services only (Lambda, DynamoDB, S3, ECS Express Mode) |
 | 2-3 engineers | Managed services + 1 "complex" service (RDS, ECS Fargate)      |
 | 4-7 engineers | Add ECS, custom networking, CI/CD pipelines                    |
 | 8+ engineers  | Can consider EKS, multi-region, custom infrastructure          |

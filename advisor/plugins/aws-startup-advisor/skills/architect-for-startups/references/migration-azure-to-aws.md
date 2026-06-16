@@ -47,10 +47,10 @@ Enterprise guide says "Cosmos DB maps to 4+ services depending on API." For star
 
 | Your Situation                   | Choose                         | Why NOT the complex option      |
 | -------------------------------- | ------------------------------ | ------------------------------- |
-| Simple web app, <1K daily users  | App Runner                     | Don't need ECS/EKS complexity   |
-| API with background jobs         | Lambda + SQS                   | Don't need always-on compute    |
-| Need deployment slots equivalent | ECS with CodeDeploy blue/green | App Runner handles this simpler |
-| Team has container experience    | ECS Fargate                    | Don't need Kubernetes           |
+| Simple web app, <1K daily users  | ECS Express Mode               | Don't need full ECS/EKS complexity |
+| API with background jobs         | Lambda + SQS                   | Don't need always-on compute       |
+| Need deployment slots equivalent | ECS with CodeDeploy blue/green | Built-in blue/green support        |
+| Team has container experience    | ECS Fargate                    | Don't need Kubernetes              |
 
 ### Azure Functions → Lambda
 
@@ -65,7 +65,7 @@ Straightforward except:
 ### The "Weekend Migration" (< 10 Azure resources, < 5GB data)
 
 1. Friday: Set up AWS account, IAM Identity Center, basic networking
-2. Saturday: Deploy compute (Lambda/App Runner/Fargate), migrate database (export/import)
+2. Saturday: Deploy compute (Lambda/ECS Express Mode/Fargate), migrate database (export/import)
 3. Sunday: DNS cutover, smoke test, keep Azure running for 1 week as rollback
 4. Following Friday: Delete Azure resources
 
@@ -80,7 +80,7 @@ Straightforward except:
 
 | Azure Feature               | Looks Equivalent To    | But Watch Out For                                                         |
 | --------------------------- | ---------------------- | ------------------------------------------------------------------------- |
-| Azure App Service free tier | App Runner / Lambda    | App Service F1 free tier is more generous than App Runner for low-traffic |
+| Azure App Service free tier | ECS Express Mode / Lambda | App Service F1 free tier is more generous — AWS has no equivalent free container tier |
 | Cosmos DB serverless        | DynamoDB on-demand     | Cosmos RU pricing vs DynamoDB WCU/RCU doesn't map 1:1 — benchmark first   |
 | Azure SQL Basic ($5/mo)     | RDS t4g.micro ($12/mo) | AWS cheapest RDS is more expensive than Azure's cheapest SQL              |
 | Azure Functions (1M free)   | Lambda (1M free)       | Equivalent — Lambda is slightly more generous on compute-seconds          |

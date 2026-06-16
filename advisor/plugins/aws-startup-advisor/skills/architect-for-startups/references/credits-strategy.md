@@ -15,7 +15,7 @@ These eat credits even at zero traffic:
 | Service               | Hidden Fixed Cost            | Alternative                                 |
 | --------------------- | ---------------------------- | ------------------------------------------- |
 | NAT Gateway           | $32/mo + $0.045/GB processed | VPC endpoints or no VPC                     |
-| EKS Control Plane     | $73/mo per cluster           | Lambda, App Runner, or ECS Fargate          |
+| EKS Control Plane     | $73/mo per cluster           | Lambda, ECS Express Mode, or ECS Fargate    |
 | Multi-AZ RDS          | 2x single-AZ cost            | Aurora Serverless v2 or DynamoDB            |
 | OpenSearch Serverless | ~$700/mo minimum             | Bedrock Knowledge Base managed vector store |
 | VPN Connection        | $36/mo                       | SSM Session Manager                         |

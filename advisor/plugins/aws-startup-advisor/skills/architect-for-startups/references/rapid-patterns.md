@@ -37,4 +37,3 @@ These are the specific signals to move from the rapid/cheap pattern to something
 - Start with **Nova Micro** for classification/routing, **Nova Lite** for generation — cheapest Bedrock models.
 - Store conversation history in DynamoDB, not in-memory (Lambda is stateless) and not S3 (too slow for chat).
 - Don't build an agent unless you need tool use — `InvokeModel` directly is simpler and cheaper.
-

@@ -45,8 +45,8 @@ Enterprise guide says "Cosmos DB maps to 4+ services depending on API." For star
 
 ### Azure App Service → What to Choose on AWS
 
-| Your Situation                   | Choose                         | Why NOT the complex option      |
-| -------------------------------- | ------------------------------ | ------------------------------- |
+| Your Situation                   | Choose                         | Why NOT the complex option         |
+| -------------------------------- | ------------------------------ | ---------------------------------- |
 | Simple web app, <1K daily users  | ECS Express Mode               | Don't need full ECS/EKS complexity |
 | API with background jobs         | Lambda + SQS                   | Don't need always-on compute       |
 | Need deployment slots equivalent | ECS with CodeDeploy blue/green | Built-in blue/green support        |
@@ -78,9 +78,9 @@ Straightforward except:
 
 ## Cost Comparison Traps
 
-| Azure Feature               | Looks Equivalent To    | But Watch Out For                                                         |
-| --------------------------- | ---------------------- | ------------------------------------------------------------------------- |
+| Azure Feature               | Looks Equivalent To       | But Watch Out For                                                                     |
+| --------------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
 | Azure App Service free tier | ECS Express Mode / Lambda | App Service F1 free tier is more generous — AWS has no equivalent free container tier |
-| Cosmos DB serverless        | DynamoDB on-demand     | Cosmos RU pricing vs DynamoDB WCU/RCU doesn't map 1:1 — benchmark first   |
-| Azure SQL Basic ($5/mo)     | RDS t4g.micro ($12/mo) | AWS cheapest RDS is more expensive than Azure's cheapest SQL              |
-| Azure Functions (1M free)   | Lambda (1M free)       | Equivalent — Lambda is slightly more generous on compute-seconds          |
+| Cosmos DB serverless        | DynamoDB on-demand        | Cosmos RU pricing vs DynamoDB WCU/RCU doesn't map 1:1 — benchmark first               |
+| Azure SQL Basic ($5/mo)     | RDS t4g.micro ($12/mo)    | AWS cheapest RDS is more expensive than Azure's cheapest SQL                          |
+| Azure Functions (1M free)   | Lambda (1M free)          | Equivalent — Lambda is slightly more generous on compute-seconds                      |

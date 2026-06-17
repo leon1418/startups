@@ -322,3 +322,17 @@ def test_unknown_extra_key_is_mismatch(tmp_path, capsys):
 def test_run_context_missing_file_exits_2(tmp_path, capsys):
     c = write(tmp_path, "c.json", RUN_CONTEXT)
     assert vr.main(["--check-run-context", "/nonexistent.json", "--current", c]) == 2
+
+
+def test_analysis_accepts_mantle_fields():
+    payload = dict(GOLDEN_ANALYSIS)
+    payload["mantle_available"] = True
+    payload["mantle_models"] = {
+        "gpt-4o -> us.anthropic.claude-haiku-4-5-20251001-v1:0": "anthropic.claude-haiku-4-5"
+    }
+    assert validate("analysis", payload)
+
+
+def test_analysis_valid_without_mantle_fields():
+    # Mantle fields are optional — pre-Mantle payloads must still validate.
+    assert validate("analysis", GOLDEN_ANALYSIS)

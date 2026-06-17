@@ -143,6 +143,55 @@ Conservative scope — only universally-junk patterns; `.venv/` / `node_modules/
 
 # 8. Rewrite strategy
 
+## Strategy selection (check FIRST)
+
+If your context has a `Rewrite strategy: mantle` line, use the **Mantle express lane** below. Otherwise (the line is absent — the common case, including every run where any target lacks a Mantle equivalent) use the Converse rewrite that follows. Never mix: a run is entirely Mantle or entirely Converse.
+
+### Mantle express lane
+
+The source SDK stays. Per client, change only three things:
+
+- **base_url** → `https://bedrock-mantle.<REGION>.api.aws/v1` (OpenAI-compatible SDKs) or `https://bedrock-mantle.<REGION>.api.aws/anthropic/v1` (Anthropic SDK).
+- **Credential** → a Bedrock bearer token, NOT the original provider key, read from the `AWS_BEARER_TOKEN_BEDROCK` env var. Do not leave the old `api_key=os.environ["OPENAI_API_KEY"]` line in place.
+- **Model ID** → the Mantle id from the `Mantle model map` context line (e.g. `anthropic.claude-haiku-4-5`), not the runtime `us.…` id.
+
+OpenAI SDK example:
+
+```python
+# Before
+from openai import OpenAI
+client = OpenAI()  # api_key from OPENAI_API_KEY
+
+# After (Mantle — same SDK)
+import os
+from openai import OpenAI
+client = OpenAI(
+    base_url="https://bedrock-mantle.us-east-1.api.aws/v1",
+    api_key=os.environ["AWS_BEARER_TOKEN_BEDROCK"],
+)
+# model="gpt-4o" -> model="anthropic.claude-haiku-4-5"
+```
+
+Anthropic SDK example:
+
+```python
+# Before
+import anthropic
+client = anthropic.Anthropic()
+
+# After (Mantle — same SDK)
+import os
+import anthropic
+client = anthropic.Anthropic(
+    base_url="https://bedrock-mantle.us-east-1.api.aws/anthropic/v1",
+    auth_token=os.environ["AWS_BEARER_TOKEN_BEDROCK"],
+)
+```
+
+Do NOT rewrite request/response parsing — the whole point of Mantle is that the source SDK's call and response shapes are preserved. After applying the three changes above, skip the Converse-specific guidance in the rest of §8 and the §9 behavior-delta application still applies normally.
+
+### Converse rewrite (default)
+
 Choose the rewrite approach based on framework:
 
 ## Framework WITH Bedrock Provider (Vercel AI SDK, LangChain, LlamaIndex)
@@ -438,6 +487,16 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-20250514-v1:0
 ```
 
+**Mantle express lane exception:** when this run used the Mantle express lane (§8), Mantle authenticates with a bearer token, not SigV4. Write `.env.example` with the token instead of the access-key pair:
+
+```
+# Bedrock (Mantle endpoint — bearer-token auth)
+AWS_REGION=us-east-1
+# Obtain a bearer token via the aws-bedrock-token-generator package, or
+# `aws bedrock get-bearer-token` — export it as:
+AWS_BEARER_TOKEN_BEDROCK=your-bedrock-bearer-token
+```
+
 # 14. Commit code-only changes; verify clean working tree
 
 <!-- SKILL:dependency-conflict-resolution -->
@@ -691,6 +750,8 @@ grep -rl "from openai\|import openai\|require.*openai\|from anthropic\|import an
 ```
 
 If any files still contain source SDK references, fix them before proceeding. Test directories are NOT excluded from this scan on purpose: the source SDK package is being removed from the manifest, so a leftover `import openai` in a customer test means `pytest` ImportErrors on the customer's machine — §18.0 should have migrated those tests; if one appears here, go back and fix it.
+
+**Mantle express lane exception:** when this run used the Mantle express lane (§8, `Rewrite strategy: mantle`), the source-SDK imports are EXPECTED to remain — Mantle keeps the original SDK, so this residual scan does NOT apply. Verify instead that every client init sets the Mantle `base_url` and the `AWS_BEARER_TOKEN_BEDROCK` credential, and that model IDs were swapped to their Mantle forms.
 
 # 23. Verify all files were written
 

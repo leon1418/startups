@@ -66,6 +66,11 @@ progress is checkpointed to disk after every phase either way).
   excerpts of your prompts/responses — review before sharing)
 - Nothing is pushed to a remote; you review and push the branch yourself
 
+For targets available on bedrock-mantle (Haiku/Opus-class models), the plugin may offer an
+"express lane" at the checkpoint: keep your existing SDK and swap only the endpoint,
+credential, and model ID — instead of a full Converse rewrite. You choose; the default is
+the Converse rewrite, which works for all Bedrock models.
+
 The report includes a "How to Undo" section for discarding everything.
 
 ## What it costs

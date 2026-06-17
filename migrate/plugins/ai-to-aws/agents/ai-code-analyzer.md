@@ -282,6 +282,49 @@ For each `target_model_id` in the plan's model mapping:
 4. If the skill returns the plan ID unchanged, no `errors` entry is needed.
 5. If the skill ERRORS or TIMES OUT (no Bedrock access, region not enabled, network failure), retry the skill ONCE; if the retry also fails, this is a hard wall — return `{ blocked: { reason: "model_unresolvable", detail: "<reason>" } }` (see §14). If the failure is specifically that Bedrock model access is not enabled for the account, return `{ blocked: { reason: "model_access", detail: "<reason>" } }`. Do NOT fall back to raw `aws bedrock` calls — that's exactly what the skill exists to abstract.
 
+# 10.5 Mantle availability (express-lane detection)
+
+After §10 has the validated `target_models`, check whether each target also exists on the bedrock-mantle endpoint. This only RECORDS availability — the user chooses the rewrite strategy later at the orchestration checkpoint. Do NOT collect traffic or guardrails signals; those are surfaced to the user, not auto-judged here. This is a best-effort enhancement: never block the run on it.
+
+**Step A — fetch the live Mantle catalog.** Bearer-token auth; the token comes from the `aws-bedrock-token-generator` package, pulled into the pinned toolchain with `--with`. Write the id list to a temp file (prepend `AWS_PROFILE=<profile>` when your context has an `AWS profile` line):
+
+```bash
+AWS_REGION=<REGION> uv run --project <scriptsDir> --with aws-bedrock-token-generator python - > /tmp/mantle-catalog.json <<'PY'
+import json, os, sys, urllib.request
+try:
+    from aws_bedrock_token_generator import provide_token
+    region = os.environ.get("AWS_REGION", "us-east-1")
+    tok = provide_token(region=region)
+    req = urllib.request.Request(
+        f"https://bedrock-mantle.{region}.api.aws/v1/models",
+        headers={"Authorization": f"Bearer {tok}"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        ids = sorted(m["id"] for m in json.loads(r.read())["data"])
+    print(json.dumps(ids))
+except Exception as e:
+    print("MANTLE_LOOKUP_FAILED", file=sys.stderr)
+    print("[]")  # empty catalog → none-available downstream, no error raised
+PY
+```
+
+**Step B — decide availability with the pure helper.** Do NOT re-implement the normalization regex inline. Substitute `<bedrock target ids>` with the right-hand sides of your `target_models` pairs as a JSON list of strings:
+
+```bash
+uv run --project <scriptsDir> python - <<'PY'
+import json, mantle
+catalog = json.load(open("/tmp/mantle-catalog.json"))
+targets = <bedrock target ids>   # e.g. ["us.anthropic.claude-haiku-4-5-20251001-v1:0"]
+print(json.dumps(mantle.evaluate_targets(targets, catalog)))
+PY
+```
+
+**Step C — emit into your result file:**
+
+- `mantle_available`: the `all_available` boolean from the helper.
+- `mantle_models`: the `per_target` map, but keep ONLY entries whose value is non-null (drop misses), and re-key each by the FULL `"<source> -> <bedrock>"` pair (matching `target_models`) so the rewriter can line them up. Example: `{"gpt-4o -> us.anthropic.claude-haiku-4-5-20251001-v1:0": "anthropic.claude-haiku-4-5"}`.
+
+If the catalog lookup failed (empty list → `all_available` false), emit `mantle_available: false` and `mantle_models: {}`. Never treat this as a blocker.
+
 # 11. Check for existing log files
 
 The log-ingestor (T2-2) may use these. Emit the results in `log_files_found` as a **comma-joined list of paths on one line** (e.g. `data/traces.jsonl, logs/usage.csv`), or the literal string `"none"` — the ingestor parses exactly that format. If your context has a `User-supplied log files:` line, include those paths too. Use `Glob` (or the `Bash` equivalents below) against the repository path provided in your context (the `Repository:` line):
@@ -367,8 +410,10 @@ Return ONE flat object: the typed fields and `summary` are all top-level sibling
   "log_files_found": "none",
   "errors": "none",
   "behavior_deltas": [],
-  "source_baseline_available": false
+  "source_baseline_available": false,
+  "mantle_available": false,
+  "mantle_models": {}
 }
 ```
 
-Extra keys are rejected by the schema.
+Extra keys are rejected by the schema. `mantle_available` / `mantle_models` are OPTIONAL — emit them only after the §10.5 check. Use `mantle_available: false` and `mantle_models: {}` when no Mantle equivalent exists for every target, or when the catalog lookup failed.

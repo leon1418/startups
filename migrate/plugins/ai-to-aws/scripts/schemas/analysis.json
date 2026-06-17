@@ -73,7 +73,12 @@
             }
           }
         },
-        "source_baseline_available": { "type": "boolean" }
+        "source_baseline_available": { "type": "boolean" },
+        "mantle_available": { "type": "boolean" },
+        "mantle_models": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
       }
     },
     {

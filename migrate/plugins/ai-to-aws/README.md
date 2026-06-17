@@ -72,10 +72,10 @@ progress is checkpointed to disk after every phase either way).
   excerpts of your prompts/responses — review before sharing)
 - Nothing is pushed to a remote; you review and push the branch yourself
 
-For targets available on bedrock-mantle (Haiku/Opus-class models), the plugin may offer an
-"express lane" at the checkpoint: keep your existing SDK and swap only the endpoint,
-credential, and model ID — instead of a full Converse rewrite. You choose; the default is
-the Converse rewrite, which works for all Bedrock models.
+When the migration plan selects the Mantle path (OpenAI-compatible endpoint on Bedrock),
+the rewriter keeps your existing SDK and swaps only the endpoint, credential, and model
+ID — instead of a full Converse rewrite. The path is chosen during the Assess/Design phase
+based on your SDK usage pattern and target model compatibility.
 
 The report includes a "How to Undo" section for discarding everything.
 

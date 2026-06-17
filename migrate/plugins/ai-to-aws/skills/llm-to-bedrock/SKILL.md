@@ -441,19 +441,11 @@ Below, AskUserQuestion:
   invalidates ANALYSIS/EVAL and execution resumes at C1). Cap: 2 retries.
 - **Abort** → stop, no code touched.
 
-**Gate (a.5) — Rewrite strategy (only when `analysis.mantle_available == true`).** Every
-target model has a Mantle equivalent, so offer the express lane via AskUserQuestion:
-
-- **Mantle express lane** → keep the current SDK; the rewriter changes only the client
-  `base_url`, the credential (to a Bedrock bearer token), and the model IDs. Show these
-  caveats verbatim: subject to Mantle RPM limits; no native Bedrock guardrails; no
-  cross-region (`us.`) inference profiles; limited to the Mantle model subset.
-- **Converse rewrite (Recommended)** → full boto3 Converse rewrite; works with all Bedrock
-  models and features.
-
-Record the choice as `rewrite_strategy` (`"mantle"` or `"converse"`). When
-`analysis.mantle_available` is absent or `false`, skip this gate — strategy is implicitly
-`converse`.
+**Gate (a.5) — Rewrite strategy (from migration plan).** Read `migration_path` from
+`$MIGRATION_DIR/aws-design-ai.json` → `ai_architecture.code_migration.migration_path`.
+If the value is `"mantle"`, set `rewrite_strategy = "mantle"`. Otherwise (value is
+`"converse"`, `"gpt-oss"`, or the field is absent), set `rewrite_strategy = "converse"`.
+No user question needed — the decision was already made during the Assess/Design phase.
 
 **Gate (b) — Behavior-delta resolution.** For each `analysis.behavior_deltas[]` with
 `user_visible == true`, AskUserQuestion with the options from `behavior-delta-detection`.
@@ -474,12 +466,12 @@ C5's context block includes the `Confirmed behavior-delta decisions file` line a
 `Report date suffix` line (from run-context, NOT today's date on a resume). C6's context
 block lists all four phase-result file paths.
 
-When Gate (a.5) selected the Mantle express lane, C5's context block ALSO includes:
+When `rewrite_strategy == "mantle"`, C5's context block ALSO includes:
 
 - `Rewrite strategy: mantle` (omit this line entirely for Converse — its absence is the
   signal for the default Converse path)
-- `Mantle model map (from analysis.mantle_models): <source -> bedrock = mantle-id>, ...` so
-  the rewriter knows which Mantle id to substitute per target.
+- `Mantle model map: <source-model> -> <bedrock-model-id>` — sourced from the plan's
+  `ai_architecture.bedrock_models[]` entries (each `source_model` → `aws_model_id` pair).
 
 ### C7 — Render summary
 

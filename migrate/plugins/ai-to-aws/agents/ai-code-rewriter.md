@@ -153,7 +153,7 @@ The source SDK stays. Per client, change only three things:
 
 - **base_url** → `https://bedrock-mantle.<REGION>.api.aws/v1` (OpenAI-compatible SDKs) or `https://bedrock-mantle.<REGION>.api.aws/anthropic/v1` (Anthropic SDK).
 - **Credential** → a Bedrock bearer token, NOT the original provider key, read from the `AWS_BEARER_TOKEN_BEDROCK` env var. Do not leave the old `api_key=os.environ["OPENAI_API_KEY"]` line in place.
-- **Model ID** → the Mantle id from the `Mantle model map` context line (e.g. `anthropic.claude-haiku-4-5`), not the runtime `us.…` id.
+- **Model ID** → the Bedrock model id from the `Mantle model map` context line (the `aws_model_id` from the migration plan).
 
 OpenAI SDK example:
 

@@ -45,6 +45,40 @@ def test_display_name_guess_derives_pricing_api_display_names():
     assert bp.display_name_guess("anthropic.claude-sonnet-4-6-20250514-v1:0") == "Claude Sonnet 4.6"
 
 
+def test_parse_price_dimensions_ignores_cache_dimensions():
+    """Cache read/write dimensions must not override base input/output rates."""
+    fragment = {
+        "terms": {"OnDemand": {"x": {"priceDimensions": {
+            "d1": {"unit": "1K tokens", "pricePerUnit": {"USD": "0.003"},
+                   "description": "Input tokens for Claude"},
+            "d2": {"unit": "1K tokens", "pricePerUnit": {"USD": "0.015"},
+                   "description": "Output tokens for Claude"},
+            "d3": {"unit": "1K tokens", "pricePerUnit": {"USD": "0.00030"},
+                   "description": "Cache read input tokens for Claude"},
+            "d4": {"unit": "1K tokens", "pricePerUnit": {"USD": "0.00375"},
+                   "description": "Cache write input tokens for Claude"},
+        }}}}}
+    out = bp.parse_price_dimensions(fragment)
+    assert out["input_per_1k_usd"] == 0.003
+    assert out["output_per_1k_usd"] == 0.015
+
+
+def test_parse_price_dimensions_ignores_batch_dimensions():
+    """Batch dimensions should be skipped."""
+    fragment = {
+        "terms": {"OnDemand": {"x": {"priceDimensions": {
+            "d1": {"unit": "1K tokens", "pricePerUnit": {"USD": "0.001"},
+                   "description": "Input token price for batch inference"},
+            "d2": {"unit": "1K tokens", "pricePerUnit": {"USD": "0.003"},
+                   "description": "Input tokens for Claude"},
+            "d3": {"unit": "1K tokens", "pricePerUnit": {"USD": "0.015"},
+                   "description": "Output tokens for Claude"},
+        }}}}}
+    out = bp.parse_price_dimensions(fragment)
+    assert out["input_per_1k_usd"] == 0.003
+    assert out["output_per_1k_usd"] == 0.015
+
+
 def test_lookup_serves_static_table_first_without_calling_the_api(monkeypatch):
     # Models in the curated table must not depend on boto3 at all.
     import builtins

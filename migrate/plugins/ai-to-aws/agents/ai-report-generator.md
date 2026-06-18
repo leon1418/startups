@@ -476,9 +476,8 @@ per-1M-token rates and the sample cost only, with the line
    git checkout <branch_name>
    git diff main..<branch_name>
    ```
-````
 
-1. **Set up AWS credentials:**
+2. **Set up AWS credentials:**
    - Configure AWS credentials with Bedrock access
    - Set environment variables per `.env.example`
    - Apply the generated least-privilege IAM policy: `.saws-migrate/iam-policy.json`
@@ -538,8 +537,8 @@ This evaluation was based on **<coverage_level>**:
 - **Live source baseline:** `<true / false>`. When false, every "PASS"
   classification means "Bedrock matches the dataset's stored answer" —
   which may itself have been synthesized. Treat the pass rate accordingly.
+````
 
-```
 Customize the template above with actual data from all previous phases.
 
 # 8. Completion

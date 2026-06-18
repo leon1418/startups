@@ -326,3 +326,27 @@ def test_run_context_missing_file_exits_2(tmp_path, capsys):
 
 def test_analysis_valid_without_optional_fields():
     assert validate("analysis", GOLDEN_ANALYSIS)
+
+
+def test_empty_object_mismatch_detected(tmp_path, capsys):
+    """Empty dict in saved vs absent key in current must be a mismatch."""
+    saved = copy.deepcopy(RUN_CONTEXT)
+    saved["resolved_model_overrides"] = {}
+    cur = copy.deepcopy(RUN_CONTEXT)
+    cur.pop("resolved_model_overrides", None)
+    s = write(tmp_path, "s.json", saved)
+    c = write(tmp_path, "c.json", cur)
+    assert vr.main(["--check-run-context", s, "--current", c]) == 1
+    assert "resolved_model_overrides" in capsys.readouterr().out
+
+
+def test_empty_array_mismatch_detected(tmp_path, capsys):
+    """Empty list in saved vs absent key in current must be a mismatch."""
+    saved = copy.deepcopy(RUN_CONTEXT)
+    saved["log_files"] = []
+    cur = copy.deepcopy(RUN_CONTEXT)
+    cur.pop("log_files", None)
+    s = write(tmp_path, "s.json", saved)
+    c = write(tmp_path, "c.json", cur)
+    assert vr.main(["--check-run-context", s, "--current", c]) == 1
+    assert "log_files" in capsys.readouterr().out

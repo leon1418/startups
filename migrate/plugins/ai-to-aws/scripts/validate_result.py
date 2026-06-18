@@ -109,14 +109,22 @@ def validate_phase(schema_name: str, file_path: str) -> int:
 
 
 def flatten(obj, prefix="$"):
-    """Pure: flatten nested JSON into {path: leaf-value} for field-wise diff."""
+    """Pure: flatten nested JSON into {path: leaf-value} for field-wise diff.
+    Empty containers are recorded as sentinel values so structural differences
+    (e.g. key present with {} vs key absent) are detected."""
     out = {}
     if isinstance(obj, dict):
-        for k, v in obj.items():
-            out.update(flatten(v, f"{prefix}.{k}"))
+        if not obj:
+            out[prefix] = "__empty_object__"
+        else:
+            for k, v in obj.items():
+                out.update(flatten(v, f"{prefix}.{k}"))
     elif isinstance(obj, list):
-        for i, v in enumerate(obj):
-            out.update(flatten(v, f"{prefix}[{i}]"))
+        if not obj:
+            out[prefix] = "__empty_array__"
+        else:
+            for i, v in enumerate(obj):
+                out.update(flatten(v, f"{prefix}[{i}]"))
     else:
         out[prefix] = obj
     return out

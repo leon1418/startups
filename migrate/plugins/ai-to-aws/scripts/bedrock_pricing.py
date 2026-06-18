@@ -15,16 +15,20 @@ import argparse, json, re, sys
 
 
 def parse_price_dimensions(price_item: dict) -> dict:
-    """Pure: pull input/output per-1K-token USD rates from one PriceList item."""
+    """Pure: pull input/output per-1K-token USD rates from one PriceList item.
+    Only matches base input/output token dimensions — excludes cache read/write
+    and other extended dimensions that share the 'input'/'output' substring."""
     inp = out = None
     terms = price_item.get("terms", {}).get("OnDemand", {})
     for term in terms.values():
         for dim in term.get("priceDimensions", {}).values():
             usd = float(dim.get("pricePerUnit", {}).get("USD", "0") or 0)
             desc = dim.get("description", "").lower()
-            if "input" in desc:
+            if any(skip in desc for skip in ("cache", "read", "write", "batch")):
+                continue
+            if "input" in desc and "token" in desc:
                 inp = usd
-            elif "output" in desc:
+            elif "output" in desc and "token" in desc:
                 out = usd
     return {"input_per_1k_usd": inp, "output_per_1k_usd": out}
 

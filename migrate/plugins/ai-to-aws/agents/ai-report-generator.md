@@ -483,13 +483,13 @@ per-1M-token rates and the sample cost only, with the line
    - Apply the generated least-privilege IAM policy: `.saws-migrate/iam-policy.json`
      (scoped to the exact model ARNs used in this migration — review before attaching to a role)
 
-2. **Run tests:**
+3. **Run tests:**
 
    ```bash
    <test command>
    ```
 
-3. **Open a PR:**
+4. **Open a PR:**
 
    ```bash
    git push origin <branch_name>
@@ -497,7 +497,7 @@ per-1M-token rates and the sample cost only, with the line
 
    Review with your team, then merge.
 
-4. **Deploy:**
+5. **Deploy:**
    Deploy using your normal deployment process.
 
 ## How to Undo
@@ -549,7 +549,7 @@ This is the terminal phase and runs WITHOUT a schema or result file — your del
 - **The headline numbers** — overall status (`ready-to-merge` / `needs-review` / `blocked`), pass rate, files changed, tests passing/total, and the app cost savings percent.
 - **Branch status** — `branch_name` and whether it was pushed.
 
-Example: *"Report written to `<repo>/MIGRATION_REPORT_2026-05-14.md`. Overall status: ready-to-merge. 95% prompt pass rate; 5 files changed; 27/27 tests passing; 72.2% app cost savings. Branch `<branch_name>` is local-only."* (substitute the rewriter's actual `branch_name`)
+Example: _"Report written to `<repo>/MIGRATION_REPORT_2026-05-14.md`. Overall status: ready-to-merge. 95% prompt pass rate; 5 files changed; 27/27 tests passing; 72.2% app cost savings. Branch `<branch_name>` is local-only."_ (substitute the rewriter's actual `branch_name`)
 
 Do NOT invent a strict schema or emit a YAML/JSON payload as the canonical output — the report file plus this prose summary are the deliverable.
 
@@ -580,4 +580,3 @@ Map the overall status per banner case + signals (use the **evaluator's** `pass_
 ## Hard-block
 
 It is rare for this agent to be unable to produce a report. If you genuinely cannot (e.g. every prior-phase input is missing or the repository is unreadable), return `{ blocked: { reason, detail } }` instead of a report. Otherwise, always produce the report.
-```

@@ -109,6 +109,7 @@ Parse into the golden-dataset schema (§10) with `source: "api_log"`.
 When a path from §7.1's channels points at a JSONL of input/output pairs (rather than a log export), `cp` it to `<REPO>/.saws-migrate/golden-dataset/user-pairs.jsonl`, then validate line-by-line (count parseable rows, skip malformed ones rather than aborting on the first):
 
 ```bash
+# Stdlib-only JSONL parse — no boto3, so bare python3 is fine here (no pinned env needed).
 python3 -c "
 import json
 ok = bad = 0
@@ -227,6 +228,7 @@ If the file is 0 bytes, re-write it once; if it is still 0 bytes after the retry
 If multiple golden entries have identical `system_prompt + user_prompt + image_path`, they're duplicates. Run a one-shot Python script via `Bash`:
 
 ```bash
+# Stdlib-only dedupe — no boto3, so bare python3 is fine here (no pinned env needed).
 python3 -c "
 import json, os, sys
 p = '<REPO>/.saws-migrate/golden-dataset/prompts.jsonl'

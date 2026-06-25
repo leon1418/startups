@@ -112,6 +112,7 @@ for the next invocation. Check progress against the LATEST run directory only (o
 
 ```bash
 MIGRATION_DIR=$(ls -td "$REPO/.migration"/*/ 2>/dev/null | head -1)
+# Stdlib-only JSON read — no boto3, so bare python3 is fine here (no pinned env needed).
 python3 -c "import json,sys; print(json.load(open('$MIGRATION_DIR/.phase-status.json'))['phases'].get('generate','missing'))" 2>/dev/null || echo "no-status-file"
 ```
 

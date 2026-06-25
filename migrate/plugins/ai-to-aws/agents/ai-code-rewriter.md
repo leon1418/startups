@@ -565,6 +565,8 @@ Choose the matching install command. More-specific lockfile presence wins (e.g. 
 
 - **Python with `pyproject.toml` (no lockfile, PEP 621 / pip):** `python3 -m venv .venv && .venv/bin/pip install --quiet -e . && .venv/bin/pip install --quiet pytest`
 - **Python with `requirements.txt`:** `python3 -m venv .venv && .venv/bin/pip install --quiet -r requirements.txt && .venv/bin/pip install --quiet pytest`
+
+(Note: this `python3` is the system `python3` building the **customer's** venv with **their** dependencies — it is not the plugin's pinned uv toolchain. Test execution happens inside `.venv/`, so the plugin's pinned env never touches the customer's package set.)
 - **Node.js with `pnpm-lock.yaml`:**
 
   ```
@@ -764,7 +766,9 @@ If any empty files found, rewrite them.
 # 24. Lint and type check
 
 ```bash
-# Python
+# Python — syntax-only check on the customer's modified source files.
+# Bare python3 is correct here: the plugin's pinned uv env has nothing
+# to do with parsing the customer's code, and py_compile is stdlib.
 python3 -m py_compile <modified_files> && echo 'SYNTAX OK'
 
 # Node.js / TypeScript

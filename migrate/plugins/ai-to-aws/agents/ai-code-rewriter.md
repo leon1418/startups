@@ -567,6 +567,7 @@ Choose the matching install command. More-specific lockfile presence wins (e.g. 
 - **Python with `requirements.txt`:** `python3 -m venv .venv && .venv/bin/pip install --quiet -r requirements.txt && .venv/bin/pip install --quiet pytest`
 
 (Note: this `python3` is the system `python3` building the **customer's** venv with **their** dependencies — it is not the plugin's pinned uv toolchain. Test execution happens inside `.venv/`, so the plugin's pinned env never touches the customer's package set.)
+
 - **Node.js with `pnpm-lock.yaml`:**
 
   ```

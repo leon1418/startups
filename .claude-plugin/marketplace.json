@@ -28,6 +28,12 @@
       "source": "./migrate/plugins/ai-to-aws",
       "version": "1.0.1",
       "description": "End-to-end AI migration to Amazon Bedrock: assess your codebase, design the architecture, then execute — rewriting SDK calls, evaluating quality, and delivering a ready-to-merge git branch. Requires the migration-to-aws plugin (it powers the Assess phase). With both installed, use /ai-to-aws:llm-to-bedrock for AI workloads — it adds the Execute half on top of migration-to-aws's assessment."
+    },
+    {
+      "name": "agent-advisor",
+      "source": "./migrate/plugins/agent-advisor",
+      "version": "0.1.0",
+      "description": "Decide how and where to run AI agents on AWS. Deterministic scoring recommends a runtime (AgentCore Runtime, Lambda MicroVMs, ECS, EKS, or Lambda), an AgentCore deployment model and services, and a Bedrock model default. Adapts questions to your technical background and produces a layered recommendation doc with an architecture diagram. Hands off heavy artifacts and migration execution to migration-to-aws and ai-to-aws."
     }
   ]
 }

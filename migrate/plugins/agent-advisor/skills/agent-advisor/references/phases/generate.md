@@ -5,9 +5,8 @@ Read `$RUN_DIR/design.json` and `$RUN_DIR/estimate.json`. Load the winning runti
 card and `${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-defaults.md`.
 
 ## Step 2 — Build the architecture diagram
-Follow the diagram build step (Plan 3: `references/diagram/build-diagram.md`) to produce the
-Mermaid block + ASCII fallback from `scoring-result.json` + `pass2.json`. If Plan 3 is not yet
-installed, emit a simple text node list as a placeholder and note it.
+Load `references/diagram/build-diagram.md` and follow it to produce `$RUN_DIR/diagram.md`
+(Mermaid + ASCII), then embed it into Section 4 of the recommendation doc.
 
 ## Step 3 — Fill the recommendation document
 Load `references/output-templates/recommendation-doc.md`. Fill ALL 12 sections. Business

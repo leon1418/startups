@@ -69,3 +69,26 @@ def render_mermaid(runtime, services, model, deployment_model):
         lines.append('    handoff["Compute configured by migration-to-aws"]')
         lines.append("    rt -.-> handoff")
     return "\n".join(lines)
+
+
+def render_ascii(runtime, services, model, deployment_model):
+    label = RUNTIME_LABELS.get(runtime, runtime)
+    if runtime == "agentcore" and deployment_model:
+        label = f"{label} ({deployment_model})"
+    lines = [
+        "User / Client",
+        "    |",
+        "    v",
+        f"[ {label} ]",
+        f"    |-- model --> Bedrock: {model}",
+    ]
+    for sid in services:
+        lines.append(f"    |-- service --> {SERVICE_LABELS[sid]}")
+    # bullet list mirror for easy scanning
+    if services:
+        lines.append("Services:")
+        for sid in services:
+            lines.append(f"  - {SERVICE_LABELS[sid]}")
+    if runtime in HANDOFF_RUNTIMES:
+        lines.append("Note: compute configured by migration-to-aws")
+    return "\n".join(lines)

@@ -67,3 +67,25 @@ def test_mermaid_deterministic():
     b = build_diagram.render_mermaid("agentcore", ["identity", "memory"],
                                      "claude_sonnet_4_6", "harness")
     assert a == b
+
+
+def test_ascii_contains_runtime_model_services():
+    out = build_diagram.render_ascii(
+        "agentcore", ["identity", "memory"], "claude_sonnet_4_6", "harness")
+    assert "AgentCore Runtime" in out
+    assert "harness" in out.lower()
+    assert "claude_sonnet_4_6" in out
+    assert "- Identity" in out and "- Memory" in out
+    assert "migration-to-aws" not in out
+
+
+def test_ascii_handoff_for_lambda():
+    out = build_diagram.render_ascii("lambda", [], "claude_sonnet_4_6", None)
+    assert "AWS Lambda" in out
+    assert "migration-to-aws" in out
+
+
+def test_ascii_deterministic():
+    a = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_4_6", None)
+    b = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_4_6", None)
+    assert a == b

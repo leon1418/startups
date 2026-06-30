@@ -1,0 +1,20 @@
+# Clarify wording — Technical audience
+
+Use direct technical terms. Map each answer onto the keys in clarify.md Step 3.
+
+- **session_duration**: "How long do agent tasks typically run? seconds / minutes / hours
+  (≤8h) / >8h or continuous."
+- **traffic_pattern**: "Traffic shape? bursty with idle / steady continuous / mostly idle."
+- **session_state**: "Execution model? stateless / stateful / human-in-the-loop approvals."
+- **isolation**: "Multi-tenant isolation required between users? required / nice-to-have / not needed."
+- **memory_needs**: "Memory across conversations? cross-session / session-only / none."
+- **ops_preference**: "Ops you want to own? minimal (push code, get URL) / serverless with OS
+  control / containers / Kubernetes full control."
+- **compute_tier**: "Per-session compute? light (≤2 vCPU/8 GB) / heavy non-GPU (>2 vCPU) / GPU."
+- **idle_resume**: "On idle-then-resume, do running processes need to continue exactly
+  (process_level), is filesystem persistence enough (filesystem), or not needed (none)?"
+- **launch_concurrency**: "Peak new-session launch rate? high (>5/sec) / moderate / low."
+- **multi_agent / framework / existing_cluster / multi_cloud / platform_fit**: ask directly.
+- **compliance**: multi-select.
+- **model_priority / model_features / current_model / region**: ask directly (current_model
+  only for migrate).

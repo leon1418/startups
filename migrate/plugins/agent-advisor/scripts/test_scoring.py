@@ -339,3 +339,30 @@ def test_golden_microvms_high_launch_emits_warning():
                     "launch_concurrency": "high"}}, profiles=_real_profiles())
     assert result["verdict"] == "lambda_microvms"
     assert any("5 TPS" in w for w in result["warnings"])
+
+
+VALID_STATUSES = {"ga", "preview", "coming_soon"}
+
+
+@pytest.mark.parametrize("profile", scoring.load_profiles(
+    statuses=frozenset({"ga", "preview", "coming_soon"})),
+    ids=lambda p: p["id"])
+def test_profile_is_well_formed(profile):
+    assert profile["status"] in VALID_STATUSES
+    for dim, value_map in profile["affinities"].items():
+        assert dim in scoring.DIMENSIONS, f"unknown dimension {dim}"
+        for value, points in value_map.items():
+            assert isinstance(points, int), f"{dim}.{value} not an int"
+            assert value in scoring.LEGAL_VALUES[dim], f"illegal value {dim}.{value}"
+        # explicit-unknown authoring rule: a declared dimension must declare ALL legal
+        # values (so the neutral fallback is never an accident of sparse data).
+        declared = set(value_map)
+        legal = set(scoring.LEGAL_VALUES[dim])
+        assert declared == legal, (
+            f"{profile['id']}.{dim} declares {sorted(declared)}, "
+            f"must declare all of {sorted(legal)}")
+    # hard-constraint fields must be answerable keys
+    answerable = set(scoring.DIMENSIONS) | {"compliance"}
+    for constraint in profile["hard_constraints"]:
+        assert constraint["field"] in answerable
+        assert "reason" in constraint and constraint["reason"]

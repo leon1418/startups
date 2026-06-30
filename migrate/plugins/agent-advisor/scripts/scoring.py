@@ -19,6 +19,24 @@ DIMENSIONS = [
     "launch_concurrency",
 ]
 
+# Legal answer values per scoring dimension (the closed set the engine reasons about).
+LEGAL_VALUES = {
+    "session_duration": ["under_15min", "15min_to_8hr", "over_8hr", "unknown"],
+    "traffic_pattern": ["bursty", "steady", "idle", "unknown"],
+    "platform_fit": ["ecs", "eks", "lambda", "none", "unknown"],
+    "session_state": ["stateless", "stateful", "hitl", "unknown"],
+    "ops_preference": ["minimal", "moderate", "full_control", "unknown"],
+    "isolation": ["required", "nice_to_have", "not_needed", "unknown"],
+    "memory_needs": ["cross_session", "session_only", "none", "unknown"],
+    "multi_agent": ["yes", "no", "unknown"],
+    "framework": ["strands", "langgraph", "crewai", "custom", "none", "unknown"],
+    "existing_cluster": ["eks", "ecs", "none", "unknown"],
+    "multi_cloud": ["yes", "no", "unknown"],
+    "idle_resume": ["process_level", "filesystem", "none", "unknown"],
+    "compute_tier": ["light", "heavy_non_gpu", "gpu", "unknown"],
+    "launch_concurrency": ["high", "moderate", "low", "unknown"],
+}
+
 DEFAULTS = {
     **{dim: "unknown" for dim in DIMENSIONS},
     "compliance": ["none"],

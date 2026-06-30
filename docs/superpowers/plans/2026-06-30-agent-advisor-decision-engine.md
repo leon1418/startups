@@ -54,6 +54,15 @@
 }
 ```
 
+**Explicit-`unknown` authoring rule (mitigates sparse-profile bias):** the engine falls back
+to `NEUTRAL_SCORE` for any dimension/value a profile does not declare. To keep scoring
+predictable and auditable, **every profile MUST declare every dimension it lists in
+`affinities` with all of that dimension's legal values, including an explicit `unknown`
+entry.** A profile may omit a whole dimension (then every value of it scores neutral for that
+runtime — an intentional "this dimension doesn't differentiate me" statement), but it must not
+declare a dimension with only some values. The Task 12 consistency test enforces this. This
+makes the neutral fallback a deliberate, visible choice rather than an accident of sparse data.
+
 **`score(input_data)` output shape** (the contract Plans 2 & 3 consume):
 ```json
 {
@@ -199,12 +208,17 @@ def load_profiles(runtimes_dir=RUNTIMES_DIR, statuses=frozenset({"ga"})):
 - [ ] **Step 5: Run test to verify it passes**
 
 Run: `cd migrate/plugins/agent-advisor/scripts && uv run pytest test_scoring.py -v`
-Expected: PASS (3 passed).
+Expected: PASS (3 passed). This run also generates `uv.lock` in `scripts/`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Commit (including the generated `uv.lock`)**
+
+The first `uv run` creates `scripts/uv.lock`. Commit it — the sibling `ai-to-aws` plugin
+commits its lock file, and committing it prevents `uv run` from regenerating (and thus
+mutating) the source tree during read-only `--plugin-dir` installs.
 
 ```bash
 git add migrate/plugins/agent-advisor/scripts/pyproject.toml \
+        migrate/plugins/agent-advisor/scripts/uv.lock \
         migrate/plugins/agent-advisor/scripts/scoring.py \
         migrate/plugins/agent-advisor/scripts/test_scoring.py
 git commit -m "feat(agent-advisor): scaffold scoring scripts + runtime profile loader"
@@ -751,7 +765,7 @@ git commit -m "feat(agent-advisor): minimal Bedrock model default (no pricing)"
 - Consumes: `raw_answers` (the caller's answers before defaults), `answers` (post-defaults), `verdict`.
 - Produces:
   - `_collect_assumptions(raw_answers: dict) -> list[str]` — one entry per scoring dimension that was absent or `"unknown"` in `raw_answers`: `"<dim> defaulted to unknown"`.
-  - `_collect_warnings(answers: dict, verdict: str) -> list[str]` — if `verdict == "lambda_microvms"` and `answers.get("launch_concurrency") == "high"`, returns the 5 TPS guardrail warning (spec §7.3/§11); otherwise `[]`.
+  - `_collect_warnings(answers: dict, verdict: str, co_recommend: list[str] | None = None) -> list[str]` — fires the 5 TPS guardrail warning (spec §7.3/§11) when `answers.get("launch_concurrency") == "high"` AND Lambda MicroVMs is the (co-)winner: either `verdict == "lambda_microvms"`, OR `verdict == "co_recommend"` and `"lambda_microvms"` is in `co_recommend`. Otherwise `[]`. The `co_recommend` parameter defaults to `None` (treated as empty).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -769,6 +783,20 @@ def test_warning_fires_for_microvms_high_launch():
         {"launch_concurrency": "high"}, "lambda_microvms")
     assert len(warnings) == 1
     assert "5 TPS" in warnings[0]
+
+
+def test_warning_fires_for_microvms_in_co_recommend():
+    warnings = scoring._collect_warnings(
+        {"launch_concurrency": "high"}, "co_recommend",
+        co_recommend=["agentcore", "lambda_microvms"])
+    assert len(warnings) == 1
+    assert "5 TPS" in warnings[0]
+
+
+def test_no_warning_when_microvms_not_in_co_recommend():
+    assert scoring._collect_warnings(
+        {"launch_concurrency": "high"}, "co_recommend",
+        co_recommend=["ecs", "eks"]) == []
 
 
 def test_no_warning_for_other_verdict():
@@ -794,9 +822,13 @@ def _collect_assumptions(raw_answers):
     return out
 
 
-def _collect_warnings(answers, verdict):
+def _collect_warnings(answers, verdict, co_recommend=None):
     warnings = []
-    if verdict == "lambda_microvms" and answers.get("launch_concurrency") == "high":
+    microvms_is_winner = (
+        verdict == "lambda_microvms"
+        or (verdict == "co_recommend" and "lambda_microvms" in (co_recommend or []))
+    )
+    if microvms_is_winner and answers.get("launch_concurrency") == "high":
         warnings.append(
             "Lambda MicroVMs RunMicrovm is capped at 5 TPS and is not "
             "adjustable; high-concurrency launch storms will queue. If launch "
@@ -808,7 +840,7 @@ def _collect_warnings(answers, verdict):
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd migrate/plugins/agent-advisor/scripts && uv run pytest test_scoring.py -k "assumptions or warning" -v`
-Expected: PASS (3 passed).
+Expected: PASS (5 passed).
 
 - [ ] **Step 5: Commit**
 
@@ -922,7 +954,7 @@ def score(input_data, profiles=None):
         "agentcore_services": _select_agentcore_services(answers),
         "model_recommendation": _select_model(answers),
         "assumptions_used": _collect_assumptions(raw_answers),
-        "warnings": _collect_warnings(answers, verdict),
+        "warnings": _collect_warnings(answers, verdict, co_recommend),
     }
     if verdict == "co_recommend":
         result["co_recommend"] = co_recommend
@@ -1020,7 +1052,7 @@ git commit -m "feat(agent-advisor): score() orchestration, CLI, and output schem
 
 ---
 
-### Task 10: Author the five runtime profiles + golden scenario tests
+### Task 10: Author the five runtime profiles
 
 **Files:**
 - Create: `migrate/plugins/agent-advisor/skills/shared/runtimes/agentcore.json`
@@ -1028,11 +1060,15 @@ git commit -m "feat(agent-advisor): score() orchestration, CLI, and output schem
 - Create: `migrate/plugins/agent-advisor/skills/shared/runtimes/ecs.json`
 - Create: `migrate/plugins/agent-advisor/skills/shared/runtimes/eks.json`
 - Create: `migrate/plugins/agent-advisor/skills/shared/runtimes/lambda.json`
-- Test: `migrate/plugins/agent-advisor/scripts/test_scoring.py`
 
 **Interfaces:**
-- Consumes: `load_profiles`, `score` (against the real default `RUNTIMES_DIR`).
-- Produces: the production registry — five `ga` profiles the engine loads by default.
+- Consumes: `load_profiles` (to validate the files load).
+- Produces: the production registry — five `ga` profiles the engine loads by default. Each
+  profile declares every dimension it lists in `affinities` with all legal values (incl.
+  `unknown`), per the explicit-`unknown` authoring rule in the Data Model.
+
+(Golden scenario tests that assert *which runtime wins* are split into Task 11 — that is where
+affinity tuning happens, and it deserves its own review gate.)
 
 - [ ] **Step 1: Create `agentcore.json`**
 
@@ -1211,7 +1247,43 @@ git commit -m "feat(agent-advisor): score() orchestration, CLI, and output schem
 }
 ```
 
-- [ ] **Step 6: Write golden scenario tests against the real registry**
+- [ ] **Step 6: Verify all five profiles load**
+
+Run:
+```bash
+cd migrate/plugins/agent-advisor/scripts && uv run python -c "import scoring; ids=sorted(p['id'] for p in scoring.load_profiles()); print(ids); assert ids==['agentcore','ecs','eks','lambda','lambda_microvms']"
+```
+Expected: `['agentcore', 'ecs', 'eks', 'lambda', 'lambda_microvms']` (no `ValueError` from the loader's required-key / JSON checks).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add migrate/plugins/agent-advisor/skills/shared/runtimes/
+git commit -m "feat(agent-advisor): author 5 runtime profiles"
+```
+
+---
+
+### Task 11: Golden scenario tests + affinity tuning
+
+**Files:**
+- Test: `migrate/plugins/agent-advisor/scripts/test_scoring.py`
+- Modify (tuning only): `migrate/plugins/agent-advisor/skills/shared/runtimes/*.json`
+
+**Interfaces:**
+- Consumes: `load_profiles`, `score` (against the real default `RUNTIMES_DIR`).
+- Produces: behavioral guarantees that the intended runtime wins each canonical scenario. This
+  is where the affinity weights authored in Task 10 get **tuned** — expect iteration. The
+  engine and the question set are fixed; only the profile `affinities` data is adjusted.
+
+**Tuning guidance:** the neutral-default-sum model means a change to one runtime's affinity for
+one value shifts that runtime's total in every scenario touching that dimension. Tune one
+failing scenario at a time, re-run the whole golden set after each change, and prefer changing
+the *winner's* affinity up or the *loser's* down on the **specific differentiating dimension**
+for that scenario (not broad changes). Budget real time here — this is the hardest part of the
+engine.
+
+- [ ] **Step 1: Write the golden scenario tests**
 
 Add to `test_scoring.py`:
 
@@ -1273,31 +1345,63 @@ def test_golden_microvms_high_launch_emits_warning():
     assert any("5 TPS" in w for w in result["warnings"])
 ```
 
-- [ ] **Step 7: Run the golden tests**
+- [ ] **Step 2: Run the golden tests and tune until green**
 
 Run: `cd migrate/plugins/agent-advisor/scripts && uv run pytest test_scoring.py -k golden -v`
-Expected: PASS (6 passed). If a `verdict` assertion fails, adjust the affinity values in the relevant profile JSON (not the engine) until the intended runtime wins — the engine is fixed, the data is what's tuned.
+Expected: PASS (6 passed). If a `verdict` assertion fails, adjust the affinity values in the
+relevant profile JSON (not the engine), following the Tuning guidance above, until the intended
+runtime wins. Re-run the full golden set after each edit to catch regressions in other scenarios.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 3: Run the entire suite to confirm no regressions**
+
+Run: `cd migrate/plugins/agent-advisor/scripts && uv run pytest test_scoring.py -v`
+Expected: PASS (all tests, unit + golden).
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add migrate/plugins/agent-advisor/skills/shared/runtimes/ \
-        migrate/plugins/agent-advisor/scripts/test_scoring.py
-git commit -m "feat(agent-advisor): author 5 runtime profiles + golden scenario tests"
+git add migrate/plugins/agent-advisor/scripts/test_scoring.py \
+        migrate/plugins/agent-advisor/skills/shared/runtimes/
+git commit -m "test(agent-advisor): golden scenario tests + affinity tuning"
 ```
 
 ---
 
-### Task 11: Profile consistency test (parametrized over the registry)
+### Task 12: Profile consistency test (parametrized over the registry)
 
 **Files:**
 - Test: `migrate/plugins/agent-advisor/scripts/test_scoring.py`
 
 **Interfaces:**
-- Consumes: `load_profiles`, `DIMENSIONS`.
-- Produces: a guard test so a future malformed profile (illegal dimension, bad affinity type, unknown status value) fails CI rather than silently mis-scoring.
+- Consumes: `load_profiles`, `DIMENSIONS`, `LEGAL_VALUES`.
+- Produces: a guard test so a future malformed profile (illegal dimension, bad affinity type, unknown status value, OR a partially-declared dimension that would leak silent neutral scores) fails CI rather than silently mis-scoring. Enforces the explicit-`unknown` authoring rule from the Data Model.
 
-- [ ] **Step 1: Write the failing/guard test**
+- [ ] **Step 1: Add `LEGAL_VALUES` to scoring.py**
+
+The consistency test needs the legal value set per dimension to verify complete declaration.
+Add to `scoring.py` (near `DIMENSIONS`):
+
+```python
+# Legal answer values per scoring dimension (the closed set the engine reasons about).
+LEGAL_VALUES = {
+    "session_duration": ["under_15min", "15min_to_8hr", "over_8hr", "unknown"],
+    "traffic_pattern": ["bursty", "steady", "idle", "unknown"],
+    "platform_fit": ["ecs", "eks", "lambda", "none", "unknown"],
+    "session_state": ["stateless", "stateful", "hitl", "unknown"],
+    "ops_preference": ["minimal", "moderate", "full_control", "unknown"],
+    "isolation": ["required", "nice_to_have", "not_needed", "unknown"],
+    "memory_needs": ["cross_session", "session_only", "none", "unknown"],
+    "multi_agent": ["yes", "no", "unknown"],
+    "framework": ["strands", "langgraph", "crewai", "custom", "none", "unknown"],
+    "existing_cluster": ["eks", "ecs", "none", "unknown"],
+    "multi_cloud": ["yes", "no", "unknown"],
+    "idle_resume": ["process_level", "filesystem", "none", "unknown"],
+    "compute_tier": ["light", "heavy_non_gpu", "gpu", "unknown"],
+    "launch_concurrency": ["high", "moderate", "low", "unknown"],
+}
+```
+
+- [ ] **Step 2: Write the guard test**
 
 Add to `test_scoring.py`:
 
@@ -1310,11 +1414,18 @@ VALID_STATUSES = {"ga", "preview", "coming_soon"}
     ids=lambda p: p["id"])
 def test_profile_is_well_formed(profile):
     assert profile["status"] in VALID_STATUSES
-    # affinity dimensions must be real scoring dimensions
-    for dim in profile["affinities"]:
+    for dim, value_map in profile["affinities"].items():
         assert dim in scoring.DIMENSIONS, f"unknown dimension {dim}"
-        for value, points in profile["affinities"][dim].items():
+        for value, points in value_map.items():
             assert isinstance(points, int), f"{dim}.{value} not an int"
+            assert value in scoring.LEGAL_VALUES[dim], f"illegal value {dim}.{value}"
+        # explicit-unknown authoring rule: a declared dimension must declare ALL legal
+        # values (so the neutral fallback is never an accident of sparse data).
+        declared = set(value_map)
+        legal = set(scoring.LEGAL_VALUES[dim])
+        assert declared == legal, (
+            f"{profile['id']}.{dim} declares {sorted(declared)}, "
+            f"must declare all of {sorted(legal)}")
     # hard-constraint fields must be answerable keys
     answerable = set(scoring.DIMENSIONS) | {"compliance"}
     for constraint in profile["hard_constraints"]:
@@ -1322,21 +1433,24 @@ def test_profile_is_well_formed(profile):
         assert "reason" in constraint and constraint["reason"]
 ```
 
-- [ ] **Step 2: Run the consistency test**
+- [ ] **Step 3: Run the consistency test**
 
 Run: `cd migrate/plugins/agent-advisor/scripts && uv run pytest test_scoring.py -k well_formed -v`
-Expected: PASS (5 parametrized cases — one per real profile).
+Expected: PASS (5 parametrized cases — one per real profile). If a profile fails the
+all-values assertion, add the missing legal values (incl. `unknown`) to that dimension in the
+profile JSON.
 
-- [ ] **Step 3: Run the entire suite once more**
+- [ ] **Step 4: Run the entire suite once more**
 
 Run: `cd migrate/plugins/agent-advisor/scripts && uv run pytest test_scoring.py -v`
 Expected: PASS (all tests green).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add migrate/plugins/agent-advisor/scripts/test_scoring.py
-git commit -m "test(agent-advisor): parametrized profile consistency guard"
+git add migrate/plugins/agent-advisor/scripts/scoring.py \
+        migrate/plugins/agent-advisor/scripts/test_scoring.py
+git commit -m "test(agent-advisor): parametrized profile consistency guard + LEGAL_VALUES"
 ```
 
 ---
@@ -1345,23 +1459,25 @@ git commit -m "test(agent-advisor): parametrized profile consistency guard"
 
 **Spec coverage (Plan 1 scope only — the decision engine):**
 
-- §6.1 carry over scoring.py/test_scoring.py via uv → Tasks 1-11 ✓
+- §6.1 carry over scoring.py/test_scoring.py via uv (uv.lock committed) → Tasks 1-12 ✓
 - §6.2 hard-constraint-first + weighted scoring + tie co-recommend + no_viable → Tasks 2,3,4 ✓
 - §6.3 minimal model default, no pricing tables, coarse migrate family → Task 7 ✓
 - §7.2 Lambda MicroVMs as first-class scored runtime → Task 10 (`lambda_microvms.json`, `status: ga`) ✓
 - §7.3 new differentiating dimensions (idle_resume, compute_tier, launch_concurrency) → Data Model + Tasks 3,10 ✓
 - §7.4 hard constraints incl. GPU/heavy_non_gpu/over_8hr; FedRAMP via volatile_facts not hardcoded for microvms → Task 10 profiles ✓
-- §7.1 regression: >8hr eliminates both AgentCore and Lambda MicroVMs → Task 10 golden test ✓
-- §7.3 5 TPS guardrail warning → Task 8 + Task 10 golden test ✓
+- §7.1 regression: >8hr eliminates both AgentCore and Lambda MicroVMs → Task 11 golden test ✓
+- §7.3 5 TPS guardrail warning, incl. co_recommend verdicts containing Lambda MicroVMs → Task 8 + Task 11 golden test ✓
 - §8 Layer 1 registry (JSON, one file per runtime, generic engine, add runtime = add file) → all tasks ✓
 - §8 Layer 2 volatile_facts present in profiles (MCP refresh consumed by Plan 2, not engine) → Task 10 profiles carry the field ✓
-- §13 checklist items for scoring (test_scoring passes; Lambda MicroVMs wins its scenarios; >8hr regression) → Tasks 10,11 ✓
+- §13 checklist items for scoring (test_scoring passes; Lambda MicroVMs wins its scenarios; >8hr regression) → Tasks 11,12 ✓
 
 **Deferred to later plans (correctly out of Plan 1 scope):** §3.2 shared-reference reads, §5 Clarify wording, §9 knowledge layer/MCP runtime calls, §10 output doc + diagram, §11 chat-level error handling, §12 packaging, install-time verification. These are Plan 2 (orchestration) and Plan 3 (diagram).
 
-**Placeholder scan:** No TBD/TODO. Every code step shows complete code; every profile is full JSON. Task 10 Step 7 notes that affinity *data* may need tuning to make golden assertions pass — this is expected data-tuning, not a code placeholder (the engine is fixed).
+**Sparse-profile bias mitigation (Kiro review):** the explicit-`unknown` authoring rule (Data Model) requires each profile to declare all legal values for any dimension it lists; Task 12's consistency test enforces it. This keeps the neutral fallback a deliberate, audited choice. Affinity tuning is isolated into its own Task 11 with explicit tuning guidance and a full-suite regression run after each edit.
 
-**Type consistency:** `load_profiles`, `_apply_hard_constraints`, `_compute_scores`, `_determine_verdict`, `_select_deployment_model`, `_select_agentcore_services`, `_select_model`, `_collect_assumptions`, `_collect_warnings`, `score` — names used identically across tasks. `DIMENSIONS` (14 items) consistent between Task 3 definition and Tasks 8/11 consumers. Output keys match the `scoring-result.json` schema (Task 9) and the Data Model contract.
+**Placeholder scan:** No TBD/TODO. Every code step shows complete code; every profile is full JSON. Task 11 Step 2 notes that affinity *data* may need tuning to make golden assertions pass — this is expected data-tuning, not a code placeholder (the engine is fixed).
+
+**Type consistency:** `load_profiles`, `_apply_hard_constraints`, `_compute_scores`, `_determine_verdict`, `_select_deployment_model`, `_select_agentcore_services`, `_select_model`, `_collect_assumptions`, `_collect_warnings(answers, verdict, co_recommend=None)`, `score` — names used identically across tasks. `score()` passes `co_recommend` into `_collect_warnings` (Task 9). `DIMENSIONS` (14 items) and `LEGAL_VALUES` consistent between Task 3/12 definitions and consumers. Output keys match the `scoring-result.json` schema (Task 9) and the Data Model contract.
 
 ---
 

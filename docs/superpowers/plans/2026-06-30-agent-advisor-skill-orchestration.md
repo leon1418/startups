@@ -463,7 +463,13 @@ recommends a runtime; the conversation adapts to the user's technical background
 - **"Load"** = Read the file with the Read tool and follow it. Do not summarize or skip.
 - **`$RUN_DIR`** = the run directory under `.agent-advisor/` (e.g. `.agent-advisor/0630-1430/`),
   created in Turn 1.
-- **`$PLUGIN`** = `${CLAUDE_PLUGIN_ROOT}` (the installed plugin root).
+- **`$PLUGIN`** = `${CLAUDE_PLUGIN_ROOT}` (the installed plugin root). On Claude Code this token
+  substitutes inline. **If `${CLAUDE_PLUGIN_ROOT}` does not resolve** (some Cursor/Codex builds,
+  or a literal `${CLAUDE_PLUGIN_ROOT}` string showing up in a path error), fall back to the
+  skill's own directory: this SKILL.md lives at `<plugin>/skills/agent-advisor/SKILL.md`, so
+  shared files are at `../shared/...` and scripts at `../../scripts/...` relative to it
+  (mirrors the sibling `ai-to-aws` skill's `<SKILL_BASE>/../../scripts` pattern). Prefer
+  `${CLAUDE_PLUGIN_ROOT}`; use the relative fallback only when it fails to resolve.
 
 ## Prerequisites
 - `uv` available (for scoring). Check: `uv --version`. If missing, tell the user to install
@@ -653,6 +659,14 @@ Only include keys you can detect with reasonable confidence. Everything else sta
 ## Step 3 — Tell the user what was detected
 List the detected signals so the user can correct them in Clarify. These pre-fills let
 Clarify skip questions (Pass 1 asks fewer for build_deploy/migrate).
+
+**Determinism boundary (important):** these detections are a *best-effort LLM interpretation*
+of code, NOT deterministic facts. They become inputs to the deterministic scoring engine, so a
+wrong detection silently biases scoring. Mitigation: (1) only write a signal you can detect
+with high confidence — when unsure, omit it and let Clarify ask; (2) always present detected
+signals to the user as "detected: X (correct me if wrong)" so they have a correction
+opportunity before scoring runs. This is the one point where LLM interpretation enters the
+otherwise deterministic pipeline.
 
 ## Step 4 — Write state
 Set `phases.discover` = completed.
@@ -853,13 +867,28 @@ they want (services run on any runtime). Record them.
 
 ## Step 4 — If verdict is co_recommend or no_viable_runtime
 - co_recommend: present the tied runtimes with "choose A if X / B if Y" framing; ask the user
-  to pick one, then run Step 2/3 for the pick.
+  to pick one. Record the pick as `chosen_runtime` (Step 5). Then run Step 2/3 for the pick.
 - no_viable_runtime: show `blocking_constraints`; ask which constraint can relax; if one
-  changes, update `answers.json` and re-run scoring (clarify.md Step 5), then return here.
+  changes, rewrite `$RUN_DIR/answers.json` with the changed value and re-run the scoring engine
+  (same command as clarify.md Step 5):
+  ```bash
+  uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts python ${CLAUDE_PLUGIN_ROOT}/scripts/scoring.py $RUN_DIR/answers.json
+  ```
+  This overwrites `$RUN_DIR/scoring-result.json`. Re-read it and return to Step 1.
 
 ## Step 5 — Write pass2.json and state
-Write `$RUN_DIR/pass2.json` with `deployment_model` (confirmed), `agentcore_services` (final),
-and any native-vs-gateway choices. Clarify stays completed.
+Write `$RUN_DIR/pass2.json` with:
+- `deployment_model` (confirmed),
+- `agentcore_services` (final list),
+- `chosen_runtime` (REQUIRED when the verdict was `co_recommend` — the runtime id the user
+  picked in Step 4; the architecture-diagram composer in Plan 3 reads this to know which runtime
+  to draw). Omit for single-winner verdicts.
+- any native-vs-gateway choices.
+```json
+{"deployment_model": "harness", "agentcore_services": ["identity", "memory"],
+ "chosen_runtime": "eks", "tool_choices": {"web_search": "native"}}
+```
+Clarify stays completed.
 ````
 
 - [ ] **Step 2: Verify file exists**
@@ -1014,6 +1043,11 @@ Cached anchors (order-of-magnitude, us-east-1, verify):
 ## Step 3 — Produce a magnitude, not a quote
 Estimate a rough monthly band (e.g. "order of $50–150/month at this usage") from the runtime
 + model + a stated usage assumption. State every assumption. Never present a precise total.
+
+> Determinism note: this magnitude is computed in the LLM layer (convention-aligned with
+> migration-to-aws, which also estimates in-skill). It is the one output that is NOT
+> script-deterministic. Acceptable for v1 (magnitude-only, every assumption stated); flagged as
+> a future candidate to move into a small deterministic script if precision is ever required.
 
 ## Step 4 — Write estimate.json
 ```json
@@ -1330,12 +1364,29 @@ Invoke `/agent-advisor:add-capabilities`; confirm it reads the agentcore.md sect
 - [ ] **Step 4: Confirm scoring runs end-to-end on the install**
 
 Confirm `uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts python ${CLAUDE_PLUGIN_ROOT}/scripts/scoring.py <answers.json>`
-produces `scoring-result.json` and prints `RESULT=ok VERDICT=...`.
+produces `scoring-result.json` and prints `RESULT=ok VERDICT=...`. Confirm `scripts/uv.lock`
+was committed (Plan 1 Task 1) so this run does not modify the source tree.
 
-- [ ] **Step 5: Record the result**
+- [ ] **Step 5: Test a local `--plugin-dir` install**
 
-If everything resolves, note it in the PR description. If a fallback was needed, document it in
-`migrate/plugins/agent-advisor/INSTALL_VERIFICATION.md` and adjust the SKILL.md path style
+Install via `--plugin-dir` pointing at the repo's `migrate/plugins/agent-advisor` and trigger
+the main skill. Confirm: (a) shared reads still resolve, and (b) `uv run` does NOT create or
+modify files in the source tree (it should reuse the committed `uv.lock`). If `uv.lock` is
+regenerated, that is a finding — the lock was not committed correctly.
+
+- [ ] **Step 6: Test on Cursor (the relative-path fallback)**
+
+Install on Cursor (inline mode). Trigger the skill and confirm shared reads resolve. If
+`${CLAUDE_PLUGIN_ROOT}` does not substitute on Cursor, confirm the SKILL.md relative-path
+fallback (`../shared/...`, `../../scripts/...`) works instead. Record which path style each
+platform needed.
+
+- [ ] **Step 7: Record the result**
+
+If everything resolves on all platforms, note it in the PR description. If a fallback was
+needed (relative paths on Cursor, or the documented symlink option from spec §3.2 if the shared
+folder doesn't resolve at all), document it in
+`migrate/plugins/agent-advisor/INSTALL_VERIFICATION.md` and adjust the SKILL.md path guidance
 accordingly, then commit.
 
 ---
@@ -1369,6 +1420,17 @@ DIMENSIONS exactly. `verdict` / `deployment_model` / `agentcore_services` / `war
 `model_recommendation` consumed in T7/T8/T10 match Plan 1's `scoring-result.json` schema.
 `$RUN_DIR`, `$PLUGIN`, `.phase-status.json` keys consistent across T3-T10. Entry-point ids
 (`build_scratch`/`build_deploy`/`migrate`/`add_capabilities`) consistent T3/T4/T8.
+
+**Cross-plan contract (Kiro review fix):** `pass2.json` `chosen_runtime` is now explicitly
+written by T7 Step 5 for co_recommend verdicts — this is the key Plan 3's diagram composer
+reads to know which tied runtime to draw. `agentcore_services` in `pass2.json` is the final
+list Plan 3 prefers over the scoring default.
+
+**Determinism boundary (Kiro review):** T5 discover.md explicitly flags LLM-interpreted
+pre-fills as the one non-deterministic input (with a user-correction opportunity); T9
+estimate.md flags the LLM-layer cost magnitude as a future determinism candidate. T7 Step 4's
+no_viable re-scoring path shows the explicit `uv run scoring.py` command (not just a prose
+reference).
 
 ---
 

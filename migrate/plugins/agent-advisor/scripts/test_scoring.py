@@ -197,6 +197,15 @@ def test_model_migrate_adds_family_note_without_pricing():
     assert "$" not in rec["pricing_note"]
 
 
+def test_model_migrate_with_extended_thinking_keeps_override():
+    rec = scoring._select_model({
+        "_entry_point": "migrate", "current_model": "gpt4o",
+        "model_features": "extended_thinking"})
+    assert rec["model"] == "claude_sonnet_4_6_thinking"  # extended-thinking override wins
+    assert rec["migration_from"] == "gpt4o"
+    assert "migration-to-aws" in rec["pricing_note"]
+
+
 def test_assumptions_lists_unknown_dimensions():
     assumptions = scoring._collect_assumptions({"session_duration": "under_15min"})
     assert "session_duration defaulted to unknown" not in assumptions

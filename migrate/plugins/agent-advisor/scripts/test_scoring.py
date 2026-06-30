@@ -125,3 +125,27 @@ def test_verdict_no_viable_runtime():
         {}, eliminated={"agentcore": "x", "lambda": "y"})
     assert verdict == "no_viable_runtime"
     assert co == []
+
+
+def _agentcore_with_models():
+    return {**_minimal("agentcore"),
+            "deployment_models": ["harness", "framework_on_runtime"]}
+
+
+def test_deployment_model_none_when_runtime_has_no_models():
+    profiles = [{**_minimal("ecs"), "deployment_models": []}]
+    assert scoring._select_deployment_model({}, "ecs", profiles) is None
+
+
+def test_deployment_model_framework_for_multi_agent():
+    profiles = [_agentcore_with_models()]
+    dm = scoring._select_deployment_model(
+        {"multi_agent": "yes", "framework": "none"}, "agentcore", profiles)
+    assert dm == "framework_on_runtime"
+
+
+def test_deployment_model_harness_for_single_agent_no_framework():
+    profiles = [_agentcore_with_models()]
+    dm = scoring._select_deployment_model(
+        {"multi_agent": "no", "framework": "none"}, "agentcore", profiles)
+    assert dm == "harness"

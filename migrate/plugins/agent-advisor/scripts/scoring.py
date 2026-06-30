@@ -87,3 +87,17 @@ def _determine_verdict(scores, eliminated):
     if len(top) > 1:
         return "co_recommend", top
     return top[0], []
+
+
+def _select_deployment_model(answers, verdict, profiles):
+    profile = next((p for p in profiles if p["id"] == verdict), None)
+    if profile is None:
+        return None
+    models = profile.get("deployment_models", [])
+    if "harness" not in models or "framework_on_runtime" not in models:
+        return None
+    if answers.get("multi_agent") == "yes":
+        return "framework_on_runtime"
+    if answers.get("framework") in ("langgraph", "crewai", "custom"):
+        return "framework_on_runtime"
+    return "harness"

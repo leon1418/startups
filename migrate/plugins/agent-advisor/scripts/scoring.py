@@ -157,3 +157,26 @@ def _select_model(answers):
                 "Coarse family mapping only — see migration-to-aws for "
                 "detailed model pricing and TCO comparison.")
     return rec
+
+
+def _collect_assumptions(raw_answers):
+    out = []
+    for dim in DIMENSIONS:
+        if raw_answers.get(dim, "unknown") == "unknown":
+            out.append(f"{dim} defaulted to unknown")
+    return out
+
+
+def _collect_warnings(answers, verdict, co_recommend=None):
+    warnings = []
+    microvms_is_winner = (
+        verdict == "lambda_microvms"
+        or (verdict == "co_recommend" and "lambda_microvms" in (co_recommend or []))
+    )
+    if microvms_is_winner and answers.get("launch_concurrency") == "high":
+        warnings.append(
+            "Lambda MicroVMs RunMicrovm is capped at 5 TPS and is not "
+            "adjustable; high-concurrency launch storms will queue. If launch "
+            "rate matters at scale, reconsider AgentCore Runtime (25 TPS, "
+            "adjustable).")
+    return warnings

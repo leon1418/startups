@@ -195,3 +195,35 @@ def test_model_migrate_adds_family_note_without_pricing():
     assert rec["migration_from"] == "gpt4o"
     assert "migration-to-aws" in rec["pricing_note"]
     assert "$" not in rec["pricing_note"]
+
+
+def test_assumptions_lists_unknown_dimensions():
+    assumptions = scoring._collect_assumptions({"session_duration": "under_15min"})
+    assert "session_duration defaulted to unknown" not in assumptions
+    assert "traffic_pattern defaulted to unknown" in assumptions
+
+
+def test_warning_fires_for_microvms_high_launch():
+    warnings = scoring._collect_warnings(
+        {"launch_concurrency": "high"}, "lambda_microvms")
+    assert len(warnings) == 1
+    assert "5 TPS" in warnings[0]
+
+
+def test_warning_fires_for_microvms_in_co_recommend():
+    warnings = scoring._collect_warnings(
+        {"launch_concurrency": "high"}, "co_recommend",
+        co_recommend=["agentcore", "lambda_microvms"])
+    assert len(warnings) == 1
+    assert "5 TPS" in warnings[0]
+
+
+def test_no_warning_when_microvms_not_in_co_recommend():
+    assert scoring._collect_warnings(
+        {"launch_concurrency": "high"}, "co_recommend",
+        co_recommend=["ecs", "eks"]) == []
+
+
+def test_no_warning_for_other_verdict():
+    assert scoring._collect_warnings(
+        {"launch_concurrency": "high"}, "agentcore") == []

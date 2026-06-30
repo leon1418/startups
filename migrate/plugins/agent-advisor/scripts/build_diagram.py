@@ -40,3 +40,13 @@ def resolve_runtime(result, pass2):
     if verdict == "no_viable_runtime":
         return "none"
     return verdict
+
+
+def resolve_services(result, pass2):
+    services = pass2.get("agentcore_services") or result.get("agentcore_services", [])
+    seen, out = set(), []
+    for sid in services:
+        if sid in SERVICE_LABELS and sid not in seen:
+            seen.add(sid)
+            out.append(sid)
+    return out

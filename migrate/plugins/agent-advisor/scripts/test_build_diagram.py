@@ -24,3 +24,21 @@ def test_resolve_runtime_no_viable():
 def test_labels_cover_all_runtimes():
     for rid in ("agentcore", "lambda_microvms", "ecs", "eks", "lambda"):
         assert rid in build_diagram.RUNTIME_LABELS
+
+
+def test_resolve_services_prefers_pass2():
+    result = {"agentcore_services": ["identity", "observability"]}
+    pass2 = {"agentcore_services": ["identity", "memory", "gateway"]}
+    assert build_diagram.resolve_services(result, pass2) == [
+        "identity", "memory", "gateway"]
+
+
+def test_resolve_services_falls_back_to_result():
+    result = {"agentcore_services": ["identity", "observability"]}
+    assert build_diagram.resolve_services(result, {}) == [
+        "identity", "observability"]
+
+
+def test_resolve_services_filters_unknown_and_dedupes():
+    pass2 = {"agentcore_services": ["identity", "identity", "bogus", "memory"]}
+    assert build_diagram.resolve_services({}, pass2) == ["identity", "memory"]

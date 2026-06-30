@@ -101,3 +101,24 @@ def _select_deployment_model(answers, verdict, profiles):
     if answers.get("framework") in ("langgraph", "crewai", "custom"):
         return "framework_on_runtime"
     return "harness"
+
+
+AGENTCORE_ALWAYS_SERVICES = ["identity", "observability", "evaluations", "optimization"]
+
+
+def _select_agentcore_services(answers):
+    services = list(AGENTCORE_ALWAYS_SERVICES)
+
+    def add(name):
+        if name not in services:
+            services.append(name)
+
+    if answers.get("session_state") in ("hitl", "stateful"):
+        add("memory")
+    if answers.get("memory_needs") == "cross_session":
+        add("memory")
+    if answers.get("isolation") == "required":
+        add("policy")
+    if answers.get("multi_agent") == "yes":
+        add("gateway")
+    return services

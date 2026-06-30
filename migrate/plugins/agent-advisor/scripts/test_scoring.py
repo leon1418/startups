@@ -149,3 +149,23 @@ def test_deployment_model_harness_for_single_agent_no_framework():
     dm = scoring._select_deployment_model(
         {"multi_agent": "no", "framework": "none"}, "agentcore", profiles)
     assert dm == "harness"
+
+
+def test_services_always_on_baseline():
+    assert scoring._select_agentcore_services({}) == [
+        "identity", "observability", "evaluations", "optimization"]
+
+
+def test_services_add_memory_and_policy_and_gateway():
+    services = scoring._select_agentcore_services({
+        "memory_needs": "cross_session", "isolation": "required",
+        "multi_agent": "yes"})
+    assert services[:4] == [
+        "identity", "observability", "evaluations", "optimization"]
+    assert services[4:] == ["memory", "policy", "gateway"]
+
+
+def test_services_no_duplicate_memory():
+    services = scoring._select_agentcore_services({
+        "session_state": "hitl", "memory_needs": "cross_session"})
+    assert services.count("memory") == 1

@@ -42,3 +42,28 @@ def test_resolve_services_falls_back_to_result():
 def test_resolve_services_filters_unknown_and_dedupes():
     pass2 = {"agentcore_services": ["identity", "identity", "bogus", "memory"]}
     assert build_diagram.resolve_services({}, pass2) == ["identity", "memory"]
+
+
+def test_mermaid_has_runtime_model_and_services():
+    out = build_diagram.render_mermaid(
+        "agentcore", ["identity", "memory"], "claude_sonnet_4_6", "harness")
+    assert out.startswith("flowchart TD")
+    assert "AgentCore Runtime" in out
+    assert "harness" in out.lower()
+    assert "claude_sonnet_4_6" in out
+    assert "Identity" in out and "Memory" in out
+    assert "migration-to-aws" not in out  # no handoff for agentcore
+
+
+def test_mermaid_adds_handoff_note_for_ecs():
+    out = build_diagram.render_mermaid("ecs", [], "claude_sonnet_4_6", None)
+    assert "Amazon ECS (Fargate)" in out
+    assert "migration-to-aws" in out
+
+
+def test_mermaid_deterministic():
+    a = build_diagram.render_mermaid("agentcore", ["identity", "memory"],
+                                     "claude_sonnet_4_6", "harness")
+    b = build_diagram.render_mermaid("agentcore", ["identity", "memory"],
+                                     "claude_sonnet_4_6", "harness")
+    assert a == b

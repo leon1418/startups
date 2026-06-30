@@ -50,3 +50,22 @@ def resolve_services(result, pass2):
             seen.add(sid)
             out.append(sid)
     return out
+
+
+def render_mermaid(runtime, services, model, deployment_model):
+    label = RUNTIME_LABELS.get(runtime, runtime)
+    if runtime == "agentcore" and deployment_model:
+        label = f"{label}<br/>({deployment_model})"
+    lines = ["flowchart TD"]
+    lines.append(f'    user["User / Client"]')
+    lines.append(f'    rt["{label}"]')
+    lines.append(f'    model["Bedrock: {model}"]')
+    lines.append("    user --> rt")
+    lines.append("    rt --> model")
+    for sid in services:
+        lines.append(f'    svc_{sid}["{SERVICE_LABELS[sid]}"]')
+        lines.append(f"    rt --> svc_{sid}")
+    if runtime in HANDOFF_RUNTIMES:
+        lines.append('    handoff["Compute configured by migration-to-aws"]')
+        lines.append("    rt -.-> handoff")
+    return "\n".join(lines)

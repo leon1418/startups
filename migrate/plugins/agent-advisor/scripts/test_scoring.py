@@ -169,3 +169,29 @@ def test_services_no_duplicate_memory():
     services = scoring._select_agentcore_services({
         "session_state": "hitl", "memory_needs": "cross_session"})
     assert services.count("memory") == 1
+
+
+def test_model_default_balanced():
+    rec = scoring._select_model({"model_priority": "balanced"})
+    assert rec["model"] == "claude_sonnet_4_6"
+    assert "pricing_note" not in rec
+
+
+def test_model_speed_picks_haiku():
+    rec = scoring._select_model({"model_priority": "speed"})
+    assert rec["model"] == "claude_haiku_4_5"
+
+
+def test_model_extended_thinking_override():
+    rec = scoring._select_model(
+        {"model_priority": "quality", "model_features": "extended_thinking"})
+    assert rec["model"] == "claude_sonnet_4_6_thinking"
+
+
+def test_model_migrate_adds_family_note_without_pricing():
+    rec = scoring._select_model(
+        {"_entry_point": "migrate", "current_model": "gpt4o",
+         "model_priority": "unknown"})
+    assert rec["migration_from"] == "gpt4o"
+    assert "migration-to-aws" in rec["pricing_note"]
+    assert "$" not in rec["pricing_note"]

@@ -122,3 +122,38 @@ def _select_agentcore_services(answers):
     if answers.get("multi_agent") == "yes":
         add("gateway")
     return services
+
+
+_MODEL_PRIORITY = {
+    "quality": ("claude_sonnet_4_6", "Best quality for agentic workloads"),
+    "balanced": ("claude_sonnet_4_6", "Balanced quality, speed, and cost"),
+    "speed": ("claude_haiku_4_5", "Fastest response time"),
+    "cost": ("claude_haiku_4_5", "Lowest cost per token"),
+    "unknown": ("claude_sonnet_4_6", "Default for agentic workloads"),
+}
+
+# Coarse family mapping only — detailed pricing lives in migration-to-aws.
+_MIGRATE_FAMILY = {
+    "gpt4": "claude_sonnet_4_6", "gpt4o": "claude_sonnet_4_6",
+    "gemini_flash": "nova_lite", "gemini_pro": "claude_sonnet_4_6",
+    "claude": "claude_sonnet_4_6", "other": "claude_sonnet_4_6",
+}
+
+
+def _select_model(answers):
+    model, reasoning = _MODEL_PRIORITY.get(
+        answers.get("model_priority", "unknown"), _MODEL_PRIORITY["unknown"])
+    rec = {"model": model, "reasoning": reasoning}
+    if answers.get("model_features") == "extended_thinking":
+        rec["model"] = "claude_sonnet_4_6_thinking"
+        rec["reasoning"] = "Extended thinking for deep reasoning"
+    if answers.get("_entry_point") == "migrate":
+        current = answers.get("current_model", "unknown")
+        if current in _MIGRATE_FAMILY:
+            rec["migration_from"] = current
+            if answers.get("model_features", "unknown") in ("unknown", "none"):
+                rec["model"] = _MIGRATE_FAMILY[current]
+            rec["pricing_note"] = (
+                "Coarse family mapping only — see migration-to-aws for "
+                "detailed model pricing and TCO comparison.")
+    return rec

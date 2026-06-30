@@ -10,6 +10,24 @@ RUNTIMES_DIR = pathlib.Path(__file__).parent.parent / "skills" / "shared" / "run
 
 _REQUIRED_PROFILE_KEYS = ("id", "status", "affinities", "hard_constraints")
 
+NEUTRAL_SCORE = 2
+
+DIMENSIONS = [
+    "session_duration", "traffic_pattern", "platform_fit", "session_state",
+    "ops_preference", "isolation", "memory_needs", "multi_agent", "framework",
+    "existing_cluster", "multi_cloud", "idle_resume", "compute_tier",
+    "launch_concurrency",
+]
+
+DEFAULTS = {
+    **{dim: "unknown" for dim in DIMENSIONS},
+    "compliance": ["none"],
+    "model_priority": "unknown",
+    "model_features": "unknown",
+    "current_model": "unknown",
+    "region": "unknown",
+}
+
 
 def load_profiles(runtimes_dir=RUNTIMES_DIR, statuses=frozenset({"ga"})):
     """Load runtime profiles whose status is in `statuses`, sorted by id."""
@@ -41,3 +59,17 @@ def _apply_hard_constraints(answers, profiles):
                 eliminated[profile["id"]] = constraint["reason"]
                 break
     return eliminated
+
+
+def _compute_scores(answers, profiles, eliminated):
+    scores = {}
+    for profile in profiles:
+        if profile["id"] in eliminated:
+            continue
+        affinities = profile.get("affinities", {})
+        total = 0
+        for dim in DIMENSIONS:
+            value = answers.get(dim, "unknown")
+            total += affinities.get(dim, {}).get(value, NEUTRAL_SCORE)
+        scores[profile["id"]] = total
+    return scores

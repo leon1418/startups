@@ -76,3 +76,31 @@ def test_hard_constraint_no_match():
     eliminated = scoring._apply_hard_constraints(
         {"session_duration": "15min_to_8hr", "compliance": ["none"]}, profiles)
     assert eliminated == {}
+
+
+def test_compute_scores_uses_affinity_and_neutral_default():
+    profiles = [
+        {**_minimal("agentcore"), "affinities": {
+            "session_duration": {"15min_to_8hr": 5},
+            "traffic_pattern": {"bursty": 5}}},
+        {**_minimal("ecs"), "affinities": {
+            "session_duration": {"15min_to_8hr": 3}}},
+    ]
+    answers = {"session_duration": "15min_to_8hr", "traffic_pattern": "bursty"}
+    scores = scoring._compute_scores(answers, profiles, eliminated={})
+    # agentcore: 5 + 5 + neutral(2)*12 remaining dims = 34
+    # ecs: 3 + neutral(2) + neutral(2)*12 = 29
+    assert scores["agentcore"] == 5 + 5 + scoring.NEUTRAL_SCORE * 12
+    assert scores["ecs"] == 3 + scoring.NEUTRAL_SCORE * 13
+    assert scores["agentcore"] > scores["ecs"]
+
+
+def test_compute_scores_omits_eliminated():
+    profiles = [{**_minimal("agentcore"), "affinities": {}}]
+    scores = scoring._compute_scores({}, profiles, eliminated={"agentcore": "x"})
+    assert scores == {}
+
+
+def test_defaults_cover_all_dimensions():
+    for dim in scoring.DIMENSIONS:
+        assert dim in scoring.DEFAULTS

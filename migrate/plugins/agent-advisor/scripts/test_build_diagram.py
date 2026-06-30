@@ -104,3 +104,42 @@ def test_build_diagram_no_viable():
     out = build_diagram.build_diagram({"verdict": "no_viable_runtime"}, {})
     assert "No viable runtime" in out["mermaid"]
     assert "No viable runtime" in out["ascii"]
+
+
+def test_golden_agentcore_full():
+    result = {"verdict": "agentcore", "deployment_model": "framework_on_runtime",
+              "agentcore_services": ["identity", "observability", "memory", "gateway"],
+              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+    out = build_diagram.build_diagram(result, {})
+    # runtime + deployment model + all four services + model, no handoff
+    assert "framework_on_runtime" in out["mermaid"]
+    for svc in ("Identity", "Observability", "Memory", "Gateway"):
+        assert svc in out["mermaid"] and svc in out["ascii"]
+    assert "migration-to-aws" not in out["mermaid"]
+
+
+def test_golden_lambda_microvms_no_services_no_handoff():
+    result = {"verdict": "lambda_microvms", "deployment_model": None,
+              "agentcore_services": [],
+              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+    out = build_diagram.build_diagram(result, {})
+    assert "Lambda MicroVMs" in out["mermaid"]
+    assert "migration-to-aws" not in out["mermaid"]  # MicroVMs is not a handoff runtime
+
+
+def test_golden_ecs_has_handoff():
+    result = {"verdict": "ecs", "deployment_model": None,
+              "agentcore_services": ["identity"],
+              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+    out = build_diagram.build_diagram(result, {})
+    assert "migration-to-aws" in out["mermaid"]
+    assert "migration-to-aws" in out["ascii"]
+
+
+def test_golden_co_recommend_renders_chosen():
+    result = {"verdict": "co_recommend", "co_recommend": ["ecs", "eks"],
+              "deployment_model": None, "agentcore_services": [],
+              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+    out = build_diagram.build_diagram(result, {"chosen_runtime": "eks"})
+    assert "Amazon EKS" in out["mermaid"]
+    assert "migration-to-aws" in out["mermaid"]  # eks is a handoff runtime

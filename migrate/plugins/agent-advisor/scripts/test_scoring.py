@@ -282,3 +282,60 @@ def test_score_output_matches_schema(tmp_path):
         (pathlib.Path(scoring.__file__).parent / "schemas"
          / "scoring-result.json").read_text())
     jsonschema.validate(result, schema)
+
+
+def _real_profiles():
+    return scoring.load_profiles()  # default RUNTIMES_DIR
+
+
+def test_golden_loads_five_ga_runtimes():
+    ids = {p["id"] for p in _real_profiles()}
+    assert ids == {"agentcore", "lambda_microvms", "ecs", "eks", "lambda"}
+
+
+def test_golden_over_8hr_eliminates_agentcore_and_microvms():
+    # Regression against the old PM decision-tree bug (spec §7.1).
+    result = scoring.score({
+        "entry_point": "migrate",
+        "answers": {"session_duration": "over_8hr"}}, profiles=_real_profiles())
+    assert "agentcore" in result["eliminated"]
+    assert "lambda_microvms" in result["eliminated"]
+    assert result["verdict"] in ("ecs", "eks", "co_recommend")
+
+
+def test_golden_microvms_wins_process_level_resume():
+    result = scoring.score({
+        "entry_point": "build_deploy",
+        "answers": {"session_duration": "15min_to_8hr", "idle_resume": "process_level",
+                    "session_state": "hitl", "ops_preference": "moderate"}},
+        profiles=_real_profiles())
+    assert result["verdict"] == "lambda_microvms"
+
+
+def test_golden_microvms_wins_heavy_non_gpu():
+    result = scoring.score({
+        "entry_point": "build_deploy",
+        "answers": {"compute_tier": "heavy_non_gpu", "session_duration": "15min_to_8hr"}},
+        profiles=_real_profiles())
+    assert "agentcore" in result["eliminated"]
+    assert result["verdict"] == "lambda_microvms"
+
+
+def test_golden_agentic_io_wait_favors_agentcore():
+    result = scoring.score({
+        "entry_point": "build_scratch",
+        "answers": {"session_duration": "15min_to_8hr", "traffic_pattern": "bursty",
+                    "session_state": "hitl", "ops_preference": "minimal",
+                    "multi_agent": "no", "framework": "none"}},
+        profiles=_real_profiles())
+    assert result["verdict"] == "agentcore"
+    assert result["deployment_model"] == "harness"
+
+
+def test_golden_microvms_high_launch_emits_warning():
+    result = scoring.score({
+        "entry_point": "build_deploy",
+        "answers": {"compute_tier": "heavy_non_gpu", "session_duration": "15min_to_8hr",
+                    "launch_concurrency": "high"}}, profiles=_real_profiles())
+    assert result["verdict"] == "lambda_microvms"
+    assert any("5 TPS" in w for w in result["warnings"])

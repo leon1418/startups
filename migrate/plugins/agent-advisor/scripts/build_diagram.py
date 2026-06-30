@@ -92,3 +92,44 @@ def render_ascii(runtime, services, model, deployment_model):
     if runtime in HANDOFF_RUNTIMES:
         lines.append("Note: compute configured by migration-to-aws")
     return "\n".join(lines)
+
+
+def build_diagram(result, pass2):
+    runtime = resolve_runtime(result, pass2)
+    if runtime == "none":
+        msg = "No viable runtime — see blocking constraints"
+        return {
+            "mermaid": f'flowchart TD\n    n["{msg}"]',
+            "ascii": f"[ {RUNTIME_LABELS['none']} ]\n{msg}",
+        }
+    services = resolve_services(result, pass2)
+    model = result.get("model_recommendation", {}).get("model", "unknown")
+    deployment_model = result.get("deployment_model")
+    return {
+        "mermaid": render_mermaid(runtime, services, model, deployment_model),
+        "ascii": render_ascii(runtime, services, model, deployment_model),
+    }
+
+
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description="agent-advisor diagram composer")
+    parser.add_argument("result", type=pathlib.Path)
+    parser.add_argument("pass2", type=pathlib.Path)
+    args = parser.parse_args(argv)
+    result = json.loads(args.result.read_text())
+    pass2 = json.loads(args.pass2.read_text()) if args.pass2.exists() else {}
+    diagram = build_diagram(result, pass2)
+    out = (
+        "```mermaid\n" + diagram["mermaid"] + "\n```\n\n"
+        "<details><summary>ASCII (plain-text fallback)</summary>\n\n"
+        "```\n" + diagram["ascii"] + "\n```\n\n</details>\n"
+    )
+    out_path = args.result.parent / "diagram.md"
+    out_path.write_text(out)
+    print(f"RESULT=ok RUNTIME={resolve_runtime(result, pass2)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

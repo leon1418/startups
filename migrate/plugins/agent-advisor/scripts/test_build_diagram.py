@@ -89,3 +89,18 @@ def test_ascii_deterministic():
     a = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_4_6", None)
     b = build_diagram.render_ascii("eks", ["identity"], "claude_sonnet_4_6", None)
     assert a == b
+
+
+def test_build_diagram_end_to_end():
+    result = {"verdict": "agentcore", "deployment_model": "harness",
+              "agentcore_services": ["identity"],
+              "model_recommendation": {"model": "claude_sonnet_4_6"}}
+    out = build_diagram.build_diagram(result, {})
+    assert "flowchart TD" in out["mermaid"]
+    assert "AgentCore Runtime" in out["ascii"]
+
+
+def test_build_diagram_no_viable():
+    out = build_diagram.build_diagram({"verdict": "no_viable_runtime"}, {})
+    assert "No viable runtime" in out["mermaid"]
+    assert "No viable runtime" in out["ascii"]

@@ -1,0 +1,34 @@
+{
+  "name": "agent-advisor",
+  "version": "0.1.0",
+  "description": "Decide how and where to run AI agents on AWS. Recommends a runtime, an AgentCore deployment model and services, and a Bedrock model default — backed by deterministic scoring.",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://aws.amazon.com"
+  },
+  "homepage": "https://github.com/awslabs/startups/tree/main/migrate",
+  "repository": "https://github.com/awslabs/startups",
+  "license": "Apache-2.0",
+  "keywords": [
+    "aws", "ai-agents", "agentcore", "bedrock", "lambda-microvms",
+    "ecs", "eks", "lambda", "runtime-selection", "agent-architecture",
+    "strands", "langgraph", "crewai", "deploy-agent", "agent-runtime"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Agent Advisor (Run AI Agents on AWS)",
+    "shortDescription": "Recommend how and where to run AI agents on AWS, with deterministic runtime scoring.",
+    "longDescription": "Answer a few adaptive questions about your agent and get a runtime recommendation (AgentCore Runtime, Lambda MicroVMs, ECS, EKS, or Lambda), an AgentCore deployment model and service set, and a Bedrock model default — all backed by a deterministic, testable scoring engine. The advisor adapts its questions to your technical background and produces one layered recommendation document (business summary plus technical detail) with an architecture diagram. It generates lightweight scaffolding for greenfield builds and hands off heavy artifact generation and migration execution to the migration-to-aws and ai-to-aws plugins.",
+    "developerName": "Amazon Web Services",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/awslabs/startups/tree/main/migrate",
+    "defaultPrompt": [
+      "Help me choose a runtime for my AI agent on AWS",
+      "AgentCore vs ECS vs Lambda MicroVMs for my agent",
+      "I have an agent idea — what should I deploy on AWS?",
+      "Add AgentCore services to my agent already on AWS"
+    ]
+  }
+}

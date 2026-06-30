@@ -1,0 +1,15 @@
+{
+  "name": "agent-advisor",
+  "displayName": "Agent Advisor (Run AI Agents on AWS)",
+  "version": "0.1.0",
+  "description": "Decide how and where to run AI agents on AWS. Recommends a runtime (AgentCore Runtime, Lambda MicroVMs, ECS, EKS, or Lambda), an AgentCore deployment model and services, and a Bedrock model default — backed by deterministic scoring. Produces a layered recommendation doc and lightweight scaffolding. Runs in inline mode on Cursor.",
+  "author": {
+    "name": "Amazon Web Services"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "aws", "ai-agents", "agentcore", "bedrock", "lambda-microvms",
+    "ecs", "eks", "lambda", "runtime-selection", "agent-architecture",
+    "strands", "langgraph", "crewai", "deploy-agent", "agent-runtime"
+  ]
+}

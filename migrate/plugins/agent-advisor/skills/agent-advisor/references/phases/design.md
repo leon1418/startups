@@ -34,6 +34,8 @@ supports all models.
 Set `handoff_required` = true when verdict is ecs/eks/lambda OR entry_point == migrate.
 
 ## Step 6 — Branch on entry point
-- entry_point == migrate → Load `references/handoff/handoff-migration.md` and follow it. STOP
-  after writing the handoff summary (do NOT run Estimate/Generate).
+- entry_point == migrate → set `phases.design` = completed, set `phases.estimate` = "skipped",
+  and continue to **Generate**. The user gets the same recommendation doc + architecture diagram
+  as Build paths; Generate then performs the handoff at the end. Do NOT run Estimate (precise
+  cost belongs downstream).
 - otherwise → set `phases.design` = completed and continue to Estimate.

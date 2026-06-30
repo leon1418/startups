@@ -1,11 +1,15 @@
 # Handoff — Migrate path
 
-The advisor's job ends at the decision. Execution belongs to the migration plugins.
+Loaded at the end of the **Generate** phase for `migrate` (after the user has already received
+the full recommendation doc + architecture diagram). The advisor's recommendation is done;
+**execution** belongs to the migration plugins. This step adds the machine-readable handoff
+artifact and points the user downstream — it does not replace the recommendation doc.
 
 ## Step 1 — Write the handoff summary
-Write `$RUN_DIR/handoff-summary.md` containing: recommended runtime + deployment model +
-services, coarse model family mapping (from model_recommendation.migration_from, no prices),
-and the rationale (top scoring signals + eliminations).
+Write `$RUN_DIR/handoff-summary.md` (a compact, machine-readable companion to
+`recommendation.md` for the downstream plugins) containing: recommended runtime + deployment
+model + services, coarse model family mapping (from model_recommendation.migration_from, no
+prices), and the rationale (top scoring signals + eliminations).
 
 ## Step 2 — Check downstream availability
 Check whether `migration-to-aws` and/or `ai-to-aws` appear in the available-skills list (do
@@ -19,6 +23,8 @@ NOT invoke them as a test).
   `/plugin install <name>@startups-for-aws` and tell the user to re-run that plugin with the
   handoff summary at `$RUN_DIR/handoff-summary.md`.
 
-## Step 4 — Write state and stop
-Set `phases.design` = completed. Do not advance to Estimate/Generate. Tell the user the advisor
-phase is done and the handoff summary is saved.
+## Step 4 — Finish
+Return to Generate Step 7, which sets `phases.generate` = completed. Tell the user the advisor
+phase is done: they have the recommendation doc + architecture diagram (`recommendation.md`),
+and the handoff summary (`handoff-summary.md`) is saved for the downstream plugins. Offer to
+kick off the recommended downstream plugin.

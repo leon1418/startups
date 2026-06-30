@@ -227,3 +227,58 @@ def test_no_warning_when_microvms_not_in_co_recommend():
 def test_no_warning_for_other_verdict():
     assert scoring._collect_warnings(
         {"launch_concurrency": "high"}, "agentcore") == []
+
+
+def test_score_end_to_end_with_fixture_profiles(tmp_path):
+    _write_profile(tmp_path, {
+        **_minimal("agentcore"),
+        "deployment_models": ["harness", "framework_on_runtime"],
+        "affinities": {"session_duration": {"15min_to_8hr": 5},
+                       "traffic_pattern": {"bursty": 5}},
+    })
+    _write_profile(tmp_path, {
+        **_minimal("lambda"),
+        "hard_constraints": [{"field": "session_duration",
+                              "value": "15min_to_8hr",
+                              "reason": "Lambda has 15-minute timeout"}],
+    })
+    profiles = scoring.load_profiles(tmp_path)
+    result = scoring.score({
+        "entry_point": "build_scratch",
+        "answers": {"session_duration": "15min_to_8hr",
+                    "traffic_pattern": "bursty", "multi_agent": "no",
+                    "framework": "none"}},
+        profiles=profiles)
+
+    assert result["verdict"] == "agentcore"
+    assert result["eliminated"] == {"lambda": "Lambda has 15-minute timeout"}
+    assert result["deployment_model"] == "harness"
+    assert result["agentcore_services"][0] == "identity"
+    assert "co_recommend" not in result
+    assert "blocking_constraints" not in result
+
+
+def test_score_no_viable_lists_blocking(tmp_path):
+    _write_profile(tmp_path, {
+        **_minimal("agentcore"),
+        "hard_constraints": [{"field": "session_duration", "value": "over_8hr",
+                              "reason": "8hr cap"}]})
+    profiles = scoring.load_profiles(tmp_path)
+    result = scoring.score(
+        {"entry_point": "build_scratch",
+         "answers": {"session_duration": "over_8hr"}}, profiles=profiles)
+    assert result["verdict"] == "no_viable_runtime"
+    assert result["blocking_constraints"] == ["agentcore: 8hr cap"]
+
+
+def test_score_output_matches_schema(tmp_path):
+    import jsonschema
+    _write_profile(tmp_path, {**_minimal("agentcore"),
+                              "deployment_models": ["harness", "framework_on_runtime"]})
+    profiles = scoring.load_profiles(tmp_path)
+    result = scoring.score(
+        {"entry_point": "build_scratch", "answers": {}}, profiles=profiles)
+    schema = json.loads(
+        (pathlib.Path(scoring.__file__).parent / "schemas"
+         / "scoring-result.json").read_text())
+    jsonschema.validate(result, schema)

@@ -180,3 +180,62 @@ def _collect_warnings(answers, verdict, co_recommend=None):
             "rate matters at scale, reconsider AgentCore Runtime (25 TPS, "
             "adjustable).")
     return warnings
+
+
+def score(input_data, profiles=None):
+    if profiles is None:
+        profiles = load_profiles()
+    entry_point = input_data.get("entry_point", "build_scratch")
+    raw_answers = input_data.get("answers", {})
+
+    answers = dict(DEFAULTS)
+    answers.update({k: v for k, v in raw_answers.items() if v is not None})
+    answers["_entry_point"] = entry_point
+
+    eliminated = _apply_hard_constraints(answers, profiles)
+    scores = _compute_scores(answers, profiles, eliminated)
+    verdict, co_recommend = _determine_verdict(scores, eliminated)
+
+    deployment_model = None
+    if verdict not in ("no_viable_runtime", "co_recommend"):
+        deployment_model = _select_deployment_model(answers, verdict, profiles)
+    elif verdict == "co_recommend":
+        for rid in co_recommend:
+            dm = _select_deployment_model(answers, rid, profiles)
+            if dm is not None:
+                deployment_model = dm
+                break
+
+    result = {
+        "verdict": verdict,
+        "scores": scores,
+        "eliminated": eliminated,
+        "deployment_model": deployment_model,
+        "agentcore_services": _select_agentcore_services(answers),
+        "model_recommendation": _select_model(answers),
+        "assumptions_used": _collect_assumptions(raw_answers),
+        "warnings": _collect_warnings(answers, verdict, co_recommend),
+    }
+    if verdict == "co_recommend":
+        result["co_recommend"] = co_recommend
+    if verdict == "no_viable_runtime":
+        result["blocking_constraints"] = [
+            f"{r}: {reason}" for r, reason in sorted(eliminated.items())]
+    return result
+
+
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description="agent-advisor runtime scoring")
+    parser.add_argument("answers", type=pathlib.Path, help="path to answers.json")
+    args = parser.parse_args(argv)
+    input_data = json.loads(args.answers.read_text())
+    result = score(input_data)
+    out_path = args.answers.parent / "scoring-result.json"
+    out_path.write_text(json.dumps(result, indent=2))
+    print(f"RESULT=ok VERDICT={result['verdict']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

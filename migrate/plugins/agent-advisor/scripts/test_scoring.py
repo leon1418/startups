@@ -45,3 +45,34 @@ def test_load_profiles_rejects_missing_key(tmp_path):
 
     with pytest.raises(ValueError, match="x.json"):
         scoring.load_profiles(tmp_path)
+
+
+def test_hard_constraint_scalar_match():
+    profiles = [
+        {**_minimal("agentcore"), "hard_constraints": [
+            {"field": "session_duration", "value": "over_8hr", "reason": "8hr cap"}]},
+        {**_minimal("ecs"), "hard_constraints": []},
+    ]
+    eliminated = scoring._apply_hard_constraints(
+        {"session_duration": "over_8hr"}, profiles)
+    assert eliminated == {"agentcore": "8hr cap"}
+
+
+def test_hard_constraint_compliance_list_match():
+    profiles = [
+        {**_minimal("agentcore"), "hard_constraints": [
+            {"field": "compliance", "value": "fedramp", "reason": "not FedRAMP"}]},
+    ]
+    eliminated = scoring._apply_hard_constraints(
+        {"compliance": ["soc2", "fedramp"]}, profiles)
+    assert eliminated == {"agentcore": "not FedRAMP"}
+
+
+def test_hard_constraint_no_match():
+    profiles = [
+        {**_minimal("agentcore"), "hard_constraints": [
+            {"field": "session_duration", "value": "over_8hr", "reason": "8hr cap"}]},
+    ]
+    eliminated = scoring._apply_hard_constraints(
+        {"session_duration": "15min_to_8hr", "compliance": ["none"]}, profiles)
+    assert eliminated == {}

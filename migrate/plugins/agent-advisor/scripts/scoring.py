@@ -25,3 +25,19 @@ def load_profiles(runtimes_dir=RUNTIMES_DIR, statuses=frozenset({"ga"})):
         if profile["status"] in statuses:
             profiles.append(profile)
     return sorted(profiles, key=lambda p: p["id"])
+
+
+def _apply_hard_constraints(answers, profiles):
+    eliminated = {}
+    compliance = answers.get("compliance", ["none"])
+    for profile in profiles:
+        for constraint in profile.get("hard_constraints", []):
+            field, trigger = constraint["field"], constraint["value"]
+            if field == "compliance":
+                matched = trigger in compliance
+            else:
+                matched = answers.get(field) == trigger
+            if matched:
+                eliminated[profile["id"]] = constraint["reason"]
+                break
+    return eliminated

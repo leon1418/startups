@@ -104,3 +104,24 @@ def test_compute_scores_omits_eliminated():
 def test_defaults_cover_all_dimensions():
     for dim in scoring.DIMENSIONS:
         assert dim in scoring.DEFAULTS
+
+
+def test_verdict_single_winner():
+    verdict, co = scoring._determine_verdict(
+        {"agentcore": 30, "ecs": 20}, eliminated={})
+    assert verdict == "agentcore"
+    assert co == []
+
+
+def test_verdict_co_recommend_within_threshold():
+    verdict, co = scoring._determine_verdict(
+        {"ecs": 30, "eks": 29, "lambda": 10}, eliminated={})
+    assert verdict == "co_recommend"
+    assert co == ["ecs", "eks"]
+
+
+def test_verdict_no_viable_runtime():
+    verdict, co = scoring._determine_verdict(
+        {}, eliminated={"agentcore": "x", "lambda": "y"})
+    assert verdict == "no_viable_runtime"
+    assert co == []

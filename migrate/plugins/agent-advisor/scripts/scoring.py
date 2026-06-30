@@ -73,3 +73,17 @@ def _compute_scores(answers, profiles, eliminated):
             total += affinities.get(dim, {}).get(value, NEUTRAL_SCORE)
         scores[profile["id"]] = total
     return scores
+
+
+TIE_THRESHOLD = 2
+
+
+def _determine_verdict(scores, eliminated):
+    active = {r: s for r, s in scores.items() if r not in eliminated}
+    if not active:
+        return "no_viable_runtime", []
+    max_score = max(active.values())
+    top = sorted(r for r, s in active.items() if s >= max_score - TIE_THRESHOLD)
+    if len(top) > 1:
+        return "co_recommend", top
+    return top[0], []

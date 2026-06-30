@@ -108,12 +108,12 @@ agent-advisor/
 │       └── scoring-result.json       # scoring.py output schema
 └── skills/
     ├── shared/                       # canonical knowledge, referenced by both skills
-    │   ├── runtimes/                 # ← runtime REGISTRY (one profile per runtime)
-    │   │   ├── agentcore.yaml
-    │   │   ├── lambda-microvms.yaml
-    │   │   ├── ecs.yaml
-    │   │   ├── eks.yaml
-    │   │   └── lambda.yaml
+    │   ├── runtimes/                 # ← runtime REGISTRY (one JSON profile per runtime)
+    │   │   ├── agentcore.json
+    │   │   ├── lambda-microvms.json
+    │   │   ├── ecs.json
+    │   │   ├── eks.json
+    │   │   └── lambda.json
     │   └── decision-refs/
     │       ├── decision-matrix.md    # human-readable view (generated from registry)
     │       ├── agentcore.md  ecs.md  eks.md  lambda.md  lambda-microvms.md  # service cards
@@ -132,6 +132,7 @@ agent-advisor/
     │       │   ├── estimate.md
     │       │   └── generate.md
     │       ├── output-templates/recommendation-doc.md
+    │       ├── diagram-fragments/      # Mermaid + ASCII pair per runtime/service/edge
     │       └── handoff/handoff-migration.md
     └── add-capabilities/             # standalone skill: already on AWS, add services
         └── SKILL.md
@@ -283,6 +284,21 @@ already exist in `migration-to-aws` and `ai-to-aws`, and pricing is the most vol
 - `model-defaults.md` holds only a forward default (requirement → Bedrock default), used to
   fill the cost estimate and the scaffold's `modelId`. Default: Claude Sonnet 4.6 (balanced);
   Haiku 4.5 for speed/cost.
+
+### 6.4 Cost magnitude — reuse migration-to-aws's pricing pattern
+
+Coarse cost magnitude (Build/Add paths) reuses `migration-to-aws`'s proven approach rather
+than inventing a new one:
+
+- A cached `pricing-cache.md`-style table is the **primary** source, carrying a
+  `Last updated` date and a staleness warning (e.g., "if today is >30 days after Last
+  updated, treat AI model prices as potentially stale").
+- The `awspricing` MCP is the **secondary** fallback for services not in the cache.
+- The estimate output records `pricing_source` (`cached` / `cached_stale` / `mcp`), mirroring
+  migration-to-aws so downstream behavior is consistent.
+
+This is magnitude-only ("order of $X/month, verify"), not the precise estimation
+`migration-to-aws` does — consistent with the thin-advisory boundary in §2.
 - For Migrate, the decision summary gives a **coarse family-level** mapping only; detailed
   pricing/TCO is handed off downstream.
 - SKILL.md notes the canonical pricing source is `migration-to-aws`, to prevent future
@@ -357,28 +373,40 @@ easy to change and new runtimes easy to add. Two layers.
 
 ### Layer 1 — Runtime registry
 
-Each runtime is a self-contained profile under `skills/shared/runtimes/<id>.yaml`, carrying:
+Each runtime is a self-contained profile under `skills/shared/runtimes/<id>.json` (JSON, to
+match the uv/scoring toolchain — `scoring.py` loads it with stdlib `json`, no extra deps),
+carrying:
 
-```yaml
-id: lambda_microvms
-display_name: "Lambda MicroVMs"
-status: ga                      # ga | preview | coming_soon  ← lifecycle switch
-launched: "2026-06-22"
-service_card: lambda-microvms.md
-hard_constraints:
-  - {field: session_duration, value: over_8hr, reason: "8hr session cap"}
-  - {field: compute_tier, value: gpu, reason: "No GPU support"}
-affinities:                     # only the dimensions/values it cares about; missing = neutral
-  session_duration: {15min_to_8hr: 5, under_15min: 3}
-  idle_resume:       {process_level: 5, filesystem: 2, none: 1}
-  compute_tier:      {heavy_non_gpu: 5, light: 2}
-  ...
-deployment_models: [...]        # runtime-specific Pass-2 follow-ups
-volatile_facts:                 # see Layer 2
-  - {key: session_cap, value: "8h", verify_via_mcp: true}
-  - {key: fedramp, value: "unknown", verify_via_mcp: true}
-  - {key: regions, value: [...], verify_via_mcp: true}
+```json
+{
+  "id": "lambda_microvms",
+  "display_name": "Lambda MicroVMs",
+  "status": "ga",
+  "launched": "2026-06-22",
+  "service_card": "lambda-microvms.md",
+  "hard_constraints": [
+    {"field": "session_duration", "value": "over_8hr", "reason": "8hr session cap"},
+    {"field": "compute_tier", "value": "gpu", "reason": "No GPU support"}
+  ],
+  "affinities": {
+    "session_duration": {"15min_to_8hr": 5, "under_15min": 3},
+    "idle_resume": {"process_level": 5, "filesystem": 2, "none": 1},
+    "compute_tier": {"heavy_non_gpu": 5, "light": 2}
+  },
+  "deployment_models": [],
+  "volatile_facts": [
+    {"key": "session_cap", "value": "8h", "verify_via_mcp": true},
+    {"key": "fedramp", "value": "unknown", "verify_via_mcp": true},
+    {"key": "regions", "value": [], "verify_via_mcp": true}
+  ]
+}
 ```
+
+- `status`: `ga` | `preview` | `coming_soon` — lifecycle switch.
+- `affinities`: only the dimensions/values this runtime cares about; missing dimensions
+  default to neutral.
+- `deployment_models`: runtime-specific Pass-2 follow-ups.
+- `volatile_facts`: see Layer 2.
 
 `scoring.py` becomes a generic engine: scan `runtimes/`, load all profiles whose `status`
 qualifies, and for each answer ask each profile "what's your affinity for this value?",
@@ -452,14 +480,49 @@ One Markdown document serving both audiences (business summary first, technical 
 1. Executive summary (business-readable)
 2. Customer profile (from answers)
 3. Recommendation: primary runtime (+ rationale, scored criteria)
-4. Alternatives considered (why eliminated / scored lower)
-5. Comparison matrix (relevant rows)
-6. Six dimensions (Identity, Observability, Guardrails, Scaling, Tool/Gateway, Protocols)
-7. AgentCore services (which to enable, why — applies to all runtimes)
-8. Bedrock model default (coarse family mapping for Migrate)
-9. Next steps (incl. handoff pointers)
-10. Freshness footer (generation date, which MCP lookups succeeded vs fell back, verify
+4. **Architecture diagram** (see §10.1) — the recommended deployment, rendered from the
+   scoring result
+5. Alternatives considered (why eliminated / scored lower)
+6. Comparison matrix (relevant rows)
+7. Six dimensions (Identity, Observability, Guardrails, Scaling, Tool/Gateway, Protocols)
+8. AgentCore services (which to enable, why — applies to all runtimes)
+9. Bedrock model default (coarse family mapping for Migrate)
+10. Next steps (incl. handoff pointers)
+11. Freshness footer (generation date, which MCP lookups succeeded vs fell back, verify
     disclaimer)
+
+### 10.1 Architecture diagram
+
+The report includes an architecture diagram of the recommended deployment, **assembled
+deterministically from the scoring result** (verdict + deployment model + activated AgentCore
+services + data flows) — same input → same diagram, testable, no hallucination. This is
+consistent with the `scoring.py` determinism philosophy.
+
+**Two renderings, emitted together:**
+
+- **Mermaid** (primary) — a fenced ```mermaid``` block embedded in the Markdown. Text-based,
+  version-controllable, renders in GitHub / VS Code / Claude.
+- **ASCII** (fallback) — a plain-text box diagram for terminals and environments that don't
+  render Mermaid. Emitted alongside the Mermaid block (in a collapsed/secondary section) so
+  the diagram is never invisible.
+
+**Assembly model (template composition):** predefined diagram fragments keyed by the scoring
+result, composed into one diagram:
+
+- A **runtime node** fragment per verdict (AgentCore Runtime / Lambda MicroVMs / ECS / EKS /
+  Lambda Standard); for AgentCore, the deployment-model variant (Harness vs Framework on
+  Runtime).
+- **AgentCore service nodes** for each activated service (Identity, Memory, Gateway, Policy,
+  KB, Code Interpreter, Browser, Web Search, Sandbox) — these apply on any runtime.
+- **Edge fragments** for data flows (user → runtime, runtime → Bedrock model, runtime →
+  services, runtime → external APIs via Gateway, runtime → data stores).
+- A **handoff annotation** when the verdict is a runtime that hands off to migration-to-aws
+  (ECS/EKS/Lambda), marking the compute layer as "configured by migration-to-aws".
+
+Fragments live under `references/diagram-fragments/` (Mermaid + ASCII pair per fragment);
+a `build-diagram` step in `generate.md` composes them. Because composition is keyed entirely
+by the `scoring-result.json` fields, the diagram is reproducible and covered by the same
+golden-output testing as the rest of Generate.
 
 ### Build scaffolding (lightweight)
 
@@ -510,6 +573,9 @@ written to disk + chat confirmation (mirrors `ai-to-aws` inline-mode handling).
       fallback + freshness footer when MCP is unavailable.
 - [ ] Migrate path stops after Design and writes a handoff file; install guidance shown when
       downstream plugins are absent.
+- [ ] Architecture diagram composes deterministically from `scoring-result.json` (golden
+      output: same result → same Mermaid + ASCII); both renderings emitted; handoff
+      annotation appears for ECS/EKS/Lambda verdicts.
 
 ---
 
@@ -517,7 +583,12 @@ written to disk + chat confirmation (mirrors `ai-to-aws` inline-mode handling).
 
 - Exact wording of the new differentiating questions (idle-resume, compute-tier) — drafted in
   `clarify-*.md` during implementation.
-- Whether the coarse cost magnitude for Build/Add uses `awspricing` MCP or a small cached
-  table — decided during implementation per available env.
-- Final registry format (YAML vs JSON) — YAML assumed here for readability; confirm against
-  the uv/scoring toolchain.
+
+### Resolved during design
+
+- **Registry format → JSON** (§8). Loaded with stdlib `json`, no extra deps in the scoring
+  toolchain.
+- **Cost magnitude → reuse migration-to-aws's `pricing-cache.md` pattern** (§6.4): cached
+  table primary + staleness warning + `awspricing` MCP fallback + `pricing_source` marker.
+- **Architecture diagram → Mermaid (primary) + ASCII (fallback), template composition keyed
+  by scoring result** (§10.1).

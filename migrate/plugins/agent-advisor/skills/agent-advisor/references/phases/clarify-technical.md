@@ -16,6 +16,9 @@ Use direct technical terms. Map each answer onto the keys in clarify.md Step 3.
 - **launch_concurrency**: "Peak new-session launch rate? high (>5/sec) / moderate / low."
 - **multi_agent / framework / existing_cluster / multi_cloud / platform_fit**: ask directly.
 - **compliance**: multi-select.
-- **model_priority**: ask directly. **model_features**: only ask "do you need extended thinking?"
-  (other feature values don't affect scoring). **current_model**: migrate only. Do NOT ask about
-  region (not scored here).
+- **model_priority**: ask directly (quality/speed/cost/balanced/specialized).
+- **model_features**: if priority is specialized (or a specific need is hinted), ask for the ONE
+  most critical feature — tool use / long context (>300K) / extended thinking / RAG / multimodal
+  (vision) / image generation / speech / embeddings. Drives a hard model override
+  (see `${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-selection.md`). Else `none`.
+- **current_model**: migrate only. Do NOT ask about region (not scored here).

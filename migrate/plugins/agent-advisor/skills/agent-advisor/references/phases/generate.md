@@ -4,7 +4,7 @@
 Read `$RUN_DIR/design.json`. Read `$RUN_DIR/estimate.json` **if it exists** (Build paths only —
 for `migrate`, Estimate is skipped and there is no estimate.json; that's expected). Load the
 winning runtime's service card and
-`${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-defaults.md`.
+`${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-selection.md`.
 
 ## Step 2 — Build the architecture diagram
 Load `references/diagram/build-diagram.md` and follow it to produce `$RUN_DIR/diagram.md`

@@ -29,9 +29,11 @@ Collect answers for these keys. Legal values are fixed (Plan 1 Data Model):
 - `platform_fit`: ecs | eks | lambda | none | unknown
 - `compliance` (multi-select list): none | soc2 | hipaa | pci | fedramp | gdpr | ccpa
 - model keys: `model_priority` (quality|speed|cost|balanced|unknown),
-  `model_features` (extended_thinking|none|unknown) — only `extended_thinking` changes the
-  model default; do not ask about other feature values (they don't affect the recommendation —
-  deep model selection is the `ai-to-aws` plugin's job),
+  `model_features` — the ONE most critical specialized feature; drives a hard model override
+  (see `${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-selection.md`). Legal values:
+  `tool_use | long_context | extended_thinking | rag | multimodal | image_generation | speech |
+  embedding | none | unknown`. Ask only when priority is "specialized" or the user hints at a
+  specific need (single-select — the most critical one).
   `current_model` (gpt4|gpt4o|gemini_flash|gemini_pro|claude|other|none|unknown) — migrate only.
   (No `region` question: region drives multi-region architecture, which is handed off to
   migration-to-aws, not scored here.)

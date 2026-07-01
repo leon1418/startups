@@ -11,7 +11,7 @@ is the user-confirmed set).
 ## Step 2 — Load the winning runtime's service card
 Load `${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/<verdict>.md` (use `lambda-microvms.md`
 for lambda_microvms). For co_recommend, load both. Load
-`${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-defaults.md` and
+`${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-selection.md` and
 `managed-alternatives.md`.
 
 ## Step 3 — Refresh volatile facts

@@ -26,6 +26,10 @@ clarify.md Step 3 (do not invent new keys/values).
   to unknown if the user is unsure (the engine handles unknown safely).
 - **compliance**: "Any compliance requirements? (HIPAA, SOC 2, etc.)" multi-select.
 - **model_priority**: "What matters most for the AI — quality, speed, cost, or balanced?"
-- **model_features**: only ask whether they need "extended thinking / deep reasoning" (other
-  feature values don't change the recommendation). **current_model**: migrate only ("what model
-  are you on today?"). Do NOT ask about region (not scored here).
+- **model_features**: if they need something specific, ask "what's the ONE most important thing
+  the AI must do?" in plain terms — e.g. use tools/APIs, read very long documents, deep step-by-
+  step reasoning, answer from your documents (RAG), understand images, *generate* images, handle
+  voice/speech, or produce embeddings. This picks a specialized model when needed (see
+  `${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/model-selection.md`). If nothing special →
+  `none`. **current_model**: migrate only ("what model are you on today?"). Do NOT ask about
+  region (not scored here).

@@ -438,3 +438,76 @@ def test_profile_is_well_formed(profile):
     for constraint in profile["hard_constraints"]:
         assert constraint["field"] in answerable
         assert "reason" in constraint and constraint["reason"]
+
+
+# --- Drift detection: our model pool must stay Active vs the source lifecycle file ---
+
+# The authoritative Active/Legacy/EOL list lives in the migration-to-aws plugin.
+_LIFECYCLE_FILE = (
+    pathlib.Path(scoring.__file__).parent.parent.parent
+    / "migration-to-aws" / "skills" / "gcp-to-aws" / "references" / "shared"
+    / "ai-model-lifecycle.md"
+)
+
+# Map each internal model id in our selection pool to a substring that identifies it
+# in the lifecycle file's Legacy/EOL table (by model name or model-id fragment).
+_POOL_LIFECYCLE_KEYS = {
+    "claude_sonnet_4_6": "claude-sonnet-4-6",
+    "claude_sonnet_4_6_thinking": "claude-sonnet-4-6",
+    "claude_opus_4_7": "claude-opus-4-7",
+    "claude_haiku_4_5": "claude-haiku-4-5",
+    "nova_micro": "nova-micro",
+    "nova_lite": "nova-lite",
+    "nova_2_sonic": "nova-2-sonic",
+    "stability_image_core": "stable-image-core",
+    "stability_image_ultra": "stable-image-ultra",
+    "llama_4_scout": "llama4-scout",
+    "titan_embed_v2": "titan-embed",
+}
+
+
+def _pool_models():
+    pool = {m for m, _ in scoring._MODEL_PRIORITY.values()}
+    for model, _reason, alts in scoring._FEATURE_OVERRIDE.values():
+        pool.add(model)
+        pool.update(alts)
+    return pool
+
+
+def test_pool_keys_cover_every_selectable_model():
+    # Guard: if a new model enters the selection pool, it must have a lifecycle key
+    # so the drift test below actually checks it.
+    missing = _pool_models() - set(_POOL_LIFECYCLE_KEYS)
+    assert not missing, f"models missing a lifecycle key: {sorted(missing)}"
+
+
+def _legacy_or_excluded_rows():
+    text = _LIFECYCLE_FILE.read_text().lower()
+    return [line for line in text.splitlines()
+            if line.strip().startswith("|") and ("legacy" in line or "excluded" in line)]
+
+
+def test_drift_mechanism_actually_fires_on_a_known_legacy_model():
+    # Self-proof: the file lists Nova Sonic v1 as legacy. The matcher MUST see its id
+    # fragment — otherwise a 0-match "pass" below would be vacuous (Active models are
+    # simply absent from the legacy table, so the check only means something if it can
+    # actually match a legacy id when one appears).
+    if not _LIFECYCLE_FILE.exists():
+        pytest.xfail("lifecycle file not reachable — drift check skipped")
+    bad_rows = _legacy_or_excluded_rows()
+    assert any("nova-sonic-v1" in r for r in bad_rows), (
+        "expected Nova Sonic v1 in a legacy row — lifecycle file format changed; "
+        "the drift matcher may no longer work and needs updating")
+
+
+def test_no_pool_model_is_legacy_or_excluded():
+    if not _LIFECYCLE_FILE.exists():
+        pytest.xfail(f"lifecycle file not reachable at {_LIFECYCLE_FILE} "
+                     "(migration-to-aws not installed alongside) — drift check skipped")
+    bad_rows = _legacy_or_excluded_rows()
+    for model in _pool_models():
+        key = _POOL_LIFECYCLE_KEYS[model]
+        offending = [r for r in bad_rows if key in r]
+        assert not offending, (
+            f"model '{model}' (key '{key}') appears Legacy/excluded in the lifecycle "
+            f"file — update the selection pool. Row: {offending[0].strip()}")

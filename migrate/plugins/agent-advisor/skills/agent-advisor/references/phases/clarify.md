@@ -29,12 +29,17 @@ Collect answers for these keys. Legal values are fixed (Plan 1 Data Model):
 - `platform_fit`: ecs | eks | lambda | none | unknown
 - `compliance` (multi-select list): none | soc2 | hipaa | pci | fedramp | gdpr | ccpa
 - model keys: `model_priority` (quality|speed|cost|balanced|unknown),
-  `model_features` (tool_use|long_context|extended_thinking|rag|multimodal|speed|none|unknown),
-  `current_model` (gpt4|gpt4o|gemini_flash|gemini_pro|claude|other|none|unknown),
-  `region` (single|multi|global|unknown)
+  `model_features` (extended_thinking|none|unknown) — only `extended_thinking` changes the
+  model default; do not ask about other feature values (they don't affect the recommendation —
+  deep model selection is the `ai-to-aws` plugin's job),
+  `current_model` (gpt4|gpt4o|gemini_flash|gemini_pro|claude|other|none|unknown) — migrate only.
+  (No `region` question: region drives multi-region architecture, which is handed off to
+  migration-to-aws, not scored here.)
 
-**Critical-question rule:** if `session_duration` is blank/unknown AND entry_point !=
-add_capabilities, ask it directly in chat before scoring — it gates hard constraints.
+**Critical-question rule:** if `session_duration` is blank/unknown, **OR was only inferred by
+Discover and not confirmed by the user**, ask it directly in chat before scoring — it gates hard
+constraints, so an unconfirmed guess can silently eliminate runtimes. (Applies to every entry
+point that reaches Clarify.)
 
 ## Step 4 — Write answers.json
 ```json
@@ -49,5 +54,8 @@ uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts python ${CLAUDE_PLUGIN_ROOT}/scri
 This writes `$RUN_DIR/scoring-result.json` and prints `RESULT=ok VERDICT=<verdict>`.
 If the command errors, show the error and stop — do not hand-score.
 
-## Step 6 — Write state
-Set `phases.clarify` = completed.
+## Step 6 — Write state and continue to Pass 2
+Set `phases.clarify` = completed (leave `phases.clarify_pass2` = pending). Do NOT jump to Design.
+The state machine now routes to **Clarify Pass 2** (`references/phases/clarify-pass2.md`), which
+confirms the deployment model / services / co_recommend pick and writes `pass2.json` — Design and
+the diagram require it.

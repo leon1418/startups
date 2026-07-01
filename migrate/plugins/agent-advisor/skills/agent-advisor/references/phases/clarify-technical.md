@@ -16,5 +16,6 @@ Use direct technical terms. Map each answer onto the keys in clarify.md Step 3.
 - **launch_concurrency**: "Peak new-session launch rate? high (>5/sec) / moderate / low."
 - **multi_agent / framework / existing_cluster / multi_cloud / platform_fit**: ask directly.
 - **compliance**: multi-select.
-- **model_priority / model_features / current_model / region**: ask directly (current_model
-  only for migrate).
+- **model_priority**: ask directly. **model_features**: only ask "do you need extended thinking?"
+  (other feature values don't affect scoring). **current_model**: migrate only. Do NOT ask about
+  region (not scored here).

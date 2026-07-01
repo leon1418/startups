@@ -9,9 +9,10 @@ For customers already on AWS who want to add AgentCore services. No runtime scor
 run on any runtime.
 
 ## Step 0 — Create the run directory
-Generate a run id from the current time as `MMDD-HHMM`. Create `.agent-advisor/<run_id>/` and,
-if it does not exist, a `.agent-advisor/.gitignore` containing `*` (so run state is never
-committed). Call this directory `$RUN_DIR`.
+Generate a run id from the current time as `MMDD-HHMM`. Create the run directory under the
+**user's current working directory** (run `pwd` and anchor to it) — NOT the plugin install tree:
+`<cwd>/.agent-advisor/<run_id>/`, plus `<cwd>/.agent-advisor/.gitignore` containing `*` (so run
+state is never committed). Call this directory `$RUN_DIR`.
 
 ## Step 1 — Current runtime
 Ask which runtime they run on now: AgentCore / ECS / EKS / Lambda / other. (If the user already
@@ -27,8 +28,10 @@ If they already use a third-party tool for a capability (Tavily/Pinecone/Browser
 present: switch to AgentCore native, or keep existing and connect via Gateway.
 
 ## Step 4 — Volatile facts
-Load `${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/freshness.md`; verify service
-availability via awsknowledge MCP where relevant; fall back to cached + note.
+Load `${CLAUDE_PLUGIN_ROOT}/skills/shared/decision-refs/freshness.md`. This skill has no winning
+runtime profile, so verify the relevant "Hard limits" facts from `agentcore.md` directly (per
+freshness.md Procedure step 1). Follow its anti-fabrication rule: only list a fact as
+MCP-verified if you actually called the MCP this run; otherwise it's cached.
 
 ## Step 5 — Output
 Write the recommendation to `$RUN_DIR/capabilities-recommendation.md` (so the user can keep and

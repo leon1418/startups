@@ -1,6 +1,7 @@
 # Phase: Estimate — Coarse Cost Magnitude
 
-Build/Add paths only (Migrate handed off before this). Magnitude only — NOT precise
+Build paths only (build_scratch / build_deploy). Migrate skips Estimate; add_capabilities is a
+separate skill and never reaches here. Magnitude only — NOT precise
 estimation (that's migration-to-aws's job). Mirrors migration-to-aws's pricing pattern.
 
 ## Step 1 — Read the design

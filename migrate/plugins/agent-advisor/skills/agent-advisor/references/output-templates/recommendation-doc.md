@@ -29,7 +29,9 @@
 <model default + reasoning; for migrate, coarse family mapping + "see migration-to-aws for pricing".>
 
 ## 10. Cost magnitude
-<from estimate.json: the band + assumptions + "order-of-magnitude" disclaimer.>
+<Build paths (estimate.json exists): the band + assumptions + "order-of-magnitude" disclaimer.
+Migrate (no estimate.json — Estimate is skipped): write "Detailed cost and TCO are produced by
+the migration plugins" plus an optional one-line directional note. Do NOT invent a dollar band.>
 
 ## 11. Next steps
 <scaffolding pointers; handoff pointers if applicable.>

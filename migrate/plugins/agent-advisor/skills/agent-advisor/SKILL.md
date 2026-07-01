@@ -32,21 +32,25 @@ After each phase, consult this table for the next action.
 | `turn1` | no `$RUN_DIR/.phase-status.json` | Load `references/phases/turn1.md` |
 | `discover` | `turn1` done, entry point in {build_deploy, migrate} AND code provided | Load `references/phases/discover.md` |
 | `clarify` | `turn1` done (and discover done or skipped) | Load `references/phases/clarify.md` |
-| `design` | `clarify` == "completed" | Load `references/phases/design.md` |
+| `clarify_pass2` | `clarify` == "completed" AND `clarify_pass2` != "completed" | Load `references/phases/clarify-pass2.md` |
+| `design` | `clarify_pass2` == "completed" | Load `references/phases/design.md` |
 | `estimate` | `design` done, entry point in {build_scratch, build_deploy} | Load `references/phases/estimate.md` |
 | `generate` | `design` done AND (`estimate` done OR entry point == migrate) | Load `references/phases/generate.md` |
 | `complete` | `generate` done | Done |
 
 **Entry-point routing:**
-- `build_scratch` → skip Discover; Clarify → Design → Estimate → Generate.
-- `build_deploy` → Discover (if code) → Clarify → Design → Estimate → Generate.
-- `migrate` → Discover (if code) → Clarify → Design → **(skip Estimate)** → Generate → **then handoff, stop**. The user gets the same recommendation doc + architecture diagram as Build paths; Generate then hands off to the migration plugins (no Build scaffolding, no precise cost — those belong downstream).
+- `build_scratch` → skip Discover; Clarify → Clarify Pass 2 → Design → Estimate → Generate.
+- `build_deploy` → Discover (if code) → Clarify → Clarify Pass 2 → Design → Estimate → Generate.
+- `migrate` → Discover (if code) → Clarify → Clarify Pass 2 → Design → **(skip Estimate)** → Generate → **then handoff, stop**. The user gets the same recommendation doc + architecture diagram as Build paths; Generate then hands off to the migration plugins (no Build scaffolding, no precise cost — those belong downstream).
 - `add_capabilities` → this is handled by the **separate `add-capabilities` skill**; if a user
   on this skill picks it in Turn 1, tell them to invoke `/agent-advisor:add-capabilities`.
 
 **Phase gate:** Do NOT load design.md / estimate.md / generate.md unless
-`$RUN_DIR/.phase-status.json` exists and `phases.clarify == "completed"`. If the user asks to
-skip Clarify, refuse briefly and run Clarify.
+`$RUN_DIR/.phase-status.json` exists and BOTH `phases.clarify == "completed"` AND
+`phases.clarify_pass2 == "completed"`. Clarify Pass 2 confirms the deployment model, the service
+set, and (for a co_recommend tie) the user's `chosen_runtime` — Design and the diagram depend on
+its `pass2.json` output, so it must not be skipped. If the user asks to skip Clarify or Pass 2,
+refuse briefly and run it.
 
 ## State file (`.phase-status.json`)
 ```json
@@ -57,7 +61,8 @@ skip Clarify, refuse briefly and run Clarify.
   "current_phase": "clarify",
   "phases": {
     "turn1": "completed", "discover": "skipped", "clarify": "in_progress",
-    "design": "pending", "estimate": "pending", "generate": "pending"
+    "clarify_pass2": "pending", "design": "pending", "estimate": "pending",
+    "generate": "pending"
   }
 }
 ```

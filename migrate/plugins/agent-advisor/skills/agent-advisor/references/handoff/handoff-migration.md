@@ -8,8 +8,9 @@ artifact and points the user downstream — it does not replace the recommendati
 ## Step 1 — Write the handoff summary
 Write `$RUN_DIR/handoff-summary.md` (a compact, machine-readable companion to
 `recommendation.md` for the downstream plugins) containing: recommended runtime + deployment
-model + services, coarse model family mapping (from model_recommendation.migration_from, no
-prices), and the rationale (top scoring signals + eliminations).
+model + services, coarse model family mapping (the source model from the user's `current_model`
+answer → the Bedrock family per `model-defaults.md`; no prices), and the rationale (top scoring
+signals + eliminations, from design.json's `scores`/`eliminated`).
 
 ## Step 2 — Check downstream availability
 Check whether `migration-to-aws` and/or `ai-to-aws` appear in the available-skills list (do

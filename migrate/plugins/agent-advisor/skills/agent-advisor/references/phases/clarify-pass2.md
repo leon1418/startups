@@ -12,8 +12,11 @@ optimization). Multi-select, seeded from `agentcore_services`:
 - Gateway (external APIs / MCP), enhanced Identity (OAuth), Policy (high-risk / multi-tenant),
   Memory (cross-session), Managed KB (internal docs), Code Interpreter, Browser, Web Search,
   Sandbox.
-If the user already uses third-party tools for any (detected in Discover), ask: switch to
-AgentCore native, or keep existing and connect via Gateway.
+For any selected service that can front external tools/data (Gateway, Managed KB, Web Search,
+Memory), **ask** whether they already use a third-party tool for it (e.g. Tavily, Pinecone,
+Browserbase, a REST/MCP server) — do NOT assume greenfield. If yes: switch to AgentCore native,
+or keep existing and connect via Gateway. If no: default to native. Record the choice in
+`tool_choices`.
 
 ## Step 3 — If verdict is ecs / eks / lambda
 These hand off to migration-to-aws for compute. Still ask which AgentCore **add-on** services
@@ -32,14 +35,15 @@ they want (services run on any runtime). Record them.
 
 ## Step 5 — Write pass2.json and state
 Write `$RUN_DIR/pass2.json` with:
-- `deployment_model` (confirmed),
+- `deployment_model` (confirmed; for a `co_recommend` pick, the deployment model of the runtime
+  the user CHOSE — recompute for the chosen runtime, do not carry a stale value from the tie),
 - `agentcore_services` (final list),
 - `chosen_runtime` (REQUIRED when the verdict was `co_recommend` — the runtime id the user
-  picked in Step 4; the architecture-diagram composer in Plan 3 reads this to know which runtime
-  to draw). Omit for single-winner verdicts.
-- any native-vs-gateway choices.
+  picked in Step 4; the architecture-diagram composer reads this to know which runtime to draw).
+  Omit for single-winner verdicts.
+- `tool_choices` (per-capability native-vs-gateway choices from Step 2).
 ```json
 {"deployment_model": "harness", "agentcore_services": ["identity", "memory"],
  "chosen_runtime": "eks", "tool_choices": {"web_search": "native"}}
 ```
-Clarify stays completed.
+Set `phases.clarify_pass2` = completed (read-merge-write). The flow now advances to Design.

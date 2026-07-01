@@ -79,10 +79,18 @@ def test_ascii_contains_runtime_model_services():
     assert "migration-to-aws" not in out
 
 
-def test_ascii_handoff_for_lambda():
+def test_ascii_handoff_for_ecs():
+    out = build_diagram.render_ascii("ecs", [], "claude_sonnet_4_6", None)
+    assert "Amazon ECS" in out
+    assert "migration-to-aws" in out
+
+
+def test_ascii_no_handoff_for_standard_lambda():
+    # Standard Lambda is a self-contained Build target (function skeleton), not a
+    # heavy-infrastructure handoff — no migration-to-aws note.
     out = build_diagram.render_ascii("lambda", [], "claude_sonnet_4_6", None)
     assert "AWS Lambda" in out
-    assert "migration-to-aws" in out
+    assert "migration-to-aws" not in out
 
 
 def test_ascii_deterministic():

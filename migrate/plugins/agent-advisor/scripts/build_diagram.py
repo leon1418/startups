@@ -30,7 +30,10 @@ SERVICE_LABELS = {
     "sandbox": "Sandbox",
 }
 
-HANDOFF_RUNTIMES = {"ecs", "eks", "lambda"}
+# Runtimes whose compute layer needs heavy infrastructure execution (clusters,
+# Terraform) handed off to migration-to-aws. AgentCore, Lambda MicroVMs, and
+# standard Lambda are self-contained deliverables from this advisor — not handoffs.
+HANDOFF_RUNTIMES = {"ecs", "eks"}
 
 
 def resolve_runtime(result, pass2):

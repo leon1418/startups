@@ -166,3 +166,12 @@ Golden tests in `test_scoring.py` (model selection is deterministic):
 - Whether to ask Q17 always vs only when priority == specialized. Default: only when specialized
   or hinted, to keep the interview short (matches migration-to-aws's Q16→Q17 gating).
 - Exact alternates wording in reasoning (kept short; drafted at implementation).
+- **Source-file inconsistency to route around (Kiro 2nd-pass):** `migration-to-aws`'s
+  `clarify-ai.md` Q17 row H still reads "Claude Sonnet 4.6 (vision) + **Nova Canvas** for
+  generation" — stale vs its own `ai-model-lifecycle.md`, which says image generation → Stability
+  AI. When implementing, take the model mapping from `ai-model-lifecycle.md` (Stability AI), NOT
+  from Q17 row H. Do **not** edit migration-to-aws here (out of scope / different plugin); the
+  drift test in §4 keys off the lifecycle file, so it stays correct regardless. Optionally flag
+  the stale Q17 row to the migration-to-aws owners separately.
+- **Confirm Nova 2 Pro GA status at implementation** — lifecycle file labels it "(Preview)" as the
+  Nova Premier replacement. If still Preview, keep Llama 4 Scout as the long_context primary.

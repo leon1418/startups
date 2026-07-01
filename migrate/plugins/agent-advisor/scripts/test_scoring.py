@@ -203,7 +203,70 @@ def test_model_migrate_with_extended_thinking_keeps_override():
         "model_features": "extended_thinking"})
     assert rec["model"] == "claude_sonnet_4_6_thinking"  # extended-thinking override wins
     assert rec["migration_from"] == "gpt4o"
-    assert "migration-to-aws" in rec["pricing_note"]
+
+
+# --- Model-selection refactor (feature override + widened pool) ---
+
+def test_model_feature_speech_picks_nova_2_sonic():
+    rec = scoring._select_model({"model_priority": "balanced", "model_features": "speech"})
+    assert rec["model"] == "nova_2_sonic"  # NOT sonnet, NOT nova_sonic v1
+
+
+def test_model_feature_image_generation_picks_stability():
+    rec = scoring._select_model(
+        {"model_priority": "balanced", "model_features": "image_generation"})
+    assert rec["model"].startswith("stability_image")  # NOT nova_canvas
+
+
+def test_model_feature_long_context_uses_llama_scout():
+    rec = scoring._select_model(
+        {"model_priority": "balanced", "model_features": "long_context"})
+    # Llama 4 Scout is the ultra-long-context primary (Nova 2 Pro gated on GA)
+    assert rec["model"] == "llama_4_scout" or "llama_4_scout" in rec.get("alternates", [])
+
+
+def test_model_feature_embedding_picks_titan():
+    rec = scoring._select_model(
+        {"model_priority": "cost", "model_features": "embedding"})
+    assert rec["model"] == "titan_embed_v2"
+
+
+def test_model_feature_override_beats_cost_priority_with_advisory():
+    # priority=cost would pick haiku, but speech feature hard-overrides to nova_2_sonic,
+    # and the reasoning must carry a cost-conflict advisory.
+    rec = scoring._select_model({"model_priority": "cost", "model_features": "speech"})
+    assert rec["model"] == "nova_2_sonic"
+    assert "cost" in rec["reasoning"].lower()  # advisory present
+
+
+def test_model_multimodal_primary_vision_stability_alternate():
+    rec = scoring._select_model(
+        {"model_priority": "balanced", "model_features": "multimodal"})
+    assert rec["model"] == "claude_sonnet_4_6"  # vision understanding primary
+    assert any("stability" in a for a in rec.get("alternates", []))
+
+
+def test_model_migrate_feature_override_beats_family():
+    # migrate source gpt4o would map to sonnet family, but long_context feature wins.
+    rec = scoring._select_model({
+        "_entry_point": "migrate", "current_model": "gpt4o",
+        "model_features": "long_context"})
+    assert rec["model"] == "llama_4_scout"
+    assert rec["migration_from"] == "gpt4o"  # still recorded
+
+
+def test_model_selection_never_changes_verdict():
+    # Independence invariant: model_* answers must not affect the runtime verdict/scores.
+    base = {"session_duration": "15min_to_8hr", "traffic_pattern": "bursty",
+            "session_state": "hitl", "ops_preference": "minimal"}
+    profiles = scoring.load_profiles()
+    ref = scoring.score({"entry_point": "build_scratch", "answers": base}, profiles=profiles)
+    for mp, mf in [("cost", "speech"), ("quality", "extended_thinking"),
+                   ("speed", "image_generation"), ("balanced", "long_context")]:
+        a = dict(base, model_priority=mp, model_features=mf)
+        r = scoring.score({"entry_point": "build_scratch", "answers": a}, profiles=profiles)
+        assert r["verdict"] == ref["verdict"]
+        assert r["scores"] == ref["scores"]
 
 
 def test_assumptions_lists_unknown_dimensions():

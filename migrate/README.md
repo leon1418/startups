@@ -10,6 +10,7 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 - **GCP → AWS** — Cloud Run, Cloud SQL, GKE, Cloud Functions, Pub/Sub, Cloud Storage, VPC, and AI/agentic workloads
 - **Heroku → AWS** — Dynos, Postgres, Redis, Kafka, Private Spaces, Pipelines, and 13+ common add-ons
+- **fly.io → AWS** — Fly Machines, Fly Postgres/MPG, Tigris, Upstash Redis/Vector, volumes, 6PN networking, and GPU workloads (fly.io GPU sunset 2026-08-01)
 
 **For infrastructure migrations:**
 

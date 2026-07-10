@@ -1,0 +1,11 @@
+app = "stateful-app"
+primary_region = "iad"
+[build]
+[http_service]
+  internal_port = 8080
+  force_https = true
+[[mounts]]
+  source = "data"
+  destination = "/data"
+[[vm]]
+  size = "shared-cpu-1x"

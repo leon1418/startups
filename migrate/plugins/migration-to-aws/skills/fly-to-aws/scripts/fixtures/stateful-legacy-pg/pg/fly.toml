@@ -1,0 +1,7 @@
+app = "stateful-pg"
+primary_region = "iad"
+[build]
+  image = "flyio/postgres-flex:16"
+[[mounts]]
+  source = "pg_data"
+  destination = "/var/lib/postgresql/data"

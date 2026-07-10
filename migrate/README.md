@@ -29,10 +29,9 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 ## Plugins
 
-| Plugin               | Description                                                                                                              | Status    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------- |
-| **migration-to-aws** | Assess & plan: resource discovery, architecture mapping, cost analysis, execution planning                               | Available |
-| **ai-to-aws**        | Execute: rewrite LLM SDK calls to Bedrock, evaluate quality, deliver a ready-to-merge branch (requires migration-to-aws) | Available |
+| Plugin               | Description                                                                                                                                                 | Status    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning, and LLM code rewrite to Bedrock (llm-to-bedrock skill) | Available |
 
 ## Installation
 
@@ -42,9 +41,8 @@ Point this plugin at your Terraform files, application code, or billing data. It
 # Add the marketplace
 /plugin marketplace add awslabs/startups --sparse migrate/plugins
 
-# Install the plugins
+# Install the plugin
 /plugin install migration-to-aws@startups
-/plugin install ai-to-aws@startups
 ```
 
 ### Codex
@@ -52,7 +50,6 @@ Point this plugin at your Terraform files, application code, or billing data. It
 ```bash
 codex plugin marketplace add awslabs/startups
 codex plugin install migration-to-aws
-codex plugin install ai-to-aws
 ```
 
 ### Cursor
@@ -91,6 +88,16 @@ After installation, just describe what you want to migrate:
 - "Estimate AWS costs for my Heroku workload"
 - "Migrate my Heroku Private Space to AWS"
 
+**fly.io migrations:**
+
+- "Migrate my fly.io app to AWS"
+- "Move from fly.io to Fargate"
+- "Migrate Fly Machines to AWS"
+- "Migrate Fly Postgres to RDS or Aurora"
+- "fly.io GPU sunset migration"
+- "Estimate AWS costs for my fly.io workload"
+- "Migrate Tigris to S3"
+
 The skill creates a `.migration/<session>/` directory in the current working directory with all artifacts.
 
 ## What It Detects
@@ -125,6 +132,20 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 | Secrets        | Config vars → AWS Secrets Manager or SSM Parameter Store                                           |
 | Load Balancing | Web dynos → ALB; non-web → no ALB                                                                  |
 
+### fly.io → AWS
+
+| Category       | fly.io → AWS                                                                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compute        | Fly Machines → Fargate/Lambda/Lambda MicroVMs (deterministic routing: scale-to-zero → Lambda/MicroVMs, always-on → Fargate, GPU → EC2, batch → Batch/scheduled ECS) |
+| Databases      | Fly Postgres/Managed Postgres (MPG) → RDS or Aurora (plan-matched sizing, Aurora Serverless v2 for scale-to-zero parity)                                            |
+| Storage        | Tigris → S3, Upstash Vector → OpenSearch Serverless / Aurora pgvector, volumes → EFS/EBS (or de-volume to RDS/S3)                                                   |
+| Caching        | Upstash Redis → ElastiCache Serverless Valkey (HTTP/REST client rewrite required)                                                                                   |
+| Networking     | 6PN (.internal/.flycast) → VPC with ECS Service Connect or Cloud Map, fly-replay → highest-effort flag (no AWS LB equivalent), raw TCP/UDP → NLB                    |
+| AI Agents      | Agent frameworks (LangGraph, CrewAI, AutoGen) + api.machines.dev sandbox → bidirectional agent-advisor handoff (AgentCore/MicroVMs/ECS/Lambda scoring)              |
+| Secrets        | Fly secrets → SSM Parameter Store (default, $0) or Secrets Manager (rotation/cross-account)                                                                         |
+| CI/CD          | Fly remote builds → GitHub Actions (OIDC) + ECR + ECS Express Mode                                                                                                  |
+| Load Balancing | HTTP services → ALB, raw TCP/TLS/UDP → NLB                                                                                                                          |
+
 ## What You Get That a Base LLM Can't
 
 **Infrastructure:**
@@ -155,6 +176,7 @@ The skill creates a `.migration/<session>/` directory in the current working dir
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
 | **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                          |
+| **fly-to-aws**    | "migrate from fly.io", "fly.io to AWS", "move off fly.io", "fly.toml", "Fly Machines to AWS", "Fly Postgres to RDS", "Tigris to S3", "fly.io GPU sunset", "migrate Fly app", "Fly to Fargate", "Fly to ECS", "Fly to Lambda", "leave fly.io"             |
 
 ## MCP Servers
 

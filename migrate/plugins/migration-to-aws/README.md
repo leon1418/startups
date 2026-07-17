@@ -53,9 +53,9 @@ Point this plugin at your Terraform files, application code, or billing data. It
 
 ## Plugins
 
-| Plugin               | Description                                                                                                                                                                  | Status    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku), and LLM code rewrite to Bedrock (llm-to-bedrock skill) | Available |
+| Plugin               | Description                                                                                                                                                                                                                                                                                                       | Status    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **migration-to-aws** | Assess, plan & execute: resource discovery, architecture mapping, cost analysis, execution planning (GCP and Heroku), LLM code rewrite to Bedrock (llm-to-bedrock skill), AI-agent runtime selection + POC on AWS (agent-advisor skill), and a read-only Terraform security policy gate (tf-best-practices skill) | Available |
 
 ## Installation
 
@@ -160,10 +160,11 @@ Pass `--estimation-infra` / `--estimation-ai` only when those files exist. Resol
 
 ### Agent Skill Triggers
 
-| Agent Skill       | Triggers                                                                                                                                                                                                                                                 |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS" |
-| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"    |
+| Agent Skill       | Triggers                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **gcp-to-aws**    | "migrate GCP to AWS", "move from GCP", "GCP migration plan", "migrate Cloud SQL to RDS or Aurora", "move Cloud Run to Fargate", "estimate AWS costs for my GCP infrastructure", "migrate my OpenAI app to Bedrock", "migrate my LangChain agents to AWS"                                                                                                                                                                 |
+| **heroku-to-aws** | "migrate from Heroku", "Heroku to AWS", "move off Heroku", "migrate Heroku Postgres to RDS", "migrate dynos to Elastic Beanstalk", "migrate dynos to Fargate", "migrate Heroku Private Space", "leave Heroku", "estimate AWS costs for my Heroku app"                                                                                                                                                                    |
+| **agent-advisor** | "which runtime for my agent", "AgentCore vs ECS vs EKS vs Lambda", "AgentCore vs Lambda MicroVMs", "deploy an AI agent on AWS", "I have an agent idea — what do I build", "move my agents to AWS with a plan", "add AgentCore memory/gateway/identity to my agent", "I'm already on AWS and want to add agent capabilities", "migrate Temporal workers to AWS", "run Temporal on AWS", "build a POC for my agent on AWS" |
 
 ### MCP Servers
 
@@ -179,6 +180,32 @@ The `llm-to-bedrock` skill (bundled in this plugin) extends the assessment with 
 
 See [skills/llm-to-bedrock/SKILL.md](skills/llm-to-bedrock/SKILL.md) for full details on prerequisites, usage, and what it does to your repo.
 
+## tf-best-practices
+
+The `tf-best-practices` skill (bundled in this plugin) is a **read-only security policy gate** for AWS Terraform. `gcp-to-aws` calls it during its Generate phase to check the Terraform it emits, but it is **self-contained and has no dependency on the migration workflow** — it reads a `terraform/` directory, evaluates policy, and returns a verdict. It never edits `.tf` files or touches migration state.
+
+It enforces a set of fail-open-on-ambiguity rules (internet-facing ALB TLS termination, no public database, no public admin/datastore-port ingress, no wildcard IAM, and RDS + ElastiCache encryption at rest) via a zero-dependency static HCL reader — no `terraform init`, no provider download, so it runs offline and in sub-second time. It complements, and does not replace, `terraform fmt/init/validate` and deeper scanners like `checkov`/`tfsec`.
+
+**Using it directly** (outside a migration) — you can run the gate against any AWS Terraform directory as a pre-commit or CI check:
+
+```bash
+# Exit 0 = POLICY_OK, 1 = POLICY_FAIL (with violations), 2 = usage error
+python3 skills/tf-best-practices/scripts/validate-terraform-policy.py ./terraform --json verdict.json
+```
+
+The `--json` verdict lists each violation with `file`, `line`, `rule`, and `fix_hint` for wiring into your own pipeline. For the authoring posture rules and the full rule list, see [skills/tf-best-practices/SKILL.md](skills/tf-best-practices/SKILL.md). (Scope note: `gcp-to-aws` is the only in-tree consumer today; direct standalone use is supported but not yet wired into other skills.)
+
+## agent-advisor
+
+The `agent-advisor` skill (bundled in this plugin) is the entry point for **running AI agents on AWS** — a different job from a cloud migration. It decides how and where to run agents and produces runnable proof.
+
+- **Runtime selection** — deterministic scoring picks AgentCore, ECS/EKS, Lambda, AWS Batch, or Lambda MicroVMs from your agent's session duration, traffic shape, isolation, memory, and ops preferences.
+- **Multi-workload systems** — a system of several agents, batch jobs, and services is decomposed into workload units, each scored independently, with a consolidation option (one platform vs best-fit-per-unit) and a whole-system architecture. A single-unit run collapses to the classic single-verdict flow.
+- **Temporal workers** — self-hosted or Temporal Cloud; worker polling tiers and Activity execution classes become units; Workflow orchestration code is never rewritten (never a Step Functions translation).
+- **Phased flow** — Intake → Discover → Clarify → deterministic scoring → Design → Estimate → Generate (a layered recommendation doc + `recommendation-report.html`), then optional gated stages: a full **Migration Plan** (generated in-skill by reusing this plugin's gcp-to-aws engine) and a deployable **POC** on the chosen runtime. It also has an add-capabilities branch for teams already running agents on AWS. Artifacts land in `.agent-advisor/<session>/`.
+
+See [skills/agent-advisor/SKILL.md](skills/agent-advisor/SKILL.md) for the full trigger list, phases, and gates.
+
 ## Requirements
 
 - Claude Code >=2.1.29, Codex (latest), or [Cursor >= 2.5](https://cursor.com/changelog/2-5)
@@ -187,22 +214,27 @@ See [skills/llm-to-bedrock/SKILL.md](skills/llm-to-bedrock/SKILL.md) for full de
 - **For GCP AI/agentic migration:** Application source code is required (billing/IaC alone cannot detect agent architecture)
 - **For Heroku migration:** Terraform files with `heroku_*` resources are required (Procfile/app.json supplements but cannot stand alone)
 - **For AI execution (llm-to-bedrock skill):** Python 3.10+, `uv`, and Bedrock model access enabled
+- **For agent-advisor:** `uv` (deterministic runtime scoring); source code when deploying/migrating existing agents (an idea-only run needs none); the Temporal branch uses the `temporal-docs` MCP (one-time login, or public-web fallback)
 - **`uvx` required for cost estimation:** The `awspricing` MCP server runs via [`uvx`](https://docs.astral.sh/uv/guides/tools/) (part of the `uv` Python package manager). Install with `pip install uv` or `brew install uv`. Without it, the Estimate phase falls back to cached pricing — migration still works but live pricing lookups are unavailable.
 
 ## Architecture & contributing
 
-This plugin ships two migration skills built on **different architectures**, and this
+This plugin ships four skills, built on **different architectures**, and this
 matters if you contribute:
 
-- **heroku-to-aws** is built on the **phase DSL** — a declarative frontmatter grammar
-  an LLM interprets at runtime, with a static validator that checks the structure
-  before anything runs. It is the reference implementation and the **direction for all
-  new work**.
+- **heroku-to-aws** and **agent-advisor** are built on the **phase DSL** — a declarative
+  frontmatter grammar an LLM interprets at runtime, with a static validator that checks the
+  structure before anything runs. heroku-to-aws is the reference implementation and the
+  **direction for all new work**; agent-advisor follows the same pattern (and vendors the DSL
+  interpreter contract).
 - **gcp-to-aws** predates the DSL and uses the **older prose design**. It is maintained,
-  but a future effort will port it onto the DSL.
+  but a future effort will port it onto the DSL. (It is also reused as the in-skill migration
+  engine by agent-advisor's Migration Plan stage.)
+- **llm-to-bedrock** is the AI-execution skill (SDK rewrite → Bedrock, eval, git branch),
+  invoked from the migration skills' AI-execution step.
 
-**New skills and phases follow the DSL pattern** (`heroku-to-aws`), not the prose
-pattern. The grammar is documented under [`docs/`](docs/) — start with
+**New skills and phases follow the DSL pattern** (`heroku-to-aws`, `agent-advisor`), not the
+prose pattern. The grammar is documented under [`docs/`](docs/) — start with
 [docs/01-concepts.md](docs/01-concepts.md). For the full contributor workflow —
 architecture, build/validate tasks, the vendored shared-files contract, and how to add
 a validator check — see [CONTRIBUTING.md](CONTRIBUTING.md).

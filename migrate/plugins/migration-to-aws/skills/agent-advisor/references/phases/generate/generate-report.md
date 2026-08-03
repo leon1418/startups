@@ -296,7 +296,10 @@ that element entirely (use `display:none` or omit the HTML block).
     <table>
       <thead><tr><th>Item</th><th>Recommendation</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td>Bedrock model</td><td class="em">{{ unit.model_recommendation.model }}</td><td>{{ unit.model_recommendation.reasoning }}</td></tr>
+        <tr><td>Bedrock model</td><td class="em">{{ unit.model_recommendation.model_identity.display_name }}</td><td>{{ unit.model_recommendation.reasoning }}</td></tr>
+        <tr><td>API path</td><td>{{ unit.model_recommendation.api_path }}</td><td>Path ID: {{ unit.model_recommendation.model }}</td></tr>
+        <tr><td>Account verification</td><td>{{ unit.model_recommendation.live_verification.status OR "not_run" }}</td><td>{{ IF unit.model_recommendation.live_verification.status === "passed" }}Invocation ID verified{{ ELSE }}Runnable access not yet established{{ END IF }}</td></tr>
+        <tr><td>Migration gates</td><td>{{ COMMA_JOIN(CODES(unit.model_recommendation.blocks)) OR "None" }}</td><td>{{ unit.model_recommendation.evaluation.mode }} evaluation; {{ unit.model_recommendation.rollout.strategy }} rollout</td></tr>
         {{ IF unit.agentcore_services }}
         <tr><td>AgentCore services</td><td>{{ COMMA_JOIN(unit.agentcore_services) }}</td><td>{{ service notes }}</td></tr>
         {{ END IF }}

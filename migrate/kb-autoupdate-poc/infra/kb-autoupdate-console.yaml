@@ -1,0 +1,270 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Hosted operator console for kb-autoupdate: CloudFront (Midway gate at the edge) in front of
+  a Lambda Function URL running serve.py. Separate stack from the pipeline so the console can
+  be torn down without touching the pipeline. us-east-1 only (Lambda@Edge + CloudFront ACM).
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: kb-autoupdate
+    Description: The pipeline stack's name — the console reads its outputs and starts its builds.
+  DomainName:
+    Type: String
+    Default: kb-console.genli.people.aws.dev
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Default: Z01625001GSQGW0GUDF9W
+  CodeS3Bucket:
+    Type: String
+    Description: Bucket holding the two code zips (must be in us-east-1).
+  ConsoleCodeS3Key:
+    Type: String
+    Description: Zip with serve.py + report.py + state.py + config.py + run.sh.
+  EdgeCodeS3Key:
+    Type: String
+    Description: Zip with the Midway viewer-request function (index.mjs).
+  ConsoleToken:
+    Type: String
+    NoEcho: true
+    Description: CSRF token embedded in the served HTML — stable across Lambda environments.
+  OriginSecret:
+    Type: String
+    NoEcho: true
+    Description: Secret header CloudFront attaches; the Function URL rejects requests without it.
+  WebAdapterLayerArn:
+    Type: String
+    Default: arn:aws:lambda:us-east-1:753240598075:layer:LambdaAdapterLayerArm64:25
+  StateKmsKeyArn:
+    Type: String
+    Description: The pipeline's CMK — the state table is SSE-KMS, so readers need Decrypt.
+
+Resources:
+  # ── backend: serve.py on Lambda ────────────────────────────────────────────────────────
+  ConsoleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: console-least-privilege
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: StartPipelineExecutions
+                Effect: Allow
+                Action: states:StartExecution
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${ProjectName}-pipeline"
+              - Sid: WatchPipelineExecutions
+                Effect: Allow
+                Action: [states:DescribeExecution, states:GetExecutionHistory]
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${ProjectName}-pipeline:*"
+              - Sid: ReadRunArchive
+                Effect: Allow
+                Action: [s3:ListBucket, s3:GetObject]
+                Resource:
+                  - !Sub "arn:aws:s3:::${ProjectName}-evidence-${AWS::AccountId}"
+                  - !Sub "arn:aws:s3:::${ProjectName}-evidence-${AWS::AccountId}/*"
+              - Sid: EditableConfigStore
+                Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem]
+                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectName}-state"
+              - Sid: DiscoverPipelineStack
+                Effect: Allow
+                Action: [cloudformation:DescribeStacks]
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ProjectName}/*"
+              # The state table is SSE-KMS with the pipeline's CMK: on a customer-managed key
+              # the CALLER, not just DynamoDB, must be allowed to use it (same grant the
+              # pipeline's build role carries).
+              - Sid: UseStateTableKey
+                Effect: Allow
+                Action: [kms:Decrypt, kms:GenerateDataKey]
+                Resource: !Ref StateKmsKeyArn
+
+  ConsoleFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-console"
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: run.sh
+      MemorySize: 512
+      Timeout: 30
+      Role: !GetAtt ConsoleRole.Arn
+      Layers: [!Ref WebAdapterLayerArn]
+      Code:
+        S3Bucket: !Ref CodeS3Bucket
+        S3Key: !Ref ConsoleCodeS3Key
+      Environment:
+        Variables:
+          AWS_LAMBDA_EXEC_WRAPPER: /opt/bootstrap
+          AWS_LWA_ENABLE_COMPRESSION: "true"
+          AWS_LWA_READINESS_CHECK_PATH: /healthz
+          PORT: "8080"
+          KB_HOSTED: "1"
+          KB_PUBLIC_HOST: !Ref DomainName
+          KB_CONSOLE_TOKEN: !Ref ConsoleToken
+          KB_ORIGIN_SECRET: !Ref OriginSecret
+          KB_REGION: !Ref AWS::Region
+
+  ConsoleUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !Ref ConsoleFn
+      AuthType: AWS_IAM
+      InvokeMode: BUFFERED
+
+  # AWS_IAM + CloudFront OAC, not a public NONE URL: the account's guardrails auto-strip
+  # anonymous (Principal "*") permissions — correctly. Only this one distribution may invoke,
+  # via SigV4-signed origin requests. Consequence for clients: POST/PUT must carry
+  # x-amz-content-sha256 (OAC signs headers, never the body) — the console JS does this.
+  # The doc requires BOTH actions for OAC: InvokeFunctionUrl alone leaves the signed request
+  # rejected at the door (observed: platform "Forbidden", zero invocations).
+  ConsoleUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ConsoleFn
+      Action: lambda:InvokeFunctionUrl
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  ConsoleInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ConsoleFn
+      Action: lambda:InvokeFunction
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  # ── edge: Midway gate ──────────────────────────────────────────────────────────────────
+  EdgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: [lambda.amazonaws.com, edgelambda.amazonaws.com] }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: read-operator-allowlist
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem]
+                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectName}-state"
+              # The state table is SSE-KMS: the edge reader needs Decrypt on the CMK too.
+              - Effect: Allow
+                Action: [kms:Decrypt]
+                Resource: !Ref StateKmsKeyArn
+
+  EdgeFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-console-midway"
+      Runtime: nodejs20.x
+      Handler: index.handler
+      MemorySize: 128
+      Timeout: 5
+      Role: !GetAtt EdgeRole.Arn
+      Code:
+        S3Bucket: !Ref CodeS3Bucket
+        S3Key: !Ref EdgeCodeS3Key
+
+  # Lambda@Edge associates a VERSION, never $LATEST. Bump the logical id (V2, V3…) when the
+  # edge code changes — CFN versions are immutable.
+  EdgeFnVersionV2:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref EdgeFn
+
+  # ── front door ─────────────────────────────────────────────────────────────────────────
+  Cert:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  Oac:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${ProjectName}-console-oac"
+        OriginAccessControlOriginType: lambda
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: kb-autoupdate operator console (Midway-gated)
+        Aliases: [!Ref DomainName]
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        ViewerCertificate:
+          AcmCertificateArn: !Ref Cert
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: console
+            # FunctionUrl is "https://xxx.lambda-url.us-east-1.on.aws/" — take the host part.
+            DomainName: !Select [2, !Split ["/", !GetAtt ConsoleUrl.FunctionUrl]]
+            OriginAccessControlId: !GetAtt Oac.Id
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+            OriginCustomHeaders:
+              - HeaderName: x-origin-verify
+                HeaderValue: !Ref OriginSecret
+        DefaultCacheBehavior:
+          TargetOriginId: console
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+          Compress: true
+          # Managed policies: CachingDisabled + AllViewerExceptHostHeader (Function URLs
+          # require the Host header to be their own).
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+          LambdaFunctionAssociations:
+            - EventType: viewer-request
+              LambdaFunctionARN: !Ref EdgeFnVersionV2
+
+  Dns:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      RecordSets:
+        - Name: !Ref DomainName
+          Type: A
+          AliasTarget:
+            DNSName: !GetAtt Distribution.DomainName
+            HostedZoneId: Z2FDTNDATAQYW2   # CloudFront's fixed hosted zone id
+        - Name: !Ref DomainName
+          Type: AAAA
+          AliasTarget:
+            DNSName: !GetAtt Distribution.DomainName
+            HostedZoneId: Z2FDTNDATAQYW2
+
+Outputs:
+  ConsoleUrlOut:
+    Description: The team-facing console URL (Midway login required).
+    Value: !Sub "https://${DomainName}/"
+  DistributionId:
+    Value: !Ref Distribution
+  FunctionUrlOut:
+    Description: Raw Function URL — direct hits are rejected (403) without the origin secret.
+    Value: !GetAtt ConsoleUrl.FunctionUrl

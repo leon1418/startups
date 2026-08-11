@@ -1,0 +1,23 @@
+# The pipeline Lambda's runtime image. Deliberately contains NO pipeline code — the scripts
+# are shallow-cloned from the branch at invoke time (sfn_handler.prepare), so pushing to the
+# branch deploys, exactly like the CodeBuild version. Rebuild this image only when a runtime
+# dependency changes.
+#
+# Build (from the kb-autoupdate-poc directory):
+#   docker buildx build --platform linux/arm64 -f infra/Dockerfile.pipeline \
+#     -t <acct>.dkr.ecr.us-east-1.amazonaws.com/kb-autoupdate-pipeline:latest --push .
+FROM public.ecr.aws/lambda/python:3.12
+
+RUN dnf install -y git tar gzip && dnf clean all
+
+# gh — pinned (a "latest" lookup via the unauthenticated GitHub API gets rate-limited from
+# cloud egress IPs; the CodeBuild version learned this the hard way).
+ARG GH_VERSION=2.63.2
+RUN curl -sL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_arm64.tar.gz" \
+      | tar -xz -C /usr/local --strip-components=1 gh_${GH_VERSION}_linux_arm64/bin/gh \
+    && gh --version
+
+RUN pip install --no-cache-dir boto3 httpx beautifulsoup4 lxml defusedxml
+
+COPY sfn_handler.py ${LAMBDA_TASK_ROOT}/
+CMD ["sfn_handler.handler"]

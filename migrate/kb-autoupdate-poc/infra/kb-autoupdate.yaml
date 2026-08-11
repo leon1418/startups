@@ -1,0 +1,797 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Knowledge auto-update pipeline for the migration-to-aws skills (see
+  migrate/docs/kb-autoupdate-design.md). One weekly CodeBuild job: re-verify every fact against
+  its own source, scan the AWS What's New feed, judge what changed, and open a draft PR.
+  Deploys into the MAINTAINER'S OWN account and pushes to a fork — nothing is added to the
+  upstream repository, so no upstream secret or workflow file is needed.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: kb-autoupdate
+  # Defaults point at the FORK, deliberately. A run must be provable end to end — push, draft PR,
+  # dashboard issue — without putting anything on the public upstream repository. Switch these to
+  # upstream as an explicit, separate decision.
+  #
+  # Note the coupling: a fine-grained PAT reaches resources owned by ONE user or org, so the
+  # token has to be scoped to whichever owner these point at. Probed on the currently deployed
+  # token: contents:write on awslabs/startups, 403 on leon1418/startups — i.e. it matches the
+  # upstream target, not these defaults. Whichever way you go, token and target must agree.
+  RepoUrl:
+    Type: String
+    Default: https://github.com/leon1418/startups.git
+    Description: Clone and push target for the pipeline's branches.
+  PrRepo:
+    Type: String
+    Default: leon1418/startups
+    Description: >
+      owner/name the draft PR is opened against. Keep this equal to RepoUrl's repo while
+      validating, so a PR never lands upstream by accident.
+  DashboardIssueRepo:
+    Type: String
+    Default: leon1418/startups
+    Description: Where the long-lived dashboard issue lives (design §7.2 keeps it off upstream).
+  RepoBranch:
+    Type: String
+    Default: main
+    Description: >
+      Branch the pipeline's own code is read from. While the pipeline is not merged yet, point
+      this at its feature branch — otherwise the clone has no kb-autoupdate-poc/ to run.
+  PrBase:
+    Type: String
+    Default: main
+    Description: >
+      Base branch for the knowledge PRs, and the ref their branches are cut from. Kept separate
+      from RepoBranch: cutting a knowledge branch off the pipeline's own feature branch would
+      drag the pipeline diff into every knowledge PR.
+  ScheduleExpression:
+    Type: String
+    Default: cron(23 14 ? * MON *)
+    Description: >
+      Weekly. Do NOT lengthen this: the AWS What's New feed is capped at 100 items and runs
+      ~58/week, so a monthly poll would silently drop entries.
+  CheapModelId:
+    Type: String
+    Default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+    Description: Extraction (one call per fact) and relevance triage (one call per feed item).
+  StrongModelId:
+    Type: String
+    Default: global.anthropic.claude-sonnet-5
+    Description: Judgment and rewriting only.
+  NotifyEmail:
+    Type: String
+    Default: ""
+    Description: >
+      Build-failure notifications. A quiet week is a VALID outcome (no PR, no commit), so a
+      failed run and a silent run look identical from outside — this alarm is what tells them
+      apart. Leave empty to skip the subscription.
+  ScheduleState:
+    Type: String
+    Default: DISABLED
+    AllowedValues: [ENABLED, DISABLED]
+    Description: >
+      Deploy DISABLED. The GitHub token secret is created empty (CloudFormation cannot mint a
+      PAT), so an enabled schedule would fail every week until someone fills it in. Put the token
+      in, run once by hand, then flip this to ENABLED.
+  MaxJudgePerRun:
+    Type: Number
+    Default: 3
+    Description: >
+      How many scan hits get a full judge (and therefore a PR) in one run. Bounds both cost and
+      reviewer load; deferred hits are logged by name and return on the next run.
+  LogRetentionDays:
+    Type: Number
+    Default: 90
+
+Conditions:
+  HasEmail: !Not [!Equals [!Ref NotifyEmail, ""]]
+
+Resources:
+  # ── encryption ──────────────────────────────────────────────────────────────────────
+  # One customer-managed key for the state table, the GitHub token, the failure topic and the
+  # build logs. AWS-managed keys would satisfy "encrypted at rest" but not the repo's Checkov
+  # baseline, which requires a CMK so key policy and rotation are under the account's control.
+  Key:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub "${ProjectName} — state, token, notifications and logs"
+      EnableKeyRotation: true
+      KeySpec: SYMMETRIC_DEFAULT
+      KeyUsage: ENCRYPT_DECRYPT
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AccountRoot
+            Effect: Allow
+            Principal: { AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root" }
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: CloudWatchLogs
+            Effect: Allow
+            Principal: { Service: !Sub "logs.${AWS::Region}.amazonaws.com" }
+            Action: [kms:Encrypt*, kms:Decrypt*, kms:ReEncrypt*, kms:GenerateDataKey*, kms:Describe*]
+            Resource: "*"
+            Condition:
+              ArnLike:
+                kms:EncryptionContext:aws:logs:arn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ProjectName}"
+          - Sid: EventBridgePublishToTopic
+            Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: [kms:Decrypt, kms:GenerateDataKey*]
+            Resource: "*"
+
+  KeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${ProjectName}"
+      TargetKeyId: !Ref Key
+
+  # ── state and evidence ──────────────────────────────────────────────────────────────
+  StateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-state"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: !Ref Key
+      Tags:
+        - Key: project
+          Value: !Ref ProjectName
+
+  # Access logs for the evidence bucket. Its own access logging is intentionally off — a bucket
+  # that logs itself recurses, which is why this check is skipped here and nowhere else.
+  AccessLogBucket:
+    Type: AWS::S3::Bucket
+    # checkov:skip=CKV_AWS_18:A log bucket cannot log to itself.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${ProjectName}-access-logs-${AWS::AccountId}"
+      # No AccessControl/ACL here: S3 defaults to BucketOwnerEnforced, which rejects ACLs
+      # outright ("Bucket cannot have ACLs set with ObjectOwnership's BucketOwnerEnforced
+      # setting"). Server access logging is granted by bucket policy instead — see
+      # AccessLogBucketPolicy.
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-access-logs
+            Status: Enabled
+            ExpirationInDays: 400
+            NoncurrentVersionExpirationInDays: 30
+
+  AccessLogBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AccessLogBucket
+      PolicyDocument:
+        Statement:
+          - Sid: S3ServerAccessLogsPolicy
+            Effect: Allow
+            Principal: { Service: logging.s3.amazonaws.com }
+            Action: s3:PutObject
+            Resource: !Sub "arn:${AWS::Partition}:s3:::${ProjectName}-access-logs-${AWS::AccountId}/evidence/*"
+            Condition:
+              # The source bucket is named literally, not via !Ref: EvidenceBucket already
+              # depends on this bucket through LoggingConfiguration, so a reference back would
+              # be a circular dependency.
+              ArnLike:
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:s3:::${ProjectName}-evidence-${AWS::AccountId}"
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${ProjectName}-access-logs-${AWS::AccountId}"
+              - !Sub "arn:${AWS::Partition}:s3:::${ProjectName}-access-logs-${AWS::AccountId}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  EvidenceBucket:
+    Type: AWS::S3::Bucket
+    # Retained on stack deletion: the snapshots are the audit trail behind merged PRs.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${ProjectName}-evidence-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogBucket
+        LogFilePrefix: evidence/
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-snapshots
+            Status: Enabled
+            ExpirationInDays: 400
+            NoncurrentVersionExpirationInDays: 30
+
+  EvidenceBucketTlsOnly:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref EvidenceBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${EvidenceBucket}"
+              - !Sub "arn:${AWS::Partition}:s3:::${EvidenceBucket}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  # ── the GitHub token ────────────────────────────────────────────────────────────────
+  # A fine-grained PAT cannot be minted by CloudFormation, so this is created with a random
+  # PLACEHOLDER and you overwrite it (see the README). It is not created *empty* on purpose:
+  # CodeBuild resolves SECRETS_MANAGER environment variables before any build phase runs, so an
+  # empty secret fails the build at DOWNLOAD_SOURCE with "Secrets Manager can't find the
+  # specified secret value for staging label: AWSCURRENT" — an error that says nothing about the
+  # actual cause. With a placeholder the build starts and fails at `gh auth login` instead, which
+  # is legible, and the infrastructure can be smoke-tested before the token exists.
+  # Scoping the real token: a fine-grained PAT reaches resources owned by ONE user or org, so a
+  # single one cannot cover both a user-owned fork and an org-owned upstream. Either scope one
+  # fine-grained PAT to the upstream repo alone (contents + pull_requests + issues: write) and
+  # push branches there, or use two tokens, one per owner. A classic PAT with `repo` would work
+  # but grants write to every repository the account can reach — too wide for an unattended job.
+  GitHubToken:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${ProjectName}/github-token"
+      Description: GitHub PAT for the pipeline — see the template comment for scoping. REPLACE THE PLACEHOLDER.
+      KmsKeyId: !Ref Key
+      GenerateSecretString:
+        PasswordLength: 40
+        ExcludePunctuation: true
+
+  # ── notifications ───────────────────────────────────────────────────────────────────
+  FailureTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ProjectName}-failures"
+      DisplayName: KB auto-update failures
+      KmsMasterKeyId: !Ref Key
+
+  FailureSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasEmail
+    Properties:
+      TopicArn: !Ref FailureTopic
+      Protocol: email
+      Endpoint: !Ref NotifyEmail
+
+  # ── the job ─────────────────────────────────────────────────────────────────────────
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${ProjectName}"
+      RetentionInDays: !Ref LogRetentionDays
+      KmsKeyId: !GetAtt Key.Arn
+
+  BuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: codebuild.amazonaws.com }
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Policies:
+        - PolicyName: run
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: Logs
+                Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub "${LogGroup.Arn}:*"
+              - Sid: State
+                Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem]
+                Resource: !GetAtt StateTable.Arn
+              - Sid: Evidence
+                Effect: Allow
+                Action: [s3:PutObject, s3:GetObject]
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${EvidenceBucket}/*"
+              - Sid: Token
+                Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref GitHubToken
+              # Inference only. The pipeline never creates, deletes or configures a Bedrock
+              # resource, so nothing beyond InvokeModel is granted.
+              - Sid: BedrockInference
+                Effect: Allow
+                Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+                Resource: "*"
+              # Needed to read the token and to use the SSE-KMS state table: with a customer
+              # key the CALLER, not just the service, must be allowed to use it.
+              - Sid: UseKey
+                Effect: Allow
+                Action: [kms:Decrypt, kms:GenerateDataKey]
+                Resource: !GetAtt Key.Arn
+
+  Project:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref ProjectName
+      Description: Weekly knowledge re-verification, announcement scan, and draft-PR authoring.
+      ServiceRole: !GetAtt BuildRole.Arn
+      TimeoutInMinutes: 90
+      QueuedTimeoutInMinutes: 30
+      Artifacts: { Type: NO_ARTIFACTS }
+      Environment:
+        Type: ARM_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux-aarch64-standard:3.0
+        EnvironmentVariables:
+          - { Name: KB_REGION, Value: !Ref "AWS::Region" }
+          - { Name: KB_STATE_TABLE, Value: !Ref StateTable }
+          - { Name: KB_EVIDENCE_BUCKET, Value: !Ref EvidenceBucket }
+          - { Name: KB_CHEAP_MODEL, Value: !Ref CheapModelId }
+          - { Name: KB_STRONG_MODEL, Value: !Ref StrongModelId }
+          - { Name: KB_REPO_URL, Value: !Ref RepoUrl }
+          - { Name: KB_REPO_BRANCH, Value: !Ref RepoBranch }
+          - { Name: KB_PR_BASE, Value: !Ref PrBase }
+          - { Name: KB_PR_REPO, Value: !Ref PrRepo }
+          - { Name: KB_DASHBOARD_REPO, Value: !Ref DashboardIssueRepo }
+          - { Name: KB_MAX_JUDGE_PER_RUN, Value: !Ref MaxJudgePerRun }
+          - { Name: GITHUB_TOKEN, Type: SECRETS_MANAGER, Value: !Sub "${ProjectName}/github-token" }
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref LogGroup
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          # The whole pipeline is one job because the judge phase needs the same working tree
+          # the earlier phases read. Splitting it across Lambdas would force that tree through
+          # S3 or EFS and back for no gain at one run per week.
+          phases:
+            install:
+              commands:
+                - curl -LsSf https://astral.sh/uv/install.sh | sh
+                - export PATH="$HOME/.local/bin:$PATH"
+                - dnf install -y git tar gzip >/dev/null
+                # gh version is PINNED. Resolving "latest" needed an unauthenticated GitHub API
+                # call, which gets rate-limited from shared CI egress IPs; when it does, the
+                # version substitutes as empty, curl fetches a 404 page, and tar fails — an
+                # INSTALL failure that says nothing about the cause. A pin also removes the
+                # supply-chain surprise of a new gh release landing mid-week. Bump deliberately.
+                - |
+                  GH_VERSION=2.63.2
+                  curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_arm64.tar.gz" \
+                    | tar xz --strip-components=2 -C /usr/local/bin "gh_${GH_VERSION}_linux_arm64/bin/gh"
+                  gh --version | head -1
+            pre_build:
+              commands:
+                - export PATH="$HOME/.local/bin:$PATH"
+                # TWO clones, deliberately.
+                #
+                # code/ holds the pipeline's own scripts, on whatever branch carries them.
+                # work/ is the tree the knowledge edits are made in, on the PR base.
+                #
+                # One clone does not work: apply.py cuts its branch from the PR base, and while
+                # the pipeline is still unmerged the base does not contain kb-autoupdate-poc/ —
+                # so that checkout deletes the running scripts out from under the build. This
+                # happened; POST_BUILD failed with "cd: repo/migrate/kb-autoupdate-poc: No such
+                # file or directory". Separating the trees makes it structurally impossible.
+                - |
+                  auth_url=$(echo "$KB_REPO_URL" | sed -E "s#https://#https://x-access-token:${GITHUB_TOKEN}@#")
+                  git clone --depth 1 --branch "$KB_REPO_BRANCH" "$auth_url" code
+                  git clone --depth 1 --branch "$KB_PR_BASE"    "$auth_url" work
+                - git -C work config user.name  "kb-autoupdate[bot]"
+                - git -C work config user.email "kb-autoupdate@users.noreply.github.com"
+                # No `gh auth login`: gh picks GITHUB_TOKEN up from the environment on its own,
+                # and calling login while that variable is set exits 1 ("first clear the value
+                # from the environment"). Just prove the credential resolves.
+                - gh auth status 2>&1 | head -3
+            build:
+              commands:
+                - export PATH="$HOME/.local/bin:$PATH"
+                - cd "$CODEBUILD_SRC_DIR/code/migrate/kb-autoupdate-poc"
+                # The console's hosted Bootstrap button starts this same project with
+                # KB_MODE=bootstrap: refresh the fact registry from the skill (both passes,
+                # merge new keys only) and skip the pipeline entirely.
+                - |
+                  if [ "${KB_MODE:-run}" = "bootstrap" ]; then
+                    echo "MODE: bootstrap — proposing facts from the skill tree"
+                    rm -f results-*.json
+                    # results-* naming keeps it inside the archive include and the clean-slate rm
+                    uv run bootstrap_facts.py --apply --out results-bootstrap.json
+                    export KB_SKIP_PIPELINE=1
+                  fi
+                # Monitor 1 — every fact re-fetched from its own source page.
+                # The repo carries example results committed as POC evidence. Left in place they
+                # merge into THIS run's archive and dashboard — a stale judge from last week
+                # renders as if this run produced it. Every run starts from a clean slate.
+                - '[ -n "$KB_SKIP_PIPELINE" ] || rm -f results-*.json *.pr-body.md'
+                - '[ -n "$KB_SKIP_PIPELINE" ] || uv run recheck.py --out results-recheck.json'
+                # Monitor 2 — new feed items only; last_seen lives in DynamoDB.
+                - '[ -n "$KB_SKIP_PIPELINE" ] || uv run scan.py --out results-scan.json'
+                # One judge run + one draft PR per hit. A quiet week exits here silently.
+                # Cap how many announcements are judged per run, and SAY what was deferred. A run
+                # with an empty last_seen triages all ~100 feed items and can produce a dozen
+                # hits; judging every one of them in a single job is both slow and expensive, and
+                # a dozen draft PRs at once is not reviewable anyway. The rest stay unseen in
+                # DynamoDB and come back next run.
+                - |
+                  [ -n "$KB_SKIP_PIPELINE" ] && { : > hits.txt; } || \
+                  python3 - "$KB_MAX_JUDGE_PER_RUN" <<'PY' > hits.txt
+                  import json, sys
+                  cap = int(sys.argv[1])
+                  hits = [h["title"] for h in json.load(open("results-scan.json"))["hits"]]
+                  print("\n".join(hits[:cap]))
+                  if len(hits) > cap:
+                      print(f"DEFERRED {len(hits) - cap} of {len(hits)} hits this run: "
+                            + "; ".join(hits[cap:]), file=sys.stderr)
+                  PY
+                # Branch and PR both live in the same repo, so gh needs no cross-fork --head.
+                # The result filename is computed ONCE here and passed to both steps. Letting
+                # judge.py derive it from the title while the shell derived its own truncated
+                # slug meant the two never agreed — apply.py looked for a name that did not exist.
+                - |
+                  n=0; apply_failures=0
+                  while read -r title; do
+                    [ -z "$title" ] && continue
+                    n=$((n + 1))
+                    out="results-judge-$(printf '%s' "$title" | shasum | cut -c1-10).json"
+                    uv run judge.py --hit "$title" --out "$out" || continue
+                    rc=0
+                    uv run apply.py \
+                      --judge "$out" \
+                      --repo "$CODEBUILD_SRC_DIR/work" \
+                      --commit --push --draft-pr \
+                      --base "$KB_PR_BASE" --from-ref "origin/$KB_PR_BASE" \
+                      --remote origin --pr-repo "$KB_PR_REPO" || rc=$?
+                    # Handled = the DURABLE action completed: rc 0 (PR opened/updated) or
+                    # rc 3 (judged, nothing to apply). Any other rc leaves the item unhandled
+                    # so it retries next run, and fails this build so SNS says so.
+                    if [ "$rc" -eq 0 ] || [ "$rc" -eq 3 ]; then
+                      uv run scan.py --mark-handled "$title" || true
+                    else
+                      echo "APPLY FAILED (rc=$rc): $title — left unhandled, retries next run"
+                      apply_failures=$((apply_failures + 1))
+                    fi
+                  done < hits.txt
+                  echo "judged $n announcement(s) this run"
+                  [ "$apply_failures" -eq 0 ] || { echo "$apply_failures apply step(s) failed"; exit 1; }
+                - '[ -n "$KB_SKIP_PIPELINE" ] || uv run dashboard_issue.py --repo-for-issue "$KB_DASHBOARD_REPO" || true'
+            post_build:
+              commands:
+                - export PATH="$HOME/.local/bin:$PATH"
+                - cd "$CODEBUILD_SRC_DIR/code/migrate/kb-autoupdate-poc"
+                - |
+                  aws s3 cp . "s3://$KB_EVIDENCE_BUCKET/runs/$(date -u +%Y-%m-%dT%H%M%SZ)/" \
+                    --recursive --exclude '*' --include 'results-*.json' --include '*.pr-body.md'
+
+  # ── trigger ─────────────────────────────────────────────────────────────────────────
+  # ── the Step Functions pipeline ─────────────────────────────────────────────────────
+  # One container image, one Lambda, many states: the state machine passes {"stage": ...} so
+  # every pipeline stage — and every judged hit inside the Map — is separately visible in the
+  # execution history, which is what log-grepping on CodeBuild never gave the operator.
+  # The image holds only the runtime; scripts are shallow-cloned from the branch per invoke,
+  # so pushing to the branch still deploys. CodeBuild remains for now as the fallback path
+  # and the image builder; it retires once this is validated.
+  PipelineFnRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: pipeline-least-privilege
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: State
+                Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem]
+                Resource: !GetAtt StateTable.Arn
+              - Sid: Evidence
+                Effect: Allow
+                Action: [s3:PutObject, s3:GetObject]
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${EvidenceBucket}/*"
+              - Sid: EvidenceList
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${EvidenceBucket}"
+              - Sid: Token
+                Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref GitHubToken
+              - Sid: BedrockInference
+                Effect: Allow
+                Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+                Resource: "*"
+              - Sid: UseKey
+                Effect: Allow
+                Action: [kms:Decrypt, kms:GenerateDataKey]
+                Resource: !GetAtt Key.Arn
+
+  PipelineFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-pipeline"
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/kb-autoupdate-pipeline:latest"
+      Architectures: [arm64]
+      MemorySize: 2048
+      EphemeralStorage: { Size: 2048 }
+      Timeout: 900
+      Role: !GetAtt PipelineFnRole.Arn
+      Environment:
+        Variables:
+          KB_REGION: !Ref AWS::Region
+          KB_STATE_TABLE: !Ref StateTable
+          KB_EVIDENCE_BUCKET: !Ref EvidenceBucket
+          KB_CHEAP_MODEL: !Ref CheapModelId
+          KB_STRONG_MODEL: !Ref StrongModelId
+          KB_REPO_URL: !Ref RepoUrl
+          KB_REPO_BRANCH: !Ref RepoBranch
+          KB_PR_BASE: !Ref PrBase
+          KB_PR_REPO: !Ref PrRepo
+          KB_DASHBOARD_REPO: !Ref DashboardIssueRepo
+          KB_MAX_JUDGE_PER_RUN: !Ref MaxJudgePerRun
+          KB_TOKEN_SECRET: !Ref GitHubToken
+
+  StatesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: states.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: invoke-pipeline-fn
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: [!GetAtt PipelineFn.Arn, !Sub "${PipelineFn.Arn}:*"]
+
+  StateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub "${ProjectName}-pipeline"
+      RoleArn: !GetAtt StatesRole.Arn
+      DefinitionString: !Sub |
+        {
+          "Comment": "kb-autoupdate: recheck -> scan -> judge each hit -> finalize; {mode: bootstrap} runs the registry refresh instead",
+          "StartAt": "Route",
+          "States": {
+            "Route": {
+              "Type": "Choice",
+              "Choices": [{"Variable": "$.mode", "StringEquals": "bootstrap", "Next": "Bootstrap"}],
+              "Default": "Recheck"
+            },
+            "Bootstrap": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {"FunctionName": "${PipelineFn.Arn}", "Payload": {"stage": "bootstrap"}},
+              "ResultSelector": {"Payload.$": "$.Payload"},
+              "TimeoutSeconds": 900,
+              "End": true
+            },
+            "Recheck": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {"FunctionName": "${PipelineFn.Arn}", "Payload": {"stage": "recheck"}},
+              "ResultSelector": {"Payload.$": "$.Payload"},
+              "ResultPath": "$.recheck",
+              "Retry": [{"ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException", "Lambda.SdkClientException"], "IntervalSeconds": 15, "MaxAttempts": 2}],
+              "TimeoutSeconds": 900,
+              "Next": "Scan"
+            },
+            "Scan": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {"FunctionName": "${PipelineFn.Arn}", "Payload": {"stage": "scan", "runId.$": "$.recheck.Payload.runId"}},
+              "ResultSelector": {"Payload.$": "$.Payload"},
+              "ResultPath": "$.scan",
+              "Retry": [{"ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException", "Lambda.SdkClientException"], "IntervalSeconds": 15, "MaxAttempts": 2}],
+              "TimeoutSeconds": 900,
+              "Next": "HasHits"
+            },
+            "HasHits": {
+              "Type": "Choice",
+              "Choices": [{"Variable": "$.scan.Payload.hasHits", "BooleanEquals": true, "Next": "JudgeHits"}],
+              "Default": "NoHits"
+            },
+            "NoHits": {"Type": "Pass", "Result": [], "ResultPath": "$.hitResults", "Next": "Finalize"},
+            "JudgeHits": {
+              "Type": "Map",
+              "ItemsPath": "$.scan.Payload.hits",
+              "MaxConcurrency": 1,
+              "ItemSelector": {"stage": "hit", "title.$": "$$.Map.Item.Value.title", "runId.$": "$$.Map.Item.Value.runId"},
+              "ItemProcessor": {
+                "ProcessorConfig": {"Mode": "INLINE"},
+                "StartAt": "Hit",
+                "States": {
+                  "Hit": {
+                    "Type": "Task",
+                    "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+                    "Parameters": {"FunctionName": "${PipelineFn.Arn}", "Payload.$": "$"},
+                    "OutputPath": "$.Payload",
+                    "TimeoutSeconds": 900,
+                    "End": true
+                  }
+                }
+              },
+              "ResultPath": "$.hitResults",
+              "Next": "Finalize"
+            },
+            "Finalize": {
+              "Type": "Task",
+              "Resource": "arn:${AWS::Partition}:states:::lambda:invoke",
+              "Parameters": {"FunctionName": "${PipelineFn.Arn}", "Payload": {"stage": "finalize", "runId.$": "$.recheck.Payload.runId", "hitResults.$": "$.hitResults"}},
+              "ResultSelector": {"Payload.$": "$.Payload"},
+              "OutputPath": "$",
+              "TimeoutSeconds": 900,
+              "End": true
+            }
+          }
+        }
+
+  # Execution failures reach the same SNS topic the build failures did.
+  SfnFailureRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${ProjectName}-execution-failed"
+      Description: Notify when a pipeline execution fails.
+      EventPattern:
+        source: [aws.states]
+        detail-type: ["Step Functions Execution Status Change"]
+        detail:
+          stateMachineArn: [!Ref StateMachine]
+          status: [FAILED, TIMED_OUT, ABORTED]
+      Targets:
+        - Id: sns
+          Arn: !Ref FailureTopic
+          InputTransformer:
+            InputPathsMap:
+              status: "$.detail.status"
+              arn: "$.detail.executionArn"
+            InputTemplate: '"kb-autoupdate pipeline execution <status>. Execution: <arn>"'
+
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: scheduler.amazonaws.com }
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Policies:
+        - PolicyName: start-pipeline
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Ref StateMachine
+
+  Schedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: !Sub "${ProjectName}-weekly"
+      Description: Weekly knowledge re-verification and announcement scan.
+      FlexibleTimeWindow: { Mode: "OFF" }
+      ScheduleExpression: !Ref ScheduleExpression
+      ScheduleExpressionTimezone: UTC
+      State: !Ref ScheduleState
+      Target:
+        Arn: !Ref StateMachine
+        RoleArn: !GetAtt SchedulerRole.Arn
+        Input: '{"mode": "run"}'
+
+  # A quiet run and a dead pipeline are indistinguishable without this.
+  BuildFailureRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${ProjectName}-build-failed"
+      Description: Notify when the weekly run fails.
+      EventPattern:
+        source: [aws.codebuild]
+        detail-type: ["CodeBuild Build State Change"]
+        detail:
+          project-name: [!Ref Project]
+          build-status: [FAILED, STOPPED, TIMED_OUT]
+      Targets:
+        - Id: sns
+          Arn: !Ref FailureTopic
+          InputTransformer:
+            InputPathsMap:
+              status: "$.detail.build-status"
+              id: "$.detail.build-id"
+            InputTemplate: '"kb-autoupdate run <status>. Build: <id>"'
+
+  FailureTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics: [!Ref FailureTopic]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sns:Publish
+            Resource: !Ref FailureTopic
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  StateMachineArnOut:
+    Description: The pipeline state machine — the console starts and watches executions on it.
+    Value: !Ref StateMachine
+  ProjectNameOut:
+    Description: Run it now with `aws codebuild start-build --project-name <this>`.
+    Value: !Ref Project
+  StateTableOut:
+    Description: Set KB_STATE_TABLE to this when running locally against shared state.
+    Value: !Ref StateTable
+  EvidenceBucketOut:
+    Value: !Ref EvidenceBucket
+  GitHubTokenSecret:
+    Description: Put the fine-grained PAT here before the first run.
+    Value: !Ref GitHubToken
+  FailureTopicOut:
+    Value: !Ref FailureTopic

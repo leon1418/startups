@@ -1,0 +1,113 @@
+{
+  "_meta": {
+    "purpose": "POC fact records — batch 1 of the migration in kb-autoupdate-design.md §10.",
+    "note": "Values are the repo's CURRENT assertions, copied verbatim so the comparison is real. Sources of each value are named in `current_value_from`.",
+    "schema_version": "poc-0.1"
+  },
+  "facts": [
+    {
+      "key": "agentcore.session_cap",
+      "value": "8h",
+      "unit": "duration",
+      "current_value_from": "skills/agent-advisor/references/runtimes/agentcore.json volatile_facts[0]",
+      "recheck": {
+        "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html",
+        "locate": "In the table of lifetime session lifecycle parameters, the row whose Phase is 'Maximum session duration' — read its Timeout column."
+      },
+      "appears_in": [
+        "skills/agent-advisor/references/runtimes/agentcore.json:30",
+        "skills/agent-advisor/references/decision-refs/agentcore.md:15",
+        "skills/agent-advisor/references/decision-refs/temporal.md:56",
+        "skills/agent-advisor/references/decision-refs/ecs.md:13"
+      ],
+      "observed_at": null,
+      "pin": null,
+      "_poc_expectation": "agree — the Quotas page still says 8 hrs. Runtime instances (14d) is a DIFFERENT compute option and must NOT surface here as a conflict."
+    },
+    {
+      "key": "agentcore.idle_timeout",
+      "value": "15 minutes of inactivity",
+      "unit": "duration",
+      "current_value_from": "not yet asserted in the skills — included to test extraction of a second field from the same page",
+      "recheck": {
+        "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html",
+        "locate": "In the table of lifetime session lifecycle parameters, the row whose Phase is 'Idle session timeout' — read its Timeout column."
+      },
+      "appears_in": [],
+      "observed_at": null,
+      "pin": null,
+      "_poc_expectation": "agree — tests that two facts can share one source page and be located independently."
+    },
+    {
+      "key": "lambda.timeout",
+      "value": "15m",
+      "unit": "duration",
+      "current_value_from": "skills/agent-advisor/references/runtimes/lambda.json volatile_facts[0]",
+      "recheck": {
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+        "locate": "The quota for a function's maximum execution time per invocation (function timeout). Report the value with its unit."
+      },
+      "appears_in": [
+        "skills/agent-advisor/references/runtimes/lambda.json:*"
+      ],
+      "observed_at": null,
+      "pin": null,
+      "_poc_expectation": "agree — 900 seconds / 15 minutes. Tests that '900 seconds' is recognised as equal to the stored '15m'."
+    },
+    {
+      "key": "fargate.per_vcpu_hour",
+      "value": "0.04048",
+      "unit": "USD per vCPU-hour",
+      "current_value_from": "skills/shared/pricing/aws-infra-pricing.json fargate.per_vcpu_hour",
+      "recheck": {
+        "url": "https://aws.amazon.com/fargate/pricing/",
+        "locate": "The on-demand Linux/x86 price per vCPU per hour in US East (N. Virginia) for Amazon ECS on Fargate."
+      },
+      "appears_in": [
+        "skills/shared/pricing/aws-infra-pricing.json fargate.per_vcpu_hour",
+        "skills/gcp-to-aws/references/shared/pricing-cache.md (Fargate table)"
+      ],
+      "observed_at": null,
+      "pin": null,
+      "_poc_expectation": "appears_in has 2 entries, so even if the value changed this fact must route to a human, not auto-edit (design §6.1). Also demonstrates the real duplication between the JSON and the markdown cache."
+    },
+    {
+      "key": "fargate.per_vcpu_hour_arm64",
+      "value": "0.03238",
+      "unit": "USD per vCPU-hour",
+      "current_value_from": "skills/shared/pricing/aws-infra-pricing.json fargate.per_vcpu_hour_arm64",
+      "recheck": {
+        "url": "https://aws.amazon.com/fargate/pricing/",
+        "locate": "The on-demand ARM/Graviton price per vCPU per hour in US East (N. Virginia) for Amazon ECS on Fargate."
+      },
+      "appears_in": [
+        "skills/shared/pricing/aws-infra-pricing.json fargate.per_vcpu_hour_arm64"
+      ],
+      "observed_at": null,
+      "pin": null,
+      "_poc_expectation": "appears_in has 1 entry, so a changed value here is eligible for auto-edit."
+    },
+    {
+      "key": "temporal.serverless_workers.status",
+      "value": "Public Preview",
+      "unit": "maturity",
+      "current_value_from": "skills/agent-advisor/references/decision-refs/freshness.md:55-61",
+      "recheck": {
+        "url": "https://docs.temporal.io/production-deployment/worker-deployments/serverless-workers/aws-lambda",
+        "locate": "The maturity or availability label for Serverless Workers on AWS Lambda (for example 'Public Preview', 'Available', 'GA')."
+      },
+      "appears_in": [
+        "skills/agent-advisor/references/decision-refs/freshness.md:55",
+        "skills/agent-advisor/references/decision-refs/temporal.md"
+      ],
+      "observed_at": null,
+      "pin": {
+        "at": "2026-07",
+        "reason": "The docs page showed 'Available' while the feature was pre-release. A docs label alone is not GA evidence.",
+        "lift_when": "A GA announcement post from Temporal.",
+        "last_observed": { "value": "Available", "at": "2026-07" }
+      },
+      "_poc_expectation": "If the page now says anything stronger than Public Preview, the pin must suppress the PR and report a conflict instead (design §8)."
+    }
+  ]
+}

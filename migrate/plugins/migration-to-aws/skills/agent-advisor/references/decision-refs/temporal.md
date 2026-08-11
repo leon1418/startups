@@ -53,7 +53,7 @@ scoring script.
 
 - **Lambda classic**: 15-min cap + freeze model is incompatible with a long-poll
   loop → OUT.
-- **AgentCore Runtime**: 8-hour max execution → OUT as Worker host. (Its correct
+- **AgentCore Runtime**: 8-hour max execution applies to the default serverless/microVM runtime → OUT as Worker host for long-running work; however, AgentCore runtime instances (EC2-based) now support sessions up to 14 days, so this exclusion no longer applies universally to AgentCore Runtime.
   role is the execution tier for agent-session Activities — Tier 2.)
 - **Lambda MicroVMs**: can run long, but resident-polling cost is strictly worse
   than ECS → OUT.
@@ -92,7 +92,7 @@ Classify each Activity (scan + user confirmation), then map:
 | Activity class                                             | Signature                                        | Execution target                                                                                                                                                                                                                                  |
 | ---------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Light-IO (single LLM/API call, DB read-write)              | IO-bound, seconds–minutes                        | **in-process** — delegation adds hops for nothing. In-process does NOT waive Temporal hygiene: idempotency, Activity timeout/retry options, cancellation handling, heartbeats for external calls                                                  |
-| Agent-session (LLM loop + tools + memory, tens of minutes) | stateful session, isolation, independent scaling | **run `scoring.py`** via the adapter table below (§ Tier 2 adapter — agent-session Activity classes); typical winner AgentCore Runtime (≤8h) — DAF pattern; community reference github.com/koukish/async-agent-architecture-sample (not official) |
+| Agent-session (LLM loop + tools + memory, tens of minutes) | stateful session, isolation, independent scaling | **run `scoring.py`** via the adapter table below (§ Tier 2 adapter — agent-session Activity classes); typical winner AgentCore Runtime (≤8h on default microVM runtime; up to 14 days available via EC2-based runtime instances) — DAF pattern; community reference github.com/koukish/async-agent-architecture-sample (not official) |
 | Short-tool (convert, scrape, validate)                     | stateless, seconds, spiky                        | **Lambda** (<15 min)                                                                                                                                                                                                                              |
 | Heavy (batch, fine-tune, >15 min, high CPU/GPU)            | long, resource-dense                             | **ECS task / AWS Batch**; GPU → EC2                                                                                                                                                                                                               |
 

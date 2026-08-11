@@ -2,8 +2,8 @@
 
 ## Fields to verify at runtime via the awsknowledge MCP
 
-- AgentCore session cap (currently "8h, extending")
-- AgentCore compute cap (2 vCPU / 8 GB)
+- AgentCore session cap (8h for microVM runtime; up to 14 days for EC2-based runtime instances, GA)
+- AgentCore compute cap (2 vCPU / 8 GB for microVM runtime; no fixed ceiling for EC2-based runtime instances)
 - AgentCore / Lambda MicroVMs region availability
 - Lambda MicroVMs launch TPS (5, not adjustable)
 - FedRAMP certification status for AgentCore and Lambda MicroVMs

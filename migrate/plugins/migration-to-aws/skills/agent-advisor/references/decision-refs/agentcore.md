@@ -12,8 +12,8 @@ isolation, minimal ops, cross-session memory, high-volume session launch.
 
 ## Hard limits (verify via MCP — volatile)
 
-- Session cap: 8h (extending — verify)
-- Compute cap: 2 vCPU / 8 GB (hard)
+- Session cap: 8h for default microVM/serverless runtime; up to 14 days for EC2-based runtime instances (GA)
+- Compute cap: 2 vCPU / 8 GB (hard) for default microVM/serverless runtime; EC2-based runtime instances support GPU-accelerated, memory-optimized, and compute-optimized instance types with no fixed 2 vCPU/8GB ceiling
 - FedRAMP: authorization in progress (WIP) — verify current status; NOT a hard block
 
 ## Deployment models
@@ -38,7 +38,7 @@ isolation, minimal ops, cross-session memory, high-volume session launch.
 
 ## Tradeoffs
 
-2 vCPU / 8 GB ceiling; no process-level suspend (Session Storage persists files only).
+2 vCPU / 8 GB ceiling on default microVM runtime only; EC2-based runtime instances remove this ceiling. No process-level suspend (Session Storage persists files only).
 
 ## Serving & security notes
 

@@ -12,7 +12,7 @@ isolation, minimal ops, cross-session memory, high-volume session launch.
 
 ## Hard limits (verify via MCP — volatile)
 
-- Session cap: 8h (extending — verify)
+- Session cap: 8h for default serverless microVM runtime (fast startup); up to 14 days for new EC2-backed "runtime instances" (GPU/memory/compute-optimized, no fast-startup guarantee)
 - Compute cap: 2 vCPU / 8 GB (hard)
 - FedRAMP: authorization in progress (WIP) — verify current status; NOT a hard block
 

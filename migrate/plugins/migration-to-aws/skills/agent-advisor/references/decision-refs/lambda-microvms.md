@@ -14,7 +14,7 @@ sub-second cold starts.
 
 ## Hard limits (verify via MCP — volatile)
 
-- Session cap: 8h (max 28,800s) — same as AgentCore; NOT longer
+- Session cap: 8h (max 28,800s) — same as AgentCore's default serverless microVM runtime; AgentCore's new EC2-backed runtime instances now support up to 14 days, so Lambda MicroVMs is no longer capped the same as AgentCore overall
 - Max compute: up to 16 vCPU / 32 GB
 - Launch rate: RunMicrovm 5 TPS, NOT adjustable (hard scaling weakness)
 - Account memory cap: ~1,024 GB in select regions

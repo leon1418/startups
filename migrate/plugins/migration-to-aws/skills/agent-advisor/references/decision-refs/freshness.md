@@ -2,7 +2,7 @@
 
 ## Fields to verify at runtime via the awsknowledge MCP
 
-- AgentCore session cap (currently "8h, extending")
+- AgentCore session cap (now split: 8h for default serverless microVM runtime; up to 14 days for EC2-backed runtime instances) — resolved, no longer pending verification
 - AgentCore compute cap (2 vCPU / 8 GB)
 - AgentCore / Lambda MicroVMs region availability
 - Lambda MicroVMs launch TPS (5, not adjustable)

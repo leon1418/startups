@@ -14,7 +14,7 @@ Strands Agents is an open-source SDK from AWS (open-sourced May 2025, 1.0 releas
 
 - **Model-driven:** The LLM drives tool selection and planning autonomously — no hardcoded task flows
 - **Multi-agent primitives:** Agents-as-Tools (hierarchical), Swarms (collaborative), Graphs (deterministic), A2A protocol (cross-organization)
-- **AWS-native deployment:** First-class deployment on AgentCore Runtime with microVM isolation, 8-hour sessions, auto-scaling
+- **AWS-native deployment:** First-class deployment on AgentCore Runtime with microVM isolation, 8-hour sessions (default serverless) or up to 14-day sessions via EC2-backed runtime instances, auto-scaling
 - **Multi-model:** Supports Bedrock, OpenAI, Anthropic, and any OpenAI-compatible endpoint. Different models per agent in the same system.
 - **Session management:** Built-in durable session persistence (S3, file-based, or custom DAO)
 - **Async-native:** Full async support with streaming, concurrent agent evaluation, cancellation
@@ -127,7 +127,7 @@ Strands agents deploy on AgentCore Runtime for production:
 
 - Serverless microVM isolation per session (no shared state between users)
 - Auto-scaling from zero to thousands of sessions
-- Up to 8-hour session duration for long-running agent tasks
+- Up to 8-hour session duration for the default serverless microVM runtime; up to 14 days if using EC2-backed runtime instances
 - Built-in observability via OpenTelemetry (traces to CloudWatch, Datadog, etc.)
 - VPC support and PrivateLink for network isolation
 
@@ -138,7 +138,7 @@ Strands agents deploy on AgentCore Runtime for production:
 | `quick` (< 30s)                    | AgentCore Runtime standard. Consider Lambda for simple single-turn if no state needed. |
 | `medium` (30s – 5min)              | AgentCore Runtime standard. Sessions handle this natively.                             |
 | `long` (5min – 1hr)                | AgentCore Runtime required. Lambda will timeout.                                       |
-| `very_long` (1hr+)                 | AgentCore Runtime with session chaining. Break into sub-tasks if > 8 hours.            |
+| `very_long` (1hr+)                 | AgentCore Runtime with session chaining, or EC2-backed runtime instances for sessions up to 14 days without chaining. Break into sub-tasks if > 8 hours on default serverless microVM runtime.            |
 
 **Memory integration:**
 

@@ -53,7 +53,7 @@ scoring script.
 
 - **Lambda classic**: 15-min cap + freeze model is incompatible with a long-poll
   loop → OUT.
-- **AgentCore Runtime**: 8-hour max execution → OUT as Worker host. (Its correct
+- **AgentCore Runtime (serverless)**: 8-hour max execution → OUT as Worker host for the serverless deployment; AgentCore runtime instances (persistent, up to 14 days) may need reevaluation as a Worker host candidate. (Its correct
   role is the execution tier for agent-session Activities — Tier 2.)
 - **Lambda MicroVMs**: can run long, but resident-polling cost is strictly worse
   than ECS → OUT.

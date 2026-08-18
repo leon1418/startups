@@ -482,8 +482,8 @@ Interpret → `ai_constraints.agentic.memory_requirement`: A → `"none"`, B →
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Quick     | Standard invocation. Any deployment model works.                                                                                                                         |
 | Medium    | AgentCore Runtime recommended for managed scaling. Harness sessions handle this natively.                                                                                |
-| Long      | AgentCore Runtime strongly recommended (supports up to 8-hour sessions). Serverless alternatives (Lambda) will timeout.                                                  |
-| Very long | AgentCore Runtime required (8-hour max session). If tasks exceed 8 hours: recommend breaking into sub-tasks with session chaining, or evaluate custom compute (ECS/EKS). |
+| Long      | AgentCore Runtime strongly recommended. Serverless AgentCore Runtime supports up to 8-hour sessions; new persistent runtime instances support sessions up to 14 days for longer workloads. Serverless alternatives (Lambda) will timeout.                                                  |
+| Very long | AgentCore Runtime required. Serverless AgentCore Runtime has an 8-hour max session; for tasks exceeding 8 hours, use new persistent runtime instances (up to 14 days) instead of session chaining or custom compute (ECS/EKS). |
 
 Interpret → `ai_constraints.agentic.task_duration`: A → `"quick"`, B → `"medium"`, C → `"long"`, D → `"very_long"`. Default: B → `"medium"`.
 
@@ -512,7 +512,7 @@ Interpret → `ai_constraints.agentic.incremental_migration`: A → `true`, B �
 | A (retarget) + C (cross-session memory) | Retarget model layer + migrate memory backend to AWS (Redis → ElastiCache, etc.) |
 | B (harness) + A (no memory)             | Simplest Harness config — model + tools + prompt, no memory setup                |
 | B (harness) + C (cross-session memory)  | Harness + AgentCore Memory service                                               |
-| B (harness) + D (very long tasks)       | Flag: 8-hour session limit. Recommend task decomposition or session chaining.    |
+| B (harness) + D (very long tasks)       | Flag: 8-hour session limit applies only to serverless AgentCore Runtime; recommend new persistent runtime instances (up to 14 days) instead of task decomposition or session chaining.    |
 | C (strands) + C (cross-session memory)  | Strands SessionManager + AgentCore Memory                                        |
 | Any + A (incremental)                   | Include incremental migration script in Generate artifacts                       |
 

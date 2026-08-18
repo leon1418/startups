@@ -12,7 +12,7 @@ isolation, minimal ops, cross-session memory, high-volume session launch.
 
 ## Hard limits (verify via MCP — volatile)
 
-- Session cap: 8h (extending — verify)
+- Session cap: 8h for serverless AgentCore Runtime (still true); new "runtime instances" (persistent, managed EC2) support sessions up to 14 days
 - Compute cap: 2 vCPU / 8 GB (hard)
 - FedRAMP: authorization in progress (WIP) — verify current status; NOT a hard block
 

@@ -5,7 +5,7 @@
   "launched": "2025-12-01",
   "service_card": "agentcore.md",
   "hard_constraints": [
-    { "field": "session_duration", "value": "over_8hr", "reason": "AgentCore has an 8hr session cap" },
+    { "field": "session_duration", "value": "over_8hr", "reason": "Serverless AgentCore Runtime has an 8hr session cap; AgentCore runtime instances support sessions up to 14 days" },
     { "field": "compute_tier", "value": "gpu", "reason": "AgentCore has no GPU support" },
     { "field": "compute_tier", "value": "heavy_non_gpu", "reason": "AgentCore is capped at 2 vCPU / 8 GB" }
   ],

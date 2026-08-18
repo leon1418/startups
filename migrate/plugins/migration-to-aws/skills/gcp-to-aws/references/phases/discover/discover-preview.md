@@ -94,7 +94,7 @@ from `references/shared/pricing-cache.md` (Source Provider Pricing + Bedrock Mod
 | `gemini-2.0-flash-lite`                         | Amazon Nova Lite           | `amazon.nova-lite-v1:0`                    |
 | `claude-3-5-sonnet`, `claude-sonnet-*`          | Claude Sonnet 4.6          | `anthropic.claude-sonnet-4-6`              |
 | `claude-3-5-haiku`, `claude-haiku-*`            | Claude Haiku 4.5           | `anthropic.claude-haiku-4-5-20251001-v1:0` |
-| `claude-3-opus`, `claude-opus-*`                | Claude Opus 4.6            | `anthropic.claude-opus-4-6-v1`             |
+| `claude-3-opus`, `claude-opus-*`                | Claude Opus 4.6 / Claude Opus 5 (GovCloud)            | `anthropic.claude-opus-4-6-v1` / new Opus 5 model ID             |
 | `text-embedding-*`, `*-embedding-*`             | Amazon Titan Embeddings v2 | `amazon.titan-embed-text-v2:0`             |
 | `dall-e-*`, `imagen-*`, image generation        | Amazon Nova Canvas         | `amazon.nova-canvas-v1:0`                  |
 | `whisper-*`, speech-to-text                     | Amazon Transcribe          | (non-token service — note separately)      |

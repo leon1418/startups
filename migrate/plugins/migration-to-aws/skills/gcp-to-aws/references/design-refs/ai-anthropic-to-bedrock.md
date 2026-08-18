@@ -11,6 +11,7 @@
 | Anthropic SDK model | Bedrock model ID                           | Tier     | Input/Output per 1M |
 | ------------------- | ------------------------------------------ | -------- | ------------------- |
 | `claude-opus-4-*`   | `anthropic.claude-opus-4-6-v1`             | Premium  | $5 / $25            |
+| `claude-opus-5-*`   | `anthropic.claude-opus-5-*` (GovCloud via bedrock-runtime/bedrock-mantle) | Premium  | TBD |
 | `claude-sonnet-4-*` | `anthropic.claude-sonnet-4-6`              | Flagship | $3 / $15            |
 | `claude-haiku-4-*`  | `anthropic.claude-haiku-4-5-20251001-v1:0` | Fast     | $1 / $5             |
 

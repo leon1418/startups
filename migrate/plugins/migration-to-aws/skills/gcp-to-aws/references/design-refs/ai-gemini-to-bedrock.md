@@ -62,7 +62,7 @@ Gemini 3.5 Flash is now GA (May 2026) — the current flagship Flash model. Gemi
 | Gemini Model   | Price (in/out per 1M) | Best Bedrock Match    | Bedrock Price  | Winner              |
 | -------------- | --------------------- | --------------------- | -------------- | ------------------- |
 | Gemini 3.1 Pro | $2.00 / $12.00        | Claude Sonnet 4.6     | $3.00 / $15.00 | Gemini 24% cheaper  |
-| Gemini 3.1 Pro | $2.00 / $12.00        | Claude Opus 4.7 / 4.6 | $5.00 / $25.00 | Gemini 54% cheaper  |
+| Gemini 3.1 Pro | $2.00 / $12.00        | Claude Opus 5 / 4.7 / 4.6 | pricing TBD | comparison pending Opus 5 pricing |
 | Gemini 3.1 Pro | $2.00 / $12.00        | Nova 2 Pro            | $1.38 / $11.00 | Bedrock 14% cheaper |
 | Gemini 3 Pro   | $0.50 / $3.00         | Llama 4 Maverick      | $0.24 / $0.97  | Bedrock 64% cheaper |
 | Gemini 3 Pro   | $0.50 / $3.00         | Llama 4 Scout         | $0.17 / $0.66  | Bedrock 75% cheaper |
@@ -107,7 +107,7 @@ Gemini 3.1 Pro Preview matches or beats Opus 4.6 on most reasoning benchmarks at
 
 - If user needs **general reasoning/coding quality** → Gemini 3.1 Pro is competitive or better. Migration case is weak unless driven by AWS consolidation.
 - If user needs **agentic reliability** (real-world multi-step tasks) → **Claude Sonnet 4.6** still leads on GDPval. This is the honest differentiator.
-- If user needs **maximum reasoning on hardest problems** → **Claude Opus 4.7** ($5/$25 headline on-demand, same tier as Opus 4.6) — use the latest [Claude on Bedrock](https://aws.amazon.com/bedrock/pricing/) model card for benchmark deltas vs Gemini; Opus 4.6 remains a same-price alternative where batch or regional availability matters.
+- If user needs **maximum reasoning on hardest problems** → **Claude Opus 5** — the most advanced Opus model yet, available via bedrock-runtime (both GovCloud regions) and bedrock-mantle (GovCloud US-West), with ZDR enabled by default — use the latest [Claude on Bedrock](https://aws.amazon.com/bedrock/pricing/) model card for benchmark deltas vs Gemini; Opus 4.7/4.6 remain prior-generation alternatives where batch or regional availability matters.
 
 ### Speed-First
 

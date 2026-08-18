@@ -17,7 +17,7 @@ Model choice is **independent of runtime choice** — it never changes which run
 
 | priority           | model                                                         |
 | ------------------ | ------------------------------------------------------------- |
-| quality            | Claude Sonnet 4.6 (Opus 4.7 for the most demanding reasoning) |
+| quality            | Claude Sonnet 4.6 (Claude Opus 5 for the most demanding reasoning) |
 | balanced / unknown | Claude Sonnet 4.6                                             |
 | speed              | Claude Haiku 4.5 (Nova Micro/Lite for cost-optimized speed)   |
 | cost               | Claude Haiku 4.5 or Nova Micro                                |

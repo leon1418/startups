@@ -105,7 +105,7 @@ Percentages below are blended savings using a 2:1 input-to-output token ratio.
 | GPT-4         | $30.00 / $60.00       | Claude Sonnet 4.6  | $3.00 / $15.00 | Bedrock 82% cheaper                       |
 | GPT-3.5 Turbo | $0.50 / $1.50         | Llama 4 Maverick   | $0.24 / $0.97  | Bedrock 42% cheaper + much better quality |
 
-### OpenAI Models on Bedrock (gpt-oss)
+### OpenAI Models on AWS: gpt-oss on Bedrock, and now also OpenAI's own frontier models (GPT-5.x, Codex) directly on AWS
 
 OpenAI's open-source models are available directly on Bedrock, enabling migration without switching model families:
 
@@ -131,7 +131,7 @@ _Percentages are blended savings using a 2:1 input-to-output token ratio. Actual
 - Need AWS infrastructure integration
 - Need prompt caching (Claude only, 90% savings on cached content)
 - Using o3 for reasoning → DeepSeek-R1 on Bedrock is 32% cheaper
-- Want to stay on OpenAI models → gpt-oss on Bedrock (same models, AWS infrastructure)
+- Want to stay on OpenAI models → run OpenAI frontier models (GPT-5.x, Codex) directly on AWS (now generally available), or use gpt-oss on Bedrock as an alternative
 
 **Consider staying on OpenAI if:**
 

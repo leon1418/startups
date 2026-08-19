@@ -151,6 +151,23 @@ def list_runs() -> list[str]:
     return sorted(out, reverse=True)
 
 
+def attention() -> dict:
+    """The standing what-needs-a-human snapshot the pipeline publishes at a fixed key.
+
+    Independent of whichever run the page happens to show — briefs and draft PRs are durable
+    artifacts and must survive reruns."""
+    b = evidence_bucket()
+    if b:
+        try:
+            return json.loads(s3().get_object(Bucket=b, Key="console/attention.json")["Body"].read())
+        except Exception:  # noqa: BLE001
+            pass
+    try:
+        return json.load(open("attention.json", encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def load_run(run_id: str) -> dict:
     """Reassemble one archived run into the renderer's input shape."""
     b = evidence_bucket()
@@ -470,6 +487,7 @@ class Handler(BaseHTTPRequestHandler):
                         "age": age,
                         "project": PROJECT,
                         "config": console_config(),
+                        "attention": attention(),
                     },
                     source=label,
                 )

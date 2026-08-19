@@ -29,8 +29,10 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 import re
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import state
@@ -83,6 +85,36 @@ def fetch_briefs(briefs_repo: str | None) -> list[dict]:
         return json.loads(out or "[]")
     except json.JSONDecodeError:
         return []
+
+
+def fetch_pipeline_prs(repo: str | None) -> list[dict]:
+    """Open draft PRs the pipeline itself pushed — the ones awaiting a reviewer."""
+    if not repo:
+        return []
+    out = gh(["pr", "list", "--repo", repo, "--state", "open",
+              "--json", "number,title,url,createdAt,headRefName", "--limit", "50"], check=False)
+    try:
+        prs = json.loads(out or "[]")
+    except json.JSONDecodeError:
+        return []
+    return [p for p in prs if (p.get("headRefName") or "").startswith("kb-autoupdate/")]
+
+
+def publish_attention(briefs: list[dict], prs: list[dict]) -> None:
+    """The standing what-needs-a-human snapshot, at a FIXED key — not tied to any run.
+
+    Briefs and PRs are durable artifacts; showing them only inside the run that created them
+    means a rerun hides them. The console reads this one object instead, so the list survives
+    any number of reruns and refreshes whenever a run completes."""
+    snap = {"briefs": briefs, "prs": prs,
+            "at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
+    Path("attention.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
+    bucket = os.environ.get("KB_EVIDENCE_BUCKET")
+    if bucket:
+        import boto3
+
+        boto3.client("s3").upload_file("attention.json", bucket, "console/attention.json")
+        print(f"published attention snapshot: {len(briefs)} brief(s), {len(prs)} PR(s)")
 
 
 def render(rc: dict, sc: dict, judges: list[dict], last_run: dict | None, briefs: list[dict] | None = None) -> str:
@@ -213,6 +245,7 @@ def main() -> int:
     briefs = fetch_briefs(args.briefs_repo)
     # Archived with the run so the console can render the same list without GitHub access.
     Path("results-briefs.json").write_text(json.dumps({"briefs": briefs}, indent=2), encoding="utf-8")
+    publish_attention(briefs, fetch_pipeline_prs(args.briefs_repo))
 
     body = render(rc, sc, judges, state.get("last_run"), briefs)
 

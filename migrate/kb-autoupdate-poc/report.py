@@ -331,8 +331,35 @@ def build_html(data: dict, last_run: dict | None = None, console: dict | None = 
 <div class="progress" id="prog">
   <div class="progcap mute" id="progCap"></div>
   <div class="steps" id="steps"></div>
-</div>
-<p class="hint" style="margin-top:12px">Starts the pipeline as a Step Functions execution. The
+</div>""")
+
+        # The standing what-needs-a-human list. Briefs and draft PRs are durable artifacts, so
+        # they live OUTSIDE any single run's display — a rerun must not hide them. The pipeline
+        # refreshes this snapshot at the end of every run.
+        att = console.get("attention") or {}
+        att_briefs, att_prs = att.get("briefs") or [], att.get("prs") or []
+        if att_briefs or att_prs:
+            bits = []
+            if att_briefs:
+                bits.append(f"{len(att_briefs)} brief{'s' if len(att_briefs) != 1 else ''} awaiting a decision")
+            if att_prs:
+                bits.append(f"{len(att_prs)} draft PR{'s' if len(att_prs) != 1 else ''} awaiting review")
+            rows = "".join(
+                f'<div style="padding:3px 0 0"><span class="mute">decide</span> · '
+                f'<a href="{esc(b["url"])}" target="_blank">#{b["number"]} {esc(b["title"][:90])}</a></div>'
+                for b in att_briefs
+            ) + "".join(
+                f'<div style="padding:3px 0 0"><span class="mute">review</span> · '
+                f'<a href="{esc(p["url"])}" target="_blank">PR #{p["number"]} {esc(p["title"][:90])}</a></div>'
+                for p in att_prs
+            )
+            a(f"""<div class="callout" style="border-left-color: var(--warn); margin-top: 12px">
+  <div style="font-size:13px"><b>Waiting on a human.</b> {" · ".join(bits)}
+  <span class="mute">— independent of the run shown; refreshed after every run{(" · as of " + esc(att["at"])) if att.get("at") else ""}</span></div>
+  <div style="font-size:12.5px">{rows}</div>
+</div>""")
+
+        a(f"""<p class="hint" style="margin-top:12px">Starts the pipeline as a Step Functions execution. The
 whole pipeline is laid out above before anything runs; each step lights up while it executes and
 keeps its result on its own row when it finishes. The announcements to be judged appear under
 <b>Judge hits</b>, by title, the moment the scan knows them. A run with nothing new finishes in

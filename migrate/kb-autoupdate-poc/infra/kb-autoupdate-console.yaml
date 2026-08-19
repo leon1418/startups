@@ -57,9 +57,11 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+              # ListExecutions lets a fresh Lambda environment find the latest run, so the
+              # Execute tab can keep showing it after the run (and the environment) is gone.
               - Sid: StartPipelineExecutions
                 Effect: Allow
-                Action: states:StartExecution
+                Action: [states:StartExecution, states:ListExecutions]
                 Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${ProjectName}-pipeline"
               - Sid: WatchPipelineExecutions
                 Effect: Allow

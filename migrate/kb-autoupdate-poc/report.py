@@ -130,6 +130,8 @@ nav.tabs button .cnt { color: var(--ink-3); font-weight: 400; margin-left: 5px; 
 .step.child { margin-left: 28px; padding: 5px 10px; font-size: 12px; }
 .step.child .nm { flex: 1 1 auto; min-width: 0; font-weight: 500; }
 .step.child + .step.child, .step + .step.child { border-top: none; }
+.progress .progcap { font-size: 12px; padding: 0 10px 6px; }
+.progress .progcap:empty { display: none; }
 @keyframes kb-pulse { 50% { opacity: .3; } }
 
 /* KPI row — stat tiles, not a chart */
@@ -326,6 +328,7 @@ def build_html(data: dict, last_run: dict | None = None, console: dict | None = 
   <span class="mute" style="font-size:12px">{esc(console.get("project") or "kb-autoupdate")} · Step Functions</span>
 </div>
 <div class="progress" id="prog">
+  <div class="progcap mute" id="progCap"></div>
   <div class="steps" id="steps"></div>
 </div>
 <p class="hint" style="margin-top:12px">Starts the pipeline as a Step Functions execution. The
@@ -434,6 +437,8 @@ async function poll(id) {{
     clearInterval(timer);
     timer = null;
     pill(p.status === "SUCCEEDED" ? "ok" : "bad", p.status.toLowerCase());
+    $("progCap").textContent = "this run · " + p.status.toLowerCase() +
+      (p.stopped ? " · finished " + p.stopped : "");
     $("runBtn").disabled = false;
     if (p.status === "SUCCEEDED") {{
       // Results only exist once the run has written them. Land the reader on the Results tab —
@@ -455,6 +460,8 @@ async function poll(id) {{
 $("runBtn").onclick = async () => {{
   $("runBtn").disabled = true;
   $("prog").classList.add("show");
+  $("progCap").textContent = "";
+  $("steps").innerHTML = "";
   pill("on", "starting");
   const r = await api("/api/execute", {{ method: "POST" }});
   if (r.error) {{ pill("bad", r.error); $("runBtn").disabled = false; return; }}
@@ -466,13 +473,21 @@ $("runSel").onchange = (e) => {{
   location.search = e.target.value ? "?run=" + encodeURIComponent(e.target.value) : "";
 }};
 
-// Reattach to a build that is still running from a previous page load.
+// On load: reattach to a build still running from a previous page load — or, when nothing
+// is running, keep the PREVIOUS run's steps on screen. Finishing a run should not erase
+// what it just did from the Execute tab.
 api("/api/progress").then((p) => {{
-  if (p && p.status === "RUNNING") {{
+  if (!p || p.status === "IDLE") return;
+  if (p.status === "RUNNING") {{
     $("runBtn").disabled = true;
     $("prog").classList.add("show");
     timer = setInterval(() => poll(p.buildId), 4000);
     poll(p.buildId);
+  }} else {{
+    $("prog").classList.add("show");
+    renderSteps(p.steps);
+    $("progCap").textContent = "previous run · " + p.status.toLowerCase() +
+      (p.stopped ? " · finished " + p.stopped : "");
   }}
 }});
 

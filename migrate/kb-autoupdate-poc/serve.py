@@ -271,6 +271,15 @@ def progress(exec_arn: str | None) -> dict:
     with _lock:
         exec_arn = exec_arn or _last_build.get("id")
     if not exec_arn:
+        # A fresh Lambda environment has no memory of the last run — ask Step Functions, so
+        # the Execute tab can keep showing the previous run instead of an empty box.
+        try:
+            ex = sfn().list_executions(
+                stateMachineArn=stack_outputs()["StateMachineArnOut"], maxResults=1)["executions"]
+            exec_arn = ex[0]["executionArn"] if ex else None
+        except Exception:  # noqa: BLE001
+            exec_arn = None
+    if not exec_arn:
         return {"status": "IDLE", "steps": [], "log": [], "buildId": None}
 
     d = sfn().describe_execution(executionArn=exec_arn)
@@ -342,7 +351,9 @@ def progress(exec_arn: str | None) -> dict:
                     s["status"] = "failed"
                     s["detail"] = s["detail"] or cause
             log.append(f"execution failed: {cause}")
-    return {"buildId": exec_arn, "status": d["status"], "steps": steps, "log": log[-24:]}
+    stopped = d.get("stopDate")
+    return {"buildId": exec_arn, "status": d["status"], "steps": steps, "log": log[-24:],
+            "stopped": stopped.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if stopped else ""}
 
 
 # ── http ──────────────────────────────────────────────────────────────────────────────

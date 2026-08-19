@@ -71,21 +71,32 @@ for the thing it described, and the judge records that in an explicit "still tru
 distinction is exactly what a naive diff-and-rewrite lacks (§1's worked example is the case in
 point). Second, _how far it reaches:_ blast radius comes from searching the whole tree rather
 than from file descriptions, because a file can depend on a fact without being "about" it — and
-those are the files whose conclusions flip.
+those are the files whose conclusions flip. When any conclusion does flip, the judge writes one
+more thing: a _decision brief_ — what changed, the real options and what each depends on, a
+proposed position, and every assumption that position rests on — because a reversal opens a
+decision space (GA maturity, cost structure, workload fit) that no line-level rewrite can
+carry.
 
 **Layer 4 — Actions.** Independent consumers of judge output, and the only layer that writes
-anywhere. The draft PR is the only knowledge writer: it touches only locations the judge
-named, refuses any edit whose before-text is not actually present, and lists every skipped edit
-and its own known limits in the PR body — so the PR cannot be mistaken for a complete or
-infallible change. The dashboard is a long-lived GitHub issue rewritten every run (plus a
-local operator console over the same state); a ticked checkbox is a _request the next run acts
-on_, not a command executed on click — which is why it needs no API and no auth layer. The
-failure alert (SNS → email) exists because a quiet week and a dead pipeline must look
-different. New actions — notify a channel, regenerate a doc, target another repo — plug in
-without touching layers 1–3.
+anywhere. The verdict decides which of two products a change becomes. Mechanical changes — a
+value moved, a derived sentence to update — become a draft PR, the only knowledge writer: it
+touches only locations the judge named, refuses any edit whose before-text is not actually
+present, and lists every skipped edit and its own known limits in the PR body — so the PR
+cannot be mistaken for a complete or infallible change. A reversed recommendation, or an
+announcement the judge could not classify, is never rewritten: it becomes a _review issue_
+carrying the decision brief, and waits. The maintainer sets the position on the issue (adopt,
+adopt with changes, or reject); the next run then does the typing — it propagates the approved
+position through the same blast-radius machinery and opens the draft PR, which is still
+reviewed. The human holds both gates, direction first and execution after; the machine only
+does the mechanical middle. The dashboard is a long-lived GitHub issue rewritten every run
+(plus the operator console over the same state), and it lists every brief still waiting on a
+decision; a ticked checkbox is a _request the next run acts on_, not a command executed on
+click — which is why it needs no API and no auth layer. The failure alert (SNS → email)
+exists because a quiet week and a dead pipeline must look different. New actions — notify a
+channel, regenerate a doc, target another repo — plug in without touching layers 1–3.
 
 **Where AI ends and code begins.** The pipeline itself is deterministic; models appear at
-exactly seven points, each a narrow question under a forced JSON schema (all seven prompts
+exactly nine points, each a narrow question under a forced JSON schema (all nine prompts
 are in the appendix, verbatim). A model never triggers an action — every answer passes a code
 gate before it has any effect: the magnitude guard, the pin, the single-location rule for
 auto-edits, the judge cap, the before-text check. The alternative — agents with tool loops —
@@ -95,19 +106,21 @@ judgment point is unit-testable in isolation, and the one case that genuinely ne
 evidence (a re-verification that disagrees) is covered by a fixed second-opinion call rather
 than a loop.
 
-**The human stays in charge.** Nothing merges without review. A rejected conclusion is
-recorded as a _pin_ on the fact (with the evidence that would lift it), so the system never
-re-proposes the same rejected change weekly — the mechanism that already protects the one case
-where a vendor's own docs were wrong.
+**The human stays in charge.** Nothing merges without review, and nothing reversed is even
+_drafted_ without a maintainer's position. A rejected conclusion is recorded as a _pin_ on the
+fact (with the evidence that would lift it), so the system never re-proposes the same rejected
+change weekly — the mechanism that already protects the one case where a vendor's own docs
+were wrong.
 
 ## 3. Verification and deployment
 
 All on live sources and Bedrock (Haiku for extraction/triage, Sonnet for judgment), account
 767582656617. One verified run works through the four layers top to bottom. Discovery hits
-feed the judge, whose verdict routes the outcome — `no_change` ends in silence, `needs_human`
-(insufficient evidence) surfaces for review, anything else in a draft PR. Re-verification outcomes take the shorter path: an `agree` refreshes the fact's
-timestamp, anything else surfaces for a human with an independent second opinion attached —
-deliberately short of auto-editing, per §4's posture on value changes.
+feed the judge, whose verdict routes the outcome — `no_change` ends in silence, mechanical
+changes in a draft PR, and a reversed or unclassifiable change in a review issue that waits
+for a maintainer's decision. Re-verification outcomes take the shorter path: an `agree`
+refreshes the fact's timestamp, anything else surfaces for a human with an independent second
+opinion attached — deliberately short of auto-editing, per §4's posture on value changes.
 
 | Claim                                                 | Evidence                                                                                                                                                                                  |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -118,6 +131,7 @@ deliberately short of auto-editing, per §4's posture on value changes.
 | The whole loop closes                                 | button-press → 2–5 min run → draft PR #11 with per-edit justification; a no-news run finishes silently in ~70 s                                                                       |
 | Configuration is self-serving                         | two-pass bootstrap: 11 facts from the skill's declared volatile spots plus 84 typed claims extracted from prose (each with an HTTP-verified source URL, arriving disabled for human review) — the registry grew 6 → 99; UI edits are live on the next run |
 | Failures retry instead of vanishing                   | a hit deferred by the per-run judge cap returned on the next run and produced its draft PR — "seen" means *handled*, not fetched, so a deferred hit, a crashed judge, or a dead build all come back automatically                                          |
+| A reversal is a decision, not a rewrite               | flipped verdicts route to a four-section decision brief instead of a PR: on the runtime-instances case the brief named 4 real options and 8 explicit assumptions (GA maturity, unmodeled capacity-provider pricing, region limits) — and its proposed position warned against exactly the blanket rewrite a silent PR would have made. The first live brief opened the same day: an out-of-order GPT-5.4 replay that the judge refused to guess about |
 | Cost                                                  | ~$1–2 per full run at current caps (estimated from capped call counts — token usage is not yet instrumented); a quiet incremental run costs cents. Fixed cost ≈ the KMS key + one secret  |
 
 Deployment is deliberately small — the whole pipeline is one CloudFormation stack (16
@@ -135,9 +149,9 @@ separately visible state, so progress is first-class instead of log-grepping. Fa
 own channel — execution FAILED → EventBridge → SNS → email — so a dead pipeline cannot be
 mistaken for a quiet week.
 
-On the GitHub side the pipeline only ever produces reviewable artifacts: draft PRs and one
-long-lived dashboard issue. `main` changes only through reviewed PRs; the pipeline never
-merges. The POC has so far run against a maintainer's fork, which means zero footprint on
+On the GitHub side the pipeline only ever produces reviewable artifacts: draft PRs,
+review-brief issues, and one long-lived dashboard issue. `main` changes only through reviewed
+PRs; the pipeline never merges. The POC has so far run against a maintainer's fork, which means zero footprint on
 `awslabs/startups` — no secret, no workflow, no bot branch, and the GitHub token is
 fine-grained to the fork, returning 403 anywhere else _by construction_. Retargeting the real
 repo is a two-parameter change plus an org-scoped token (§5.2).
@@ -221,15 +235,18 @@ with the operator's alias.
 
 The header's three verbs are the three tabs.
 
-**Execute** — one button starts a Step Functions execution; every stage, and every judged
-hit, reports its own status as a chip while it runs, and the page switches to Results when
-the run completes. A no-news run finishes
-silently in about a minute.
+**Execute** — one button starts a Step Functions execution. The whole pipeline is laid out
+as a step list before anything runs, so the operator always knows what comes next; each step
+lights up while it executes and keeps its result on its own row when it finishes (the
+announcements being judged appear under Judge hits, by title, the moment the scan knows them,
+each ending in a draft-PR or review-brief link). The previous run's steps stay on screen
+between runs. A no-news run finishes in about a minute.
 
-![The Execute tab: a Run now button, the current build status, and nothing else](../kb-autoupdate-poc/screenshots/console-execute.png)
+![The Execute tab: the full pipeline as a step list — every step's status and result on its own row, judged hits with their PR or brief links](../kb-autoupdate-poc/screenshots/console-execute.png)
 
 **Results** — every archived run, summary first: a one-line verdict (*Something changed / Needs
-a look / All quiet*) with the draft-PR link when one was opened, four counters, and each
+a look / All quiet*) with the draft-PR or review-brief link when one was produced, a standing
+banner listing every brief still waiting on a maintainer's decision, four counters, and each
 monitor's detail behind a fold. The dropped-announcements list stays reviewable — every entry
 links to the original announcement, because that list is the only place a false negative can
 surface.
@@ -254,15 +271,17 @@ Idle cost is effectively zero.
 
 ---
 
-## Appendix — the seven model calls (prompt review)
+## Appendix — the nine model calls (prompt review)
 
 Every model call in the pipeline is a narrow question with a forced JSON schema, wrapped in
 code guards — the model answers, code decides. These are the prompts verbatim (extracted from
 the source, not paraphrased), each with its output contract and the guards that gate its
-effect. Reviewing these seven texts is reviewing all of the system's AI judgment. They have
+effect. Reviewing these nine texts is reviewing all of the system's AI judgment. They have
 already survived one round of AI review: it corrected an inverted unit-conversion rule, made
 the vendor framing neutral, added the judge's insufficient-evidence exit, and hardened three
-citation paths into mechanically checked quotes.
+citation paths into mechanically checked quotes. Calls 8 and 9 were added with the decision
+brief loop, after review feedback that a reversed recommendation needs a human position, not
+a rewrite.
 
 ### 1 · Recheck — does the stored value still hold?
 
@@ -340,7 +359,7 @@ If you keep it, list ONLY the files that actually need review, most affected fir
 
 ### 4 · Judge step 1 — what does this change mean?
 
-Model: Sonnet (one call per kept hit, capped per run; the hit's source/vendor is part of the input). Output contract: `verdict(value_change|schema_change|new_knowledge|no_change|needs_human) / old & new value / still_true / false_positive_files / search_terms / reasoning`. Guards around it: the per-run judge cap bounds cost; `needs_human` short-circuits to a human instead of forcing a confident class; search terms shorter than 4 chars are discarded.
+Model: Sonnet (one call per kept hit, capped per run; the hit's source/vendor is part of the input). Output contract: `verdict(value_change|schema_change|new_knowledge|no_change|needs_human) / old & new value / still_true / false_positive_files / search_terms / reasoning`. Guards around it: the per-run judge cap bounds cost; `needs_human` short-circuits — no blast radius, no edits — and opens a review issue instead of forcing a confident class; search terms shorter than 4 chars are discarded.
 
 ```
 You are deciding what a vendor announcement (AWS, OpenAI, Anthropic,
@@ -371,7 +390,7 @@ capability words whose claims may be affected (GPU, session cap, worker host).
 
 ### 5 · Judge step 2 — how far does it reach?
 
-Model: Sonnet (batched, ~30 grep hits per call, batch count capped). Output contract: per hit: `kind(value|derived|flipped|unaffected) / before / after / why / evidence_quote`. Guards around it: grep candidates are capped globally; `evidence_quote` is verified in code as a verbatim substring of the announcement — paraphrased citations are rejected (2 were, in the first live test); apply.py later refuses any edit whose `before` text is not actually present.
+Model: Sonnet (batched, ~30 grep hits per call, batch count capped). Output contract: per hit: `kind(value|derived|flipped|unaffected) / before / after / why / evidence_quote`. Guards around it: grep candidates are capped globally; `evidence_quote` is verified in code as a verbatim substring of the announcement — paraphrased citations are rejected (2 were, in the first live test); apply.py later refuses any edit whose `before` text is not actually present. Any `flipped` finding additionally reroutes the whole hit away from the PR path and into the decision brief (call 8) — a reversed conclusion is never auto-rewritten.
 
 ```
 You are computing the blast radius of a fact change across a migration-advice skill.
@@ -441,4 +460,42 @@ Rules:
   NEVER invent a URL you are not confident exists.
 - recheck.locate: a natural-language instruction to find the ONE field on that page.
 - confidence: high | medium | low. LOW means unsure the URL or locate is right.
+```
+
+### 8 · Judge step 3 — the decision brief, when a conclusion reverses
+
+Model: Sonnet (one call, only when step 2 found flipped locations). Output contract: `what_changed / decision_space[{option, depends_on}] / proposed_position / assumptions[]`. Guards around it: the brief never edits anything — it becomes the review issue's body, and no rewrite happens until a maintainer ticks a decision on that issue; if this call fails, the issue still opens with the mechanical sections (a thin brief beats a silent rewrite).
+
+```
+A vendor announcement has REVERSED one or more of a migration skill's
+recommendations. Reversals are not rewritten automatically: a capability new at GA may be
+unproven, may carry a different cost structure, and may not apply to every workload type.
+The maintainer decides the position; your job is to write the decision brief they decide from.
+
+Be concrete and skeptical, and do not oversell the new capability:
+  what_changed       - plain language, 2-3 sentences, no marketing wording
+  decision_space     - the REAL options, including keeping the old recommendation for some
+                       workloads. Each option names what adopting it depends on.
+  proposed_position  - the single position you would recommend, stated so it could be pasted
+                       into the skill after review
+  assumptions        - every assumption the proposed position rests on: GA maturity, pricing,
+                       regional availability, workload fit. Anything a maintainer should
+                       verify before adopting. An unlisted assumption is a trap.
+```
+
+### 9 · Decision execution — rewrite under the approved position
+
+Model: Sonnet (one call, only when a maintainer ticked "adopt with changes" — an unedited "adopt" reuses the original step-2 texts with no model call). Output contract: per location: `file / line / after`. Guards around it: only runs on a position a human wrote or approved; a location it cannot honestly rewrite is dropped with a reason, never invented; the result still passes apply.py's before-text check and ships as a draft PR — the second human gate.
+
+```
+A maintainer reviewed a reversed recommendation and approved a POSITION —
+possibly different from the one originally proposed. Rewrite each location's replacement text
+so it expresses the approved position, and nothing beyond it.
+
+Rules:
+  - `after` must be a drop-in replacement for the shown current text: same register, similar
+    length, valid for the surrounding markdown (a table fragment stays a table fragment).
+  - Do not import claims that are not in the approved position or the announcement.
+  - If a location cannot honestly be rewritten under the approved position, return it with
+    after = "" and say why in notes — an omission with a reason beats an invented sentence.
 ```

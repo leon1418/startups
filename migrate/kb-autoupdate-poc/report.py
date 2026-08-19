@@ -108,15 +108,29 @@ nav.tabs button .cnt { color: var(--ink-3); font-weight: 400; margin-left: 5px; 
 .progress { display: none; background: var(--surface-1); border: 1px solid var(--ring);
   border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
 .progress.show { display: block; }
-.progress .phases { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.progress .ph { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--ink-3); border: 1px solid var(--ring); border-radius: 999px; padding: 3px 9px; }
-.progress .ph.done { color: var(--good); border-color: var(--good); }
-.progress .ph.now { color: #fff; background: var(--accent); border-color: var(--accent); }
-.progress .ph.fail { color: var(--critical); border-color: var(--critical); }
-.progress pre { margin: 0; max-height: 240px; overflow: auto; font: 11.5px/1.5 ui-monospace,
-  SFMono-Regular, Menlo, monospace; color: var(--ink-2); background: var(--page);
-  border: 1px solid var(--ring); border-radius: 7px; padding: 10px; white-space: pre-wrap; }
+/* Step Functions progress: the whole pipeline is a fixed vertical step list, visible from
+   the first poll. Events only change a row's icon and fill in its result line — a finished
+   step keeps its summary on screen instead of hiding it in a tooltip. */
+.progress .steps { display: flex; flex-direction: column; }
+.step { display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; border-radius: 7px;
+  font-size: 13px; }
+.step + .step { border-top: 1px solid var(--ring); }
+.step .ic { flex: none; width: 18px; text-align: center; color: var(--ink-3); }
+.step .nm { flex: none; min-width: 92px; font-weight: 600; }
+.step .ds { color: var(--ink-3); font-size: 12px; }
+.step .dt { margin-left: auto; text-align: right; color: var(--ink-2); font-size: 12px;
+  max-width: 46%; overflow-wrap: anywhere; }
+.step .dt a { color: var(--accent); }
+.step.pending .nm { color: var(--ink-3); font-weight: 500; }
+.step.running { background: var(--page); }
+.step.running .ic, .step.running .nm { color: var(--accent); }
+.step.running .ic { animation: kb-pulse 1.2s ease-in-out infinite; }
+.step.done .ic { color: var(--good); }
+.step.failed .ic, .step.failed .nm { color: var(--critical); }
+.step.child { margin-left: 28px; padding: 5px 10px; font-size: 12px; }
+.step.child .nm { flex: 1 1 auto; min-width: 0; font-weight: 500; }
+.step.child + .step.child, .step + .step.child { border-top: none; }
+@keyframes kb-pulse { 50% { opacity: .3; } }
 
 /* KPI row — stat tiles, not a chart */
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 22px 0 4px; }
@@ -215,8 +229,6 @@ BADGE = {
     "no_change": ("mute", "no change needed"),
 }
 
-PHASES = ["SUBMITTED", "PROVISIONING", "INSTALL", "PRE_BUILD", "BUILD", "POST_BUILD", "COMPLETED"]
-
 
 def esc(s) -> str:
     return html.escape(str(s if s is not None else ""))
@@ -314,13 +326,13 @@ def build_html(data: dict, last_run: dict | None = None, console: dict | None = 
   <span class="mute" style="font-size:12px">{esc(console.get("project") or "kb-autoupdate")} · Step Functions</span>
 </div>
 <div class="progress" id="prog">
-  <div class="phases" id="phases"></div>
-  <pre id="log">waiting for the build to start…</pre>
+  <div class="steps" id="steps"></div>
 </div>
-<p class="hint" style="margin-top:12px">Starts the pipeline as a Step Functions execution — every stage, and every judged hit, reports its own status above: re-verify every fact,
-scan new announcements, judge the hits, and open a draft PR when something changed. A run with
-nothing new finishes silently in about a minute. When it completes, the page switches to
-<b>Results</b>.</p>""")
+<p class="hint" style="margin-top:12px">Starts the pipeline as a Step Functions execution. The
+whole pipeline is laid out above before anything runs; each step lights up while it executes and
+keeps its result on its own row when it finishes. The announcements to be judged appear under
+<b>Judge hits</b>, by title, the moment the scan knows them. A run with nothing new finishes in
+about a minute; when it completes, the page switches to <b>Results</b>.</p>""")
         a("</div>")
 
     # ── pane 2 · Results ──────────────────────────────────────────────────────────────
@@ -349,7 +361,6 @@ nothing new finishes silently in about a minute. When it completes, the page swi
     if console:
         a(f"""<script>
 const TOKEN = {json.dumps(console["token"])};
-const PHASES = {json.dumps(PHASES)};
 const SHOWING = {json.dumps(console.get("label") or source or "local files")};
 const $ = (id) => document.getElementById(id);
 const sha256hex = async (s) => {{
@@ -385,26 +396,32 @@ function pill(state, text) {{
   $("pill").className = "pill " + state;
   $("pillTxt").textContent = text;
 }}
-function phases(stages, status) {{
-  // Stages come from the Step Functions execution history: every pipeline stage — and every
-  // judged hit inside the Map — is its own chip with its own status.
-  $("phases").innerHTML = (stages || []).map((s) => {{
-    let cls = "ph";
-    if (s.status === "done") cls += " done";
-    else if (s.status === "running") cls += " now";
-    else if (s.status === "failed") cls += " fail";
-    const tip = s.detail ? ` title="${{s.detail.replace(/"/g, "&quot;")}}"` : "";
-    return `<span class="${{cls}}"${{tip}}>${{s.name.toLowerCase()}}</span>`;
-  }}).join("");
+// The server sends the state machine's full shape (every step, pending included) on the very
+// first poll — events only flip a row's status and fill in its result. So the reader always
+// sees what comes next, and a finished step keeps its summary on screen.
+function stepRow(s, child) {{
+  const esc2 = (t) => String(t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const ic = {{ pending: "○", running: "◐", done: "✓", failed: "✕" }}[s.status] || "○";
+  const dt = esc2(s.detail).replace(/(https:\\/\\/github\\.com\\/\\S+)/,
+    '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  return `<div class="step ${{s.status}}${{child ? " child" : ""}}">` +
+    `<span class="ic">${{ic}}</span><span class="nm">${{esc2(s.name)}}</span>` +
+    (s.desc ? `<span class="ds">${{esc2(s.desc)}}</span>` : "") +
+    (dt ? `<span class="dt">${{dt}}</span>` : "") + `</div>`;
+}}
+function renderSteps(steps) {{
+  $("steps").innerHTML = (steps || []).map((s) =>
+    stepRow(s, false) + (s.children || []).map((c) => stepRow(c, true)).join("")
+  ).join("");
 }}
 
 let timer = null;
 async function poll(id) {{
   const p = await api("/api/progress?id=" + encodeURIComponent(id));
-  phases(p.stages, p.status);
-  if (p.log && p.log.length) $("log").textContent = p.log.join("\\n");
+  renderSteps(p.steps);
   if (p.status === "RUNNING") {{
-    const now = (p.stages || []).filter((s) => s.status === "running").map((s) => s.name).join(", ");
+    const flat = (p.steps || []).flatMap((s) => [s, ...(s.children || [])]);
+    const now = flat.filter((s) => s.status === "running").map((s) => s.name).join(", ");
     pill("on", "running · " + (now || "starting").toLowerCase());
     // The tables are NOT this run's output — it has not written anything yet. Say so where the
     // reader is already looking, not in a corner.
@@ -430,7 +447,7 @@ async function poll(id) {{
       bar.classList.remove("stale");
       bar.querySelector(".what").innerHTML =
         "the run <b>failed</b> — the numbers below are still from <b>" + SHOWING + "</b>";
-      bar.querySelector(".age").textContent = "see the log above for the error";
+      bar.querySelector(".age").textContent = "see the failed step above for the error";
     }}
   }}
 }}
@@ -441,7 +458,6 @@ $("runBtn").onclick = async () => {{
   pill("on", "starting");
   const r = await api("/api/execute", {{ method: "POST" }});
   if (r.error) {{ pill("bad", r.error); $("runBtn").disabled = false; return; }}
-  $("log").textContent = "build " + r.buildId;
   timer = setInterval(() => poll(r.buildId), 4000);
   poll(r.buildId);
 }};

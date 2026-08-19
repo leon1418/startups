@@ -242,52 +242,107 @@ def _find_summary(obj):
     return found
 
 
+# The state machine's SHAPE is known before it runs — so the console shows the whole
+# skeleton (all steps pending) from the first poll, and execution events only light it up.
+# An operator should never wonder what comes next.
+PIPELINE_STEPS = [
+    ("Recheck", "re-verify every registered fact against its own source"),
+    ("Scan", "pull every source, triage each new item against the skill's files"),
+    ("Judge hits", "judge each kept announcement and apply its edits"),
+    ("Finalize", "refresh the dashboard and settle the run's verdict"),
+]
+BOOTSTRAP_STEPS = [
+    ("Bootstrap", "scan the skill tree and propose monitorable facts (merge new keys only)"),
+]
+
+
+def _hit_detail(out: dict) -> str:
+    status = out.get("status")
+    if status == "handled":
+        return f"draft PR {out['pr']}" if out.get("pr") else "judged — nothing to apply"
+    if status == "judge_failed":
+        return "judge failed — retries next run"
+    if status == "apply_failed":
+        return "APPLY FAILED — retries next run"
+    return status or ""
+
+
 def progress(exec_arn: str | None) -> dict:
     with _lock:
         exec_arn = exec_arn or _last_build.get("id")
     if not exec_arn:
-        return {"status": "IDLE", "stages": [], "log": [], "buildId": None}
+        return {"status": "IDLE", "steps": [], "log": [], "buildId": None}
 
     d = sfn().describe_execution(executionArn=exec_arn)
-    hist = sfn().get_execution_history(executionArn=exec_arn, maxResults=500)["events"]
-
-    stages: list[dict] = []
+    try:
+        mode = json.loads(d.get("input") or "{}").get("mode", "run")
+    except Exception:  # noqa: BLE001
+        mode = "run"
+    skeleton = BOOTSTRAP_STEPS if mode == "bootstrap" else PIPELINE_STEPS
+    steps = [{"name": n, "desc": ds, "status": "pending", "detail": "", "children": []}
+             for n, ds in skeleton]
+    by_name = {s["name"]: s for s in steps}
+    judge = by_name.get("Judge hits")
     log: list[str] = []
 
-    def close(status: str, detail: str = "") -> None:
-        for s in reversed(stages):
-            if s["status"] == "running":
-                s["status"] = status
-                s["detail"] = detail[:200]
-                if detail:
-                    log.append(f"{s['name']}: {detail[:200]}")
-                break
-
+    hist = sfn().get_execution_history(executionArn=exec_arn, maxResults=500)["events"]
+    cur_child: dict | None = None
     for ev in hist:
         t = ev["type"]
         if t == "TaskStateEntered":
             name = ev["stateEnteredEventDetails"]["name"]
-            if name != "Hit":  # inner Map task — the iteration marker covers it
-                stages.append({"name": name, "status": "running", "detail": ""})
+            if name == "Hit":
+                if cur_child:
+                    cur_child["status"] = "running"
+            elif name in by_name:
+                by_name[name]["status"] = "running"
         elif t == "TaskStateExited":
-            if ev["stateExitedEventDetails"]["name"] == "Hit":
-                continue
-            detail = ""
+            det = ev["stateExitedEventDetails"]
+            name = det["name"]
             try:
-                detail = _find_summary(json.loads(ev["stateExitedEventDetails"].get("output", "{}"))) or ""
+                out = json.loads(det.get("output", "{}"))
             except Exception:  # noqa: BLE001
-                pass
-            close("done", detail)
-        elif t == "MapIterationStarted":
+                out = {}
+            if name == "Hit":
+                if cur_child:
+                    cur_child["status"] = "failed" if out.get("status") == "apply_failed" else "done"
+                    cur_child["detail"] = _hit_detail(out)
+                    log.append(f"{cur_child['name']}: {cur_child['detail']}")
+                continue
+            if name not in by_name:
+                continue
+            step = by_name[name]
+            step["status"] = "done"
+            step["detail"] = (_find_summary(out) or "")[:200]
+            if step["detail"]:
+                log.append(f"{name}: {step['detail']}")
+            if name == "Scan" and judge is not None:
+                hits = (out.get("scan", {}).get("Payload", {}) or {}).get("hits", [])
+                judge["children"] = [
+                    {"name": f"hit: {h['title'][:70]}", "desc": "", "status": "pending",
+                     "detail": "", "children": []}
+                    for h in hits
+                ]
+                if not hits:
+                    judge["status"] = "done"
+                    judge["detail"] = "no hits this run"
+        elif t == "MapStateEntered" and judge is not None:
+            judge["status"] = "running"
+        elif t == "MapStateExited" and judge is not None:
+            judge["status"] = "done"
+            done = sum(1 for c in judge["children"] if c["status"] in ("done", "failed"))
+            judge["detail"] = judge["detail"] or f"{done} hit{'s' if done != 1 else ''} judged"
+        elif t == "MapIterationStarted" and judge is not None:
             i = ev["mapIterationStartedEventDetails"]["index"]
-            stages.append({"name": f"hit {i + 1}", "status": "running", "detail": ""})
-        elif t == "MapIterationSucceeded":
-            close("done")
-        elif t == "MapIterationFailed":
-            close("failed")
+            cur_child = judge["children"][i] if i < len(judge["children"]) else None
         elif t == "ExecutionFailed":
-            close("failed", ev.get("executionFailedEventDetails", {}).get("cause", "")[:200])
-    return {"buildId": exec_arn, "status": d["status"], "stages": stages, "log": log[-24:]}
+            cause = ev.get("executionFailedEventDetails", {}).get("cause", "")[:200]
+            for s in steps + (judge["children"] if judge else []):
+                if s["status"] == "running":
+                    s["status"] = "failed"
+                    s["detail"] = s["detail"] or cause
+            log.append(f"execution failed: {cause}")
+    return {"buildId": exec_arn, "status": d["status"], "steps": steps, "log": log[-24:]}
 
 
 # ── http ──────────────────────────────────────────────────────────────────────────────

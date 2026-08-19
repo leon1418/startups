@@ -43,7 +43,7 @@ from report import build_html, collect_local
 
 PROJECT = "kb-autoupdate"
 REGION = "us-east-1"
-RESULT_KEYS = ("results-recheck", "results-scan", "results-judge")
+RESULT_KEYS = ("results-recheck", "results-scan", "results-judge", "results-briefs")
 
 # Hosted mode: the same server behind an ALB that has ALREADY authenticated the caller
 # (Amazon Federate OIDC). Lambda runs many execution environments concurrently, so the CSRF
@@ -166,6 +166,8 @@ def load_run(run_id: str) -> dict:
             data["recheck"] = body
         elif name.startswith("results-scan"):
             data["scan"] = body
+        elif name.startswith("results-briefs"):
+            data["briefs"] = body
         else:
             data["judges"].append(body)
     return data
@@ -248,8 +250,8 @@ def _find_summary(obj):
 PIPELINE_STEPS = [
     ("Recheck", "re-verify every registered fact against its own source"),
     ("Scan", "pull every source, triage each new item against the skill's files"),
-    ("Judge hits", "judge each kept announcement and apply its edits"),
-    ("Finalize", "refresh the dashboard and settle the run's verdict"),
+    ("Judge hits", "judge each kept announcement — edits to a draft PR, reversals to a review brief"),
+    ("Finalize", "act on maintainer decisions, refresh the dashboard, settle the verdict"),
 ]
 BOOTSTRAP_STEPS = [
     ("Bootstrap", "scan the skill tree and propose monitorable facts (merge new keys only)"),
@@ -259,7 +261,11 @@ BOOTSTRAP_STEPS = [
 def _hit_detail(out: dict) -> str:
     status = out.get("status")
     if status == "handled":
-        return f"draft PR {out['pr']}" if out.get("pr") else "judged — nothing to apply"
+        if out.get("pr"):
+            return f"draft PR {out['pr']}"
+        if out.get("issue"):
+            return f"review brief {out['issue']}"
+        return "judged — nothing to apply"
     if status == "judge_failed":
         return "judge failed — retries next run"
     if status == "apply_failed":

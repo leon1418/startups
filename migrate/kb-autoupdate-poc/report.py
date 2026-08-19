@@ -254,6 +254,7 @@ def collect_local() -> dict:
         "recheck": load("results-recheck.json", {"counts": {}, "results": []}),
         "scan": load("results-scan.json", {"counts": {}, "hits": [], "dropped": []}),
         "judges": [j for j in (load(p) for p in sorted(glob.glob("results-judge-*.json"))) if j],
+        "briefs": load("results-briefs.json", {"briefs": []}),
     }
 
 
@@ -654,17 +655,21 @@ document.addEventListener("DOMContentLoaded", () => {{
     judged_nochange = [j for j in judges if (j.get("step1") or {}).get("verdict") == "no_change"]
 
     pr_links = [j["pr"] for j in judges if (j.get("pr") or {}).get("url")]
+    brief_links = [j["review_issue"] for j in judges if (j.get("review_issue") or {}).get("url")]
 
     if judged_changes:
         n_loc = sum(len((j["step2"] or {}).get("affected", [])) for j in judged_changes)
         n_flip = sum(1 for j in judged_changes for x in (j["step2"] or {}).get("affected", []) if x.get("kind") == "flipped")
-        # The PR is the product — its link belongs in the headline, not in a log.
-        if pr_links:
-            pr_frag = " · ".join(
-                f'<a href="{esc(p["url"])}" target="_blank"><b>review draft PR #{esc(p["url"].rsplit("/", 1)[-1])}</b></a>'
-                for p in pr_links
-            )
-            tail = f" → {pr_frag}"
+        # The PR (or the review brief) is the product — its link belongs in the headline.
+        frags = [
+            f'<a href="{esc(p["url"])}" target="_blank"><b>review draft PR #{esc(p["url"].rsplit("/", 1)[-1])}</b></a>'
+            for p in pr_links
+        ] + [
+            f'<a href="{esc(b["url"])}" target="_blank"><b>decide on brief #{esc(b["url"].rsplit("/", 1)[-1])}</b></a>'
+            for b in brief_links
+        ]
+        if frags:
+            tail = " → " + " · ".join(frags)
         else:
             tail = ". The edits could not be pushed — see the Judge section."
         headline = (f"<b>Something changed.</b> {len(judged_changes)} announcement{'s' if len(judged_changes) != 1 else ''} "
@@ -691,7 +696,22 @@ document.addEventListener("DOMContentLoaded", () => {{
 
     a(f"""<div class="callout" style="border-left-color: var(--{tone}); margin-top: 16px">
   <div style="font-size:14px">{headline}</div>
-</div>
+</div>""")
+
+    # Standing list of briefs awaiting a maintainer — as of this run's dashboard refresh.
+    open_briefs = (data.get("briefs") or {}).get("briefs") or []
+    if open_briefs:
+        links = " · ".join(
+            f'<a href="{esc(b["url"])}" target="_blank">#{b["number"]} {esc(b["title"][:70])}</a>'
+            for b in open_briefs
+        )
+        a(f"""<div class="callout" style="border-left-color: var(--warn); margin-top: 10px">
+  <div style="font-size:13px"><b>Waiting on a decision.</b> {len(open_briefs)} review
+  brief{"s" if len(open_briefs) != 1 else ""} — a reversed or unclassifiable change is never
+  rewritten until a maintainer sets the position on its issue: {links}</div>
+</div>""")
+
+    a(f"""
 <div class="kpis">
   <div class="tile"><div class="lab">facts verified</div><div class="val">{fresh}<span class="mute" style="font-size:18px">/{n_facts}</span></div>
     <div class="note">{badge("agree") if fresh == n_facts else badge("needs_human")}</div></div>

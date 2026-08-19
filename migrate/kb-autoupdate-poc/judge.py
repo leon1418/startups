@@ -117,6 +117,44 @@ STEP2_SCHEMA = {
 }
 
 
+BRIEF_SYSTEM = """A vendor announcement has REVERSED one or more of a migration skill's
+recommendations. Reversals are not rewritten automatically: a capability new at GA may be
+unproven, may carry a different cost structure, and may not apply to every workload type.
+The maintainer decides the position; your job is to write the decision brief they decide from.
+
+Be concrete and skeptical, and do not oversell the new capability:
+  what_changed       - plain language, 2-3 sentences, no marketing wording
+  decision_space     - the REAL options, including keeping the old recommendation for some
+                       workloads. Each option names what adopting it depends on.
+  proposed_position  - the single position you would recommend, stated so it could be pasted
+                       into the skill after review
+  assumptions        - every assumption the proposed position rests on: GA maturity, pricing,
+                       regional availability, workload fit. Anything a maintainer should
+                       verify before adopting. An unlisted assumption is a trap."""
+
+BRIEF_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "what_changed": {"type": "string"},
+        "decision_space": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "option": {"type": "string"},
+                    "depends_on": {"type": "string"},
+                },
+                "required": ["option", "depends_on"],
+            },
+        },
+        "proposed_position": {"type": "string"},
+        "assumptions": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+    },
+    "required": ["what_changed", "decision_space", "proposed_position", "assumptions"],
+}
+
+
 def read_named_files(names: list[str]) -> str:
     out = []
     for name in names:
@@ -297,7 +335,32 @@ def main() -> int:
     step2 = {"affected": merged, "notes": " ".join(notes)}
     affected = list(step2["affected"])
     flipped = [a for a in affected if a["kind"] == "flipped"]
-    json.dump({"hit": hit, "step1": step1, "step2": step2, "grep_count": len(hits)}, open(out_path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+
+    # ---- step 3: the decision brief, only when a conclusion reversed --------------------
+    # A flipped recommendation is not rewritten automatically — the maintainer decides the
+    # position first (a capability new at GA may be unproven, differently priced, or a bad
+    # fit for some workloads). This brief is what they decide from; apply.py turns it into
+    # a review issue instead of a PR.
+    brief = None
+    if flipped:
+        listing = "\n".join(f"- {a['file']}:{a['line']}  {a['before'][:200]}" for a in flipped)
+        user3 = (
+            f"ANNOUNCEMENT\n{hit['title']}\n{hit['body']}\n\n"
+            f"THE CHANGE\nfact: {step1['fact_key']}\nold: {step1['old_value']}\nnew: {step1['new_value']}\n"
+            f"still true: {step1['still_true']}\n\n"
+            f"RECOMMENDATIONS THAT REVERSE ({len(flipped)})\n{listing}\n\n"
+            f"OTHER AFFECTED LOCATIONS: {len(affected) - len(flipped)}"
+        )
+        try:
+            brief = ask_json(STRONG_MODEL, BRIEF_SYSTEM, user3, BRIEF_SCHEMA, max_tokens=8000)
+            print(f"\nbrief        position: {brief['proposed_position'][:120]}")
+        except Exception as e:  # noqa: BLE001
+            # The issue still opens without the model-written sections — a thin brief beats
+            # a silent rewrite of a reversed recommendation.
+            step2["notes"] += f" brief generation failed: {e}"
+            print(f"\nbrief        FAILED  {str(e)[:100]}")
+
+    json.dump({"hit": hit, "step1": step1, "step2": step2, "brief": brief, "grep_count": len(hits)}, open(out_path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
 
     print(f"affected     {len(affected)} locations ({len(flipped)} flipped conclusions)  ->  {out_path}\n")
     for a in affected:

@@ -26,6 +26,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -181,6 +182,125 @@ def pr_body(judge: dict, applied: list[dict], skipped: list[dict], skills_rel: s
     return "\n".join(L)
 
 
+REVIEW_LABEL = "kb-needs-review"
+
+
+def brief_key(judge: dict) -> str:
+    """Stable dedup key: the fact for real changes, the item for unclassifiable ones."""
+    return judge["step1"].get("fact_key") or "hit-" + hashlib.sha1(judge["hit"]["title"].encode()).hexdigest()[:10]
+
+
+def review_issue_body(judge: dict) -> str:
+    """The decision brief. A flipped recommendation is never rewritten by the pipeline —
+    the maintainer decides the position here, and only then does a run do the typing."""
+    s1, hit = judge["step1"], judge["hit"]
+    affected = (judge.get("step2") or {}).get("affected", [])
+    affected = [a for a in affected if isinstance(a, dict)]
+    flipped = [a for a in affected if a.get("kind") == "flipped"]
+    brief = judge.get("brief") or {}
+
+    L: list[str] = []
+    a = L.append
+    if s1["verdict"] == "needs_human":
+        a("> Opened by the knowledge auto-update pipeline. This announcement could **not be classified")
+        a("> with confidence** — a human decides. Close this issue once it is handled.")
+        a("")
+        a(f"## What we saw\n\n[{hit['title']}]({hit['url']})")
+        a("")
+        a(f"## Why the pipeline stopped\n\n{s1.get('reasoning') or 'no reasoning recorded'}")
+        a("")
+        a(f"<!-- kb-autoupdate-brief:{brief_key(judge)} -->")
+        return "\n".join(L)
+
+    a("> Opened by the knowledge auto-update pipeline. A recommendation **reversed** — nothing was")
+    a("> rewritten. The maintainer decides the position below; the pipeline then does the typing.")
+    a("")
+    a(f"## 1 · What changed\n\n[{hit['title']}]({hit['url']})")
+    a("")
+    a(f"- was — {s1['old_value']}")
+    a(f"- now — {s1['new_value']}")
+    if s1.get("still_true"):
+        a(f"- still true — {s1['still_true']}")
+    if brief.get("what_changed"):
+        a("")
+        a(brief["what_changed"])
+    quotes = list(dict.fromkeys(x.get("evidence_quote", "") for x in flipped if x.get("evidence_quote")))
+    if quotes:
+        a("")
+        for q in quotes[:4]:
+            a(f'> "{q}"')
+    a("")
+    a("## 2 · Recommendations it affects")
+    a("")
+    a("| location | kind | current text |")
+    a("| --- | --- | --- |")
+    order = {"flipped": 0, "derived": 1, "value": 2}
+    for x in sorted(affected, key=lambda y: (order.get(y.get("kind"), 9), y.get("file", ""))):
+        cur = (x.get("before") or "").replace("|", "\\|")[:160]
+        a(f"| `{x['file']}:{x['line']}` | {KIND_LABEL.get(x.get('kind'), x.get('kind'))} | {cur} |")
+    a("")
+    if brief.get("decision_space"):
+        a("## 3 · The decision space")
+        a("")
+        for opt in brief["decision_space"]:
+            a(f"- **{opt['option']}** — depends on: {opt['depends_on']}")
+        a("")
+    if brief.get("proposed_position"):
+        a("## 4 · Proposed position")
+        a("")
+        a(f"> {brief['proposed_position']}")
+        a("")
+        if brief.get("assumptions"):
+            a("**Assumptions to verify before adopting:**")
+            a("")
+            for x in brief["assumptions"]:
+                a(f"- {x}")
+            a("")
+    else:
+        a("_The model-written decision-space/position sections failed to generate; the facts above")
+        a("still stand. See the run notes._")
+        a("")
+    a("## Decision — tick one; the next run acts on it")
+    a("")
+    a("- [ ] **Adopt the proposed position** — the pipeline rewrites the affected locations and opens a draft PR for review")
+    a('- [ ] **Adopt with changes** — edit the "Proposed position" text above first, then tick this')
+    a("- [ ] **Reject** — close this issue; nothing is rewritten")
+    a("")
+    a(f"<!-- kb-autoupdate-brief:{brief_key(judge)} -->")
+    return "\n".join(L)
+
+
+def upsert_review_issue(judge: dict, slug: str, body_path: Path, cwd: Path) -> str | None:
+    """Create or update the review issue for this brief key. Returns the issue URL."""
+    mark = f"<!-- kb-autoupdate-brief:{brief_key(judge)} -->"
+    title = ("[needs review] " + (judge["step1"].get("fact_key") or judge["hit"]["title"][:60])
+             + (" — could not classify" if judge["step1"]["verdict"] == "needs_human"
+                else " — recommendation reversed"))
+
+    sh(["gh", "label", "create", REVIEW_LABEL, "--repo", slug, "--color", "B60205",
+        "--description", "kb-autoupdate: a human decides before anything is rewritten",
+        "--force"], cwd, check=False)
+    found = sh(["gh", "issue", "list", "--repo", slug, "--label", REVIEW_LABEL, "--state", "open",
+                "--json", "number,body,url", "--limit", "50"], cwd, check=False)
+    existing = [i for i in json.loads(found or "[]") if mark in (i.get("body") or "")]
+
+    if existing:
+        num, url = str(existing[0]["number"]), existing[0]["url"]
+        # Editing a body notifies nobody — the comment is what reaches subscribers.
+        sh(["gh", "issue", "edit", num, "--repo", slug, "--body-file", str(body_path)], cwd)
+        sh(["gh", "issue", "comment", num, "--repo", slug, "--body",
+            f"Updated by the pipeline: a new announcement reached the same brief.\n\n{judge['hit']['url']}"],
+           cwd, check=False)
+        print(f"updated review issue {url}")
+        return url
+    out = sh(["gh", "issue", "create", "--repo", slug, "--title", title,
+              "--body-file", str(body_path), "--label", REVIEW_LABEL], cwd, check=False)
+    m = re.search(r"https://github\.com/\S+/issues/\d+", out or "")
+    if m:
+        print(f"created review issue {m.group(0)}")
+    return m.group(0) if m else None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--judge", required=True)
@@ -199,14 +319,43 @@ def main() -> int:
     ap.add_argument("--remote", default="origin")
     ap.add_argument("--base", default="main")
     ap.add_argument("--pr-repo", default=None, help="target repo for the PR, e.g. owner/name")
+    ap.add_argument("--run-id", default=None, help="run archive id — embedded in review issues so decisions.py can find the judge result")
+    ap.add_argument("--position-approved", action="store_true",
+                    help="a maintainer approved the position on the review issue — apply flipped edits as a normal PR")
     args = ap.parse_args()
 
     # Exit codes are a contract with the build: 0 = durable action succeeded (PR opened or
-    # updated), 3 = judged but nothing to apply (benign — the item counts as handled),
-    # anything else = a real failure (push, auth, PR creation) and the item must RETRY.
+    # updated, or a review issue opened or updated), 3 = judged but nothing to apply (benign —
+    # the item counts as handled), anything else = a real failure and the item must RETRY.
     repo = Path(args.repo).resolve()
     judge = json.loads(Path(args.judge).read_text(encoding="utf-8"))
-    affected = (judge.get("step2") or {}).get("affected", [])
+    affected = [a for a in (judge.get("step2") or {}).get("affected", []) if isinstance(a, dict)]
+
+    # A reversed recommendation, or an unclassifiable announcement, is NOT rewritten: the
+    # durable action is a review issue — the four-section decision brief — and the maintainer
+    # decides the position before any run does the typing.
+    flipped = [a for a in affected if a.get("kind") == "flipped"]
+    if not args.position_approved and (judge["step1"]["verdict"] == "needs_human" or flipped):
+        why = "could not classify" if judge["step1"]["verdict"] == "needs_human" else \
+            f"{len(flipped)} conclusion{'s' if len(flipped) != 1 else ''} reversed"
+        print(f"routing to a review issue, not a PR — {why}")
+        body = review_issue_body(judge)
+        if args.run_id:
+            # Where decisions.py finds the judge result once a maintainer ticks a box.
+            body += f"\n<!-- kb-autoupdate-run:{args.run_id}:{Path(args.judge).name} -->"
+        body_path = Path(args.judge).resolve().with_suffix(".issue-body.md")
+        body_path.write_text(body.rstrip("\n") + "\n", encoding="utf-8")
+        if not args.draft_pr:
+            print(f"(dry run — issue body written to {body_path.name})")
+            return 0
+        url = upsert_review_issue(judge, args.pr_repo or remote_slug(repo, args.remote), body_path, repo)
+        judge["review_issue"] = {"url": url, "reason": why, "flipped": len(flipped)}
+        Path(args.judge).write_text(json.dumps(judge, indent=2, ensure_ascii=False), encoding="utf-8")
+        if not url:
+            print("review issue creation did not yield a URL — failing so the item retries")
+            return 1
+        return 0
+
     if not affected:
         print("judge result has no affected locations — nothing to apply")
         return 3

@@ -72,7 +72,20 @@ def harvest_ticks(body: str) -> list[dict]:
     return out
 
 
-def render(rc: dict, sc: dict, judges: list[dict], last_run: dict | None) -> str:
+def fetch_briefs(briefs_repo: str | None) -> list[dict]:
+    """Open kb-needs-review issues — the briefs waiting on a maintainer's decision."""
+    if not briefs_repo:
+        return []
+    out = gh(["issue", "list", "--repo", briefs_repo, "--label", "kb-needs-review",
+              "--state", "open", "--json", "number,title,url,createdAt", "--limit", "50"],
+             check=False)
+    try:
+        return json.loads(out or "[]")
+    except json.JSONDecodeError:
+        return []
+
+
+def render(rc: dict, sc: dict, judges: list[dict], last_run: dict | None, briefs: list[dict] | None = None) -> str:
     facts = rc.get("results", [])
     fresh = [f for f in facts if f["status"] == "agree"]
     failed = [f for f in facts if f["status"] == "recheck_failed"]
@@ -95,6 +108,17 @@ def render(rc: dict, sc: dict, judges: list[dict], last_run: dict | None) -> str
     a("| --- | --- | --- | --- |")
     a(f"| {len(fresh)} | {len(attention)} | {len(failed)} | {len(pinned)} |")
     a("")
+
+    if briefs:
+        a(f"## Waiting on a decision — {len(briefs)} review brief{'s' if len(briefs) != 1 else ''}")
+        a("")
+        a("A reversed recommendation (or an unclassifiable announcement) is never rewritten by")
+        a("the pipeline. Each brief below waits for a maintainer to set the position; the next")
+        a("run then does the typing.")
+        a("")
+        for b in briefs:
+            a(f"- [#{b['number']} — {b['title']}]({b['url']}) · opened {str(b.get('createdAt', ''))[:10]}")
+        a("")
 
     if failed or attention:
         a("<details open><summary>Needs a human</summary>")
@@ -177,6 +201,8 @@ def render(rc: dict, sc: dict, judges: list[dict], last_run: dict | None) -> str
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-for-issue", help="owner/name — the FORK, not upstream (design §7.2)")
+    ap.add_argument("--briefs-repo", default=None,
+                    help="owner/name to list open kb-needs-review briefs from (usually the PR repo)")
     ap.add_argument("--print", action="store_true", help="render to stdout and change nothing")
     args = ap.parse_args()
 
@@ -184,7 +210,11 @@ def main() -> int:
     sc = load("results-scan.json", {"counts": {}, "hits": [], "dropped": []})
     judges = [j for j in (load(p) for p in sorted(glob.glob("results-judge-*.json"))) if j]
 
-    body = render(rc, sc, judges, state.get("last_run"))
+    briefs = fetch_briefs(args.briefs_repo)
+    # Archived with the run so the console can render the same list without GitHub access.
+    Path("results-briefs.json").write_text(json.dumps({"briefs": briefs}, indent=2), encoding="utf-8")
+
+    body = render(rc, sc, judges, state.get("last_run"), briefs)
 
     if args.print or not args.repo_for_issue:
         print(body)

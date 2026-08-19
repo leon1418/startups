@@ -32,7 +32,7 @@ isolation, minimal ops, cross-session memory, high-volume session launch.
 
 ## Conditional services (relevant but not always)
 
-- Payments: for agents that pay / transact on a user's behalf — surface only for
+- Payments: now GA, integrates with Coinbase and Stripe Privy wallets, supports payment orchestration across protocols, MPP, and x402 "upto" scheme — still surface only for transactional/high-risk-action workloads
   transactional / high-risk-action workloads.
 - Registry: agent/tool discovery and multi-agent orchestration — surface only for multi-agent setups.
 

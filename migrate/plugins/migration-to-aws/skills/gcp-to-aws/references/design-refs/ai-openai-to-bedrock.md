@@ -25,7 +25,7 @@ Verify all pricing via AWS Pricing MCP or `references/shared/pricing-cache.md`. 
 
 ## Model Mapping Tables
 
-### GPT-5.5 Series (Latest — April 23, 2026)
+### GPT-5.5 Series (previous generation; GPT-5.6 Sol now previewed)
 
 GPT-5.5 is the first fully retrained base model since GPT-4.5. Natively omnimodal (text + image + audio + video), 88.7% SWE-Bench Verified, 256K context in ChatGPT / 1M in API. Two variants: standard and Pro. No Mini/Nano variants at launch (expected Q3 2026). Percentages below are blended savings using a 2:1 input-to-output token ratio.
 

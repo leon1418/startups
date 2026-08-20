@@ -296,10 +296,15 @@ def progress(exec_arn: str | None) -> dict:
     if not exec_arn:
         # A fresh Lambda environment has no memory of the last run — ask Step Functions, so
         # the Execute tab can keep showing the previous run instead of an empty box.
+        # `console_reset_epoch` is the environment-reset marker: Step Functions execution
+        # history cannot be deleted, so "clear the history" means ignoring executions that
+        # started before the marker.
         try:
+            cutoff = float(state.get("console_reset_epoch", 0) or 0)
             ex = sfn().list_executions(
-                stateMachineArn=stack_outputs()["StateMachineArnOut"], maxResults=1)["executions"]
-            exec_arn = ex[0]["executionArn"] if ex else None
+                stateMachineArn=stack_outputs()["StateMachineArnOut"], maxResults=10)["executions"]
+            exec_arn = next((e["executionArn"] for e in ex
+                             if e["startDate"].timestamp() > cutoff), None)
         except Exception:  # noqa: BLE001
             exec_arn = None
     if not exec_arn:

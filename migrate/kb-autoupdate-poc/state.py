@@ -91,10 +91,23 @@ def get_seen(source_id: str) -> set[str]:
     return set(get(f"seen:{source_id}", []) or [])
 
 
-def put_seen(source_id: str, ids: set[str], keep: int = 600) -> None:
-    # Keep the most recent `keep` ids. The AWS feed holds 100 and runs ~58/week, so this is
-    # roughly ten weeks of memory — far more than the one week between runs needs.
-    put(f"seen:{source_id}", list(ids)[-keep:])
+def put_seen(source_id: str, ids: set[str], keep: int = 5000, window: set[str] | None = None) -> None:
+    """Persist the handled ids for one source, bounded.
+
+    An id that is no longer in the source's current feed window is dead weight: the seen
+    check only ever compares against fetched items, so dropping it changes nothing. When the
+    caller knows the window, keep exactly the handled ids still inside it (self-cleaning, no
+    arbitrary cap needed) plus a sorted tail of strays as a buffer for feeds that reorder or
+    backfill. Without a window, fall back to a flat cap — set high, because `list(set)` is
+    arbitrary order and truncating it used to evict ~540 random OpenAI ids every run, which
+    were then re-triaged forever.
+    """
+    if window is not None:
+        in_window = sorted(i for i in ids if i in window)
+        strays = sorted(i for i in ids if i not in window)[-1000:]
+        put(f"seen:{source_id}", in_window + strays)
+        return
+    put(f"seen:{source_id}", sorted(ids)[-keep:])
 
 
 def take_requests(kind: str | None = None) -> list[dict]:

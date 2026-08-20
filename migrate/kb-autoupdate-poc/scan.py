@@ -250,7 +250,7 @@ def triage(item: dict, manifest: str, names: list[str]) -> dict:
     return item | {"relevant": bool(r["relevant"]), "files": files, "reason": r["reason"]}
 
 
-def collect_new_items(source: dict, ignore_seen: bool, requeue_ids: set[str]) -> tuple[list[dict], int, set[str]]:
+def collect_new_items(source: dict, ignore_seen: bool, requeue_ids: set[str]) -> tuple[list[dict], int, set[str], set[str]]:
     """One source's fresh items, per the adapter contract: dedupe by id, never by date."""
     items = fetch_items(source)
     for i in items:
@@ -259,7 +259,7 @@ def collect_new_items(source: dict, ignore_seen: bool, requeue_ids: set[str]) ->
     fresh = [i for i in items if i["id"] not in seen or i["id"] in requeue_ids]
     span = f"({items[-1]['published_at']}  ->  {items[0]['published_at']})" if items else ""
     print(f"  {source['id']}: {len(items)} items {span} -> {len(fresh)} new")
-    return fresh, len(items), seen
+    return fresh, len(items), seen, {i["id"] for i in items}
 
 
 def main() -> int:
@@ -300,10 +300,10 @@ def main() -> int:
     if requeue:
         print(f"requeued:    {len(requeue)} item(s) a human asked to re-examine")
 
-    items, fetched, seen_by_source, source_failures = [], 0, {}, []
+    items, fetched, seen_by_source, window_by_source, source_failures = [], 0, {}, {}, []
     for s in sources:
         try:
-            fresh, total, seen = collect_new_items(s, args.all, requeue)
+            fresh, total, seen, window = collect_new_items(s, args.all, requeue)
         except Exception as e:  # noqa: BLE001 — one dead feed must not kill the whole scan
             print(f"  FAILED {s['id']}: {e}")
             source_failures.append({"id": s["id"], "error": f"{type(e).__name__}: {e}"[:200]})
@@ -311,6 +311,7 @@ def main() -> int:
         items += fresh
         fetched += total
         seen_by_source[s["id"]] = seen
+        window_by_source[s["id"]] = window
 
     # A dead input must not impersonate a quiet week: losing EVERY source is a monitoring
     # outage, so the run fails loudly (build FAILED -> SNS). Partial loss is recorded in the
@@ -359,7 +360,7 @@ def main() -> int:
     # run automatically. The feed's own ~100-item window (≈1.7 weeks) is the retry horizon.
     for sid, seen in seen_by_source.items():
         done = {r["id"] for r in results if r.get("source") == sid and r["relevant"] is False}
-        state.put_seen(sid, seen | done)
+        state.put_seen(sid, seen | done, window=window_by_source.get(sid))
     state.record_run({"scan": {"fetched": fetched, "new": len(results), "hits": len(hits), "dropped": len(dropped)}})
 
     with open(args.out, "w", encoding="utf-8") as f:

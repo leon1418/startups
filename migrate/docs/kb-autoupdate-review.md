@@ -112,10 +112,10 @@ fact (with the evidence that would lift it), so the system never re-proposes the
 change weekly — the mechanism that already protects the one case where a vendor's own docs
 were wrong.
 
-## 3. Verification and deployment
+## 3. POC Verification and deployment
 
-All on live sources and Bedrock (Haiku for extraction/triage, Sonnet for judgment), account
-767582656617. One verified run works through the four layers top to bottom. Discovery hits
+All on live sources and Bedrock (Haiku for extraction/triage, Sonnet for judgment). One
+verified run works through the four layers top to bottom. Discovery hits
 feed the judge, whose verdict routes the outcome — `no_change` ends in silence, mechanical
 changes in a draft PR, and a reversed or unclassifiable change in a review issue that waits
 for a maintainer's decision. Re-verification outcomes take the shorter path: an `agree`
@@ -124,17 +124,17 @@ opinion attached — deliberately short of auto-editing, per §4's posture on va
 
 | Claim                                                 | Evidence                                                                                                                                                                                  |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Re-verification is reliable                           | 6 piloted facts × 3 consecutive runs → identical verdicts, all `agree`, including "8h" vs "8 hrs" and unit-converted prices                                                               |
+| Re-verification is reliable                           | 6 curated facts × 3 consecutive runs → identical verdicts, all `agree`, including "8h" vs "8 hrs" and unit-converted prices. At today's 99 facts the ~60 recheck failures are prose-extracted records with bad URLs or locate instructions — surfaced for curation, never guessed at (§4)                                                               |
 | It does not confuse "new option" with "changed value" | the same week runtime instances launched, recheck still reported `session_cap` `agree` — correct, because 8h still holds for microVMs                                                   |
 | Discovery filters well without a hand-kept topic list | 100 feed items triaged against the skill's own 27 reference files → 12 kept / 88 dropped, the acceptance item among the kept; later, at six sources, 1,227 items in one run → 31 kept, all genuinely relevant                                       |
 | The judge adds real information                       | `schema_change` verdict, 13 affected locations (manual analysis had found 8), 3 conclusions flagged as _reversed_, and an unprompted "still true" clause that prevented the wrong rewrite |
-| The whole loop closes                                 | button-press → 2–5 min run → draft PR #11 with per-edit justification; a no-news run finishes silently in ~70 s                                                                       |
+| The whole loop closes                                 | button-press → a 3–6 min Step Functions run, every stage and every judged hit visible as it executes → draft PR with per-edit justification. Re-verified end to end on the 2026-08-20 demo run: three announcements produced one draft PR, one flipped brief, and one needs_human brief, each linked from its own step                                                                       |
 | Configuration is self-serving                         | two-pass bootstrap: 11 facts from the skill's declared volatile spots plus 84 typed claims extracted from prose (each with an HTTP-verified source URL, arriving disabled for human review) — the registry grew 6 → 99; UI edits are live on the next run |
 | Failures retry instead of vanishing                   | a hit deferred by the per-run judge cap returned on the next run and produced its draft PR — "seen" means *handled*, not fetched, so a deferred hit, a crashed judge, or a dead build all come back automatically                                          |
 | A reversal is a decision, not a rewrite               | flipped verdicts route to a four-section decision brief instead of a PR: on the runtime-instances case the brief named 4 real options and 8 explicit assumptions (GA maturity, unmodeled capacity-provider pricing, region limits) — and its proposed position warned against exactly the blanket rewrite a silent PR would have made. The first live brief opened the same day (an out-of-order GPT-5.4 replay the judge refused to guess about), and a genuine live reversal followed a day later — OpenAI models arriving on AWS flipped an availability recommendation, and its brief again proposed a caveated split, not a swap |
 | Cost                                                  | ~$1–2 per full run at current caps (estimated from capped call counts — token usage is not yet instrumented); a quiet incremental run costs cents. Fixed cost ≈ the KMS key + one secret  |
 
-Deployment is deliberately small — the whole pipeline is one CloudFormation stack (16
+Deployment is deliberately small — the whole pipeline is one CloudFormation stack (~20
 resources, Checkov clean, least-privilege verified by tests that failed for the right reasons):
 
 ![Deployment: two triggers — the operator console and a weekly EventBridge cron — start a Step Functions execution whose states share one Lambda; it talks to Bedrock, DynamoDB, S3 and Secrets Manager, and writes to GitHub only as draft PRs and one dashboard issue](../kb-autoupdate-poc/diagrams/kb-arch.png)

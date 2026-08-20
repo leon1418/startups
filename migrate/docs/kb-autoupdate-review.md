@@ -126,8 +126,8 @@ reasons):
 ![Deployment: two triggers — the operator console and a weekly EventBridge cron — start a Step Functions execution whose states share one Lambda; it talks to Bedrock, DynamoDB, S3 and Secrets Manager, and writes to GitHub only as draft PRs and one dashboard issue](../kb-autoupdate-poc/diagrams/kb-arch.png)
 
 A run starts one of two ways: the Run now button on the operator console (hosted,
-Midway-gated, team-allowlisted — see the appendix), or the weekly EventBridge cron (currently
-DISABLED until a few supervised weeks pass, §5.3). A run is a Step Functions execution with
+Midway-gated, team-allowlisted — see the appendix), or the weekly EventBridge cron (currently DISABLED — we
+plan to enable it after a few supervised weeks). A run is a Step Functions execution with
 one Lambda behind every state. Each stage clones the branch fresh, so pushing code is
 deploying. All state lives in one DynamoDB table (registries, cursors, run history) and one
 S3 bucket (every run's raw results); the compute keeps nothing. Every stage — and every
@@ -197,9 +197,6 @@ together with an independent second opinion — deliberately never auto-edited (
 2. **What is the right upstream posture?** Today everything targets a fork. Pointing the PRs
    and dashboard at `awslabs/startups` is a two-parameter change _plus_ a token scoped to the
    org — who owns that token, and is a bot surfacing in the public repo acceptable?
-3. **When do we enable the schedule?** The weekly cron exists and is deliberately DISABLED.
-   Our proposal: after two more supervised runs, with SNS failure alerting wired to the team
-   channel.
 
 ---
 

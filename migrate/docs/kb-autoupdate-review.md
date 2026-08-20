@@ -1,5 +1,28 @@
 # Knowledge Auto-Update for Skills — Proposal & PoC validation
 
+**Decision requested:** adopt this system as a maintained part of the migration-to-aws
+tooling, or keep it as a PoC.
+**Recommendation:** adopt, gated on the acceptance criteria in §5.
+**Scope:** the migration-to-aws skill's knowledge files; draft PRs and review briefs on the
+maintainer fork.
+**Non-goals:** auto-merge; editing anything without human review; monitoring topics the
+skill does not already cover.
+
+**Current status**
+
+| Piece                                             | Status                                       |
+| ------------------------------------------------- | -------------------------------------------- |
+| Re-verification (99 facts, MCP second opinion)    | Implemented and verified                     |
+| Discovery and triage (6 sources)                  | Implemented and verified                     |
+| Draft-PR path for mechanical changes              | Implemented and verified                     |
+| Review briefs for reversals and unclear cases     | Implemented and verified                     |
+| Decision execution (adopt → PR)                   | Implemented and unit-tested; no live run yet |
+| Auto-edit for re-verified value changes           | Implemented but switched off                 |
+| Weekly schedule                                   | Implemented but disabled                     |
+| Targeting `awslabs/startups` directly             | Proposed                                     |
+| Remembering rejected briefs                       | Known gap                                    |
+| Pinning a run to one code revision                | Known gap                                    |
+
 ## 1. Problem statement
 
 Our skills are prompt libraries whose value is the accuracy of the knowledge inside them. For
@@ -56,8 +79,7 @@ independently extensible.
 registry (DynamoDB, editable in the console — value, source, last-verified time, human pins),
 a source registry with per-source cursors (DynamoDB), and an evidence archive with every
 run's raw results (S3). The registry never stores a copy of the knowledge itself. If it did,
-there would be two copies that could drift apart — the exact disease this system exists to
-cure. So the rule is simple: the skill files in git are the only copy of the knowledge, and
+there would be two copies that could drift apart — the same problem this system exists to fix. So the rule is simple: the skill files in git are the only copy of the knowledge, and
 the database holds only operational records about them. The registry is editable in the
 console because it is operations data, like cursors; the knowledge itself changes only
 through a reviewed PR.
@@ -75,7 +97,7 @@ so the judge records what remains true instead of overwriting it. That "still tr
 exactly what a naive diff-and-rewrite lacks. Second: how far does it reach? The judge searches the whole tree for affected statements
 rather than trusting file descriptions, because a file can depend on a fact without being
 "about" it — and those are the files whose conclusions flip. When a conclusion does flip, the
-judge writes one more thing: a _decision brief_ — what changed, the real options and what each
+judge writes one more thing: the content of a _review brief_ — what changed, the real options and what each
 depends on, a proposed position, and every assumption that position rests on — because a
 reversal opens a decision space (GA maturity, cost structure, workload fit) that no
 line-level rewrite can carry.
@@ -85,17 +107,19 @@ anywhere. The verdict decides which of two products a change becomes. A mechanic
 moved value, a derived sentence to update — becomes a draft PR. The PR is the only thing that
 writes knowledge, under three rules: it touches only the locations the judge named, it
 refuses any edit whose before-text is not actually in the file, and it lists every skipped
-edit in its own body — so it can never pass for a complete or infallible change. A reversed
-recommendation, or an announcement the judge could not classify, becomes a _review issue_
-instead, carrying the decision brief; nothing is rewritten. The maintainer picks a decision
-on the issue (adopt, adopt with changes, or reject), and the next run does the typing: it
-propagates the approved position through the same blast-radius machinery and opens a draft
-PR, which still gets reviewed. The human holds both gates — direction first, execution after
+edit in its own body — so a reviewer can see exactly what it did and did not do. A reversed
+recommendation becomes a _review brief_ instead — an issue that lays out what changed, the
+real options, a proposed position, and its assumptions; nothing is rewritten. The maintainer
+picks a decision on the brief (adopt, adopt with changes, or reject), and the next run does
+the typing: it propagates the approved position through the same blast-radius machinery and
+opens a draft PR, which still gets reviewed. An announcement the judge cannot classify also
+becomes an issue, but a simpler one — it states what was seen and why the pipeline stopped,
+and a human handles and closes it; there is nothing for the pipeline to execute. The human holds both gates — direction first, execution after
 — and the machine does the mechanical middle. Around the two products sit the dashboard and
 the alert. The dashboard is one long-lived GitHub issue rewritten every run (the operator
 console shows the same state); it lists every brief still waiting on a decision, and a ticked
-checkbox is a _request the next run acts on_, not a command executed on click — which is why
-no API and no auth layer exist. The failure alert (SNS → email) exists because a quiet week
+checkbox is a _request the next run acts on_, not a command executed on click — so the
+dashboard needs no webhook and no service of its own; GitHub's own permissions are the auth. The failure alert (SNS → email) exists because a quiet week
 and a dead pipeline must look different. New actions — notify a channel, regenerate a doc,
 target another repo — plug in without touching layers 1–3.
 
@@ -110,15 +134,17 @@ pipeline has a cost ceiling you can compute, each of the nine judgment points ca
 on its own, and when something goes wrong the failure is visible at a specific step instead
 of buried inside an agent's loop.
 
-**The human stays in charge.** Nothing merges without review, and nothing reversed is even
-drafted without a maintainer's decision. When a human rejects a conclusion, the rejection is
-stored as a _pin_ on the fact, together with the evidence that would lift it. A pinned fact
-is never auto-edited, and the same rejected change is never proposed again. This already
-protects one real case where a vendor's own docs were wrong.
+**The human stays in charge.** Nothing merges without review, and no reversal is even
+drafted without a maintainer's decision. Re-verification has one more protection: when a
+human decides a source page itself is wrong, they can _pin_ the fact in the console,
+recording why and what evidence would lift the pin. A pinned fact is never auto-edited and
+is not re-flagged for the same observation. This already protects one real case where a
+vendor's own docs were wrong. Pins cover re-verification only — rejecting a review brief
+closes it without one (§4).
 
-## 3. POC Verification and deployment
+## 3. PoC verification and deployment
 
-We built the four-layer architecture above as a working POC and ran it against the real
+We built the four-layer architecture above as a working PoC and ran it against the real
 world. The deployment is deliberately small — the whole pipeline is one CloudFormation stack
 (~20 resources, Checkov clean, least-privilege verified by tests that failed for the right
 reasons):
@@ -132,8 +158,10 @@ one Lambda behind every state. Each stage clones the branch fresh, so pushing co
 deploying. All state lives in one DynamoDB table (registries, cursors, run history) and one
 S3 bucket (every run's raw results); the compute keeps nothing. Every stage — and every
 judged announcement — shows up as its own state, so you can watch progress instead of
-reading logs. Failures have their own channel: a failed execution goes through EventBridge
-to SNS to email, so a dead pipeline never looks like a quiet week.
+reading logs. Failures have their own channel: a crashed execution goes through
+EventBridge to SNS to email. Softer failures do not alert — a failed judge retries on the
+next run, and a failed decision execution stays on its issue as a comment — but both remain
+visible on the console.
 
 On GitHub the pipeline only ever produces things a human can review: draft PRs,
 review-brief issues, and one dashboard issue. `main` changes only through reviewed PRs; the
@@ -143,8 +171,8 @@ fork (it gets 403 anywhere else). Pointing at the real repo is a two-parameter c
 an org-scoped token (§5.2).
 
 
-Everything below was verified against the real world: live feeds and pages, real Bedrock
-models (Haiku for extraction and triage, Sonnet for judgment), real PRs and issues on GitHub.
+Every claim below comes from live runs: real feeds and pages, real Bedrock models (Haiku
+for extraction and triage, Sonnet for judgment), real PRs and issues on GitHub.
 A single run exercises all four layers. On the discovery side, every kept announcement ends
 in exactly one of three places: nothing (the judge found no change to make), a draft PR (a
 mechanical edit, ready for review), or a review issue (a reversal or an unclear case, waiting
@@ -154,18 +182,22 @@ together with an independent second opinion — deliberately never auto-edited (
 
 | Claim                                                 | Evidence                                                                                                                                                                                  |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Re-verification is reliable                           | 6 curated facts × 3 consecutive runs → identical verdicts, all `agree`, including "8h" vs "8 hrs" and unit-converted prices. At today's 99 facts the ~60 recheck failures are prose-extracted records with bad URLs or locate instructions — surfaced for curation, never guessed at (§4)                                                               |
+| Re-verification is stable on curated facts                           | 6 curated facts × 3 consecutive runs → identical verdicts, all `agree`, including "8h" vs "8 hrs" and unit-converted prices. At today's 99 facts the ~60 recheck failures are prose-extracted records with bad URLs or locate instructions — surfaced for curation, never guessed at (§4)                                                               |
 | It does not confuse "new option" with "changed value" | the same week runtime instances launched, recheck still reported `session_cap` `agree` — correct, because 8h still holds for microVMs                                                   |
-| Discovery filters well without a hand-kept topic list | 100 feed items triaged against the skill's own 27 reference files → 12 kept / 88 dropped, the acceptance item among the kept; later, at six sources, 1,227 items in one run → 31 kept, all genuinely relevant                                       |
-| The judge adds real information                       | `schema_change` verdict, 13 affected locations (manual analysis had found 8), 3 conclusions flagged as _reversed_, and an unprompted "still true" clause that prevented the wrong rewrite |
+| Discovery filters well without a hand-kept topic list | 100 feed items triaged against the skill's own 27 reference files → 12 kept / 88 dropped, the acceptance item among the kept; later, at six sources, 1,227 items in one run → 31 kept, all genuinely relevant. This measures precision only; how many relevant items were wrongly dropped is not yet measurable (§4) |
+| The judge adds real information                       | `schema_change` verdict, 13 affected locations (manual analysis had found 8), 3 conclusions flagged as _reversed_, and an unprompted "still true" clause that prevented the wrong rewrite. Blast radius is not stable between runs — the same input returned 9 and 13 locations, neither a superset — so the PR body states its list may be incomplete |
 | The whole loop closes                                 | button-press → a 3–6 min Step Functions run, every stage and every judged hit visible as it executes → draft PR with per-edit justification. Re-verified end to end on the 2026-08-20 demo run: three announcements produced one draft PR, one flipped brief, and one needs_human brief, each linked from its own step                                                                       |
 | The registry builds itself from the skill                         | two-pass bootstrap: 11 facts from the skill's declared volatile spots plus 84 typed claims extracted from prose (each with an HTTP-verified source URL, arriving disabled for human review) — the registry grew 6 → 99; UI edits are live on the next run |
 | Failures retry instead of vanishing                   | a hit deferred by the per-run judge cap returned on the next run and produced its draft PR — "seen" means *handled*, not fetched, so a deferred hit, a crashed judge, or a dead build all come back automatically                                          |
-| A reversal is a decision, not a rewrite               | flipped verdicts route to a four-section decision brief instead of a PR: on the runtime-instances case the brief named 4 real options and 8 explicit assumptions (GA maturity, unmodeled capacity-provider pricing, region limits) — and its proposed position warned against exactly the blanket rewrite a silent PR would have made. The first live brief opened the same day (an out-of-order GPT-5.4 replay the judge refused to guess about), and a genuine live reversal followed a day later — OpenAI models arriving on AWS flipped an availability recommendation, and its brief again proposed a caveated split, not a swap |
+| A reversal is a decision, not a rewrite               | flipped verdicts route to a four-section review brief instead of a PR: on the runtime-instances case the brief named 4 real options and 8 explicit assumptions (GA maturity, unmodeled capacity-provider pricing, region limits) — and its proposed position warned against exactly the blanket rewrite a silent PR would have made. The first live brief opened the same day (an out-of-order GPT-5.4 replay the judge refused to guess about), and a genuine live reversal followed a day later — OpenAI models arriving on AWS flipped an availability recommendation, and its brief again proposed a caveated split, not a swap |
 | A disagreement gets a second, independent check     | on any non-agree re-verification, the hosted AWS Knowledge MCP is asked the same question and answers with attributed evidence — value, verbatim quote, source URL — every quote mechanically validated against the result it cites (verified on the 9h-vs-8h fixture). Deliberately no verdict: evidence for the reviewer, not judgment |
 | We notice when sources go down     | per-source fetch failures are recorded in every run's result, and when every enabled source fails the run itself fails → SNS email; partial loss stays visible in the archive and the console                                          |
 | Pending work survives reruns                          | open review briefs and draft PRs are published to a standing list on the console and the dashboard, independent of whichever run is displayed — verified in the 2026-08-20 demo: the list kept its items across repeated runs until a human acted on them |
 | Cost                                                  | ~$1–2 per full run at current caps (estimated from capped call counts — token usage is not yet instrumented); a quiet incremental run costs cents. Fixed cost ≈ the KMS key + one secret  |
+
+All rows are as of 2026-08-20, branch `feat/kb-autoupdate-pipeline` of the maintainer fork.
+The demo-run artifacts are inspectable: run `2026-08-20T034842Z` in the evidence archive,
+draft PR #21, review briefs #22 and #23.
 
 ## 4. Limits and open risks
 
@@ -189,14 +221,25 @@ together with an independent second opinion — deliberately never auto-edited (
   cannot catch. Someone has to clean up duplicates by hand.
 - **The second opinion only covers AWS.** Facts about Temporal or OpenAI still rest on a
   single source page.
+- **A rejected brief is not remembered.** Rejecting a review brief closes the issue; if a
+  later announcement touches the same fact, a new brief opens. Pins protect re-verification
+  facts only.
+- **A run is not pinned to one code revision.** Each stage clones the branch when it starts,
+  so a push during a run can put different stages on different versions. The fix (resolve
+  the commit once per run) is known and not yet built.
 
 ## 5. Open questions
 
-1. **Should this become a maintained theme?** The POC currently lives on a feature branch of a
+1. **Should this become a maintained theme?** The PoC currently lives on a feature branch of a
    fork; adopting it means code review, tests, and a proper repo location.
-2. **What is the right upstream posture?** Today everything targets a fork. Pointing the PRs
-   and dashboard at `awslabs/startups` is a two-parameter change _plus_ a token scoped to the
-   org — who owns that token, and is a bot surfacing in the public repo acceptable?
+2. **What is the right upstream posture?** Today everything targets a fork. Pointing the
+   PRs and dashboard at `awslabs/startups` is a two-parameter change _plus_ a token scoped to
+   the org — who owns that token, and is a bot surfacing in the public repo acceptable?
+3. **What is the bar for adoption?** Our proposal, for the review to adjust: four
+   consecutive weekly runs where (a) no run fails unattended, (b) at most 1 in 5 produced
+   artifacts is rejected as irrelevant, (c) human review time stays under 30 minutes a week,
+   and (d) cost stays under $50 a month — plus a named owner for the pipeline and its
+   alerts.
 
 ---
 
@@ -241,8 +284,9 @@ reviewed PR.
 ![The Configuration tab: the editable fact registry with per-fact source URLs and locate instructions](../kb-autoupdate-poc/screenshots/console-config.png)
 
 Deployment is serverless end to end — CloudFront → a Midway-validating edge function → a
-Lambda running the same renderer as the local console, its role scoped to exactly four things
-(start this one build, read its logs, read the archive bucket, read/write the state table).
+Lambda running the same renderer as the local console, its role scoped to exactly four
+things (start executions of this one state machine, read execution history, read the archive
+bucket, read/write the state table).
 Idle cost is effectively zero.
 
 ---
@@ -255,9 +299,11 @@ the source, not paraphrased), each with its output contract and the guards that 
 effect. Reviewing these nine texts is reviewing all of the system's AI judgment. They have
 already survived one round of AI review: it corrected an inverted unit-conversion rule, made
 the vendor framing neutral, added the judge's insufficient-evidence exit, and hardened three
-citation paths into mechanically checked quotes. Calls 8 and 9 were added with the decision
-brief loop, after review feedback that a reversed recommendation needs a human position, not
-a rewrite.
+citation paths into mechanically checked quotes. Calls 8 and 9 were added with the review-brief loop, after review feedback that a reversed
+recommendation needs a human position, not a rewrite. The prompts are extracted from
+`recheck.py`, `scan.py`, `judge.py`, `bootstrap_facts.py`, and `decisions.py` on branch
+`feat/kb-autoupdate-pipeline` (2026-08-20); if this copy and the source ever disagree, the
+source wins.
 
 ### 1 · Recheck — does the stored value still hold?
 
@@ -366,7 +412,7 @@ capability words whose claims may be affected (GPU, session cap, worker host).
 
 ### 5 · Judge step 2 — how far does it reach?
 
-Model: Sonnet (batched, ~30 grep hits per call, batch count capped). Output contract: per hit: `kind(value|derived|flipped|unaffected) / before / after / why / evidence_quote`. Guards around it: grep candidates are capped globally; `evidence_quote` is verified in code as a verbatim substring of the announcement — paraphrased citations are rejected (2 were, in the first live test); apply.py later refuses any edit whose `before` text is not actually present. Any `flipped` finding additionally reroutes the whole hit away from the PR path and into the decision brief (call 8) — a reversed conclusion is never auto-rewritten.
+Model: Sonnet (batched, ~30 grep hits per call, batch count capped). Output contract: per hit: `kind(value|derived|flipped|unaffected) / before / after / why / evidence_quote`. Guards around it: grep candidates are capped globally; `evidence_quote` is verified in code as a verbatim substring of the announcement — paraphrased citations are rejected (2 were, in the first live test); apply.py later refuses any edit whose `before` text is not actually present. Any `flipped` finding additionally reroutes the whole hit away from the PR path and into the review brief (call 8) — a reversed conclusion is never auto-rewritten.
 
 ```
 You are computing the blast radius of a fact change across a migration-advice skill.
@@ -438,7 +484,7 @@ Rules:
 - confidence: high | medium | low. LOW means unsure the URL or locate is right.
 ```
 
-### 8 · Judge step 3 — the decision brief, when a conclusion reverses
+### 8 · Judge step 3 — the review brief, when a conclusion reverses
 
 Model: Sonnet (one call, only when step 2 found flipped locations). Output contract: `what_changed / decision_space[{option, depends_on}] / proposed_position / assumptions[]`. Guards around it: the brief never edits anything — it becomes the review issue's body, and no rewrite happens until a maintainer ticks a decision on that issue; if this call fails, the issue still opens with the mechanical sections (a thin brief beats a silent rewrite).
 

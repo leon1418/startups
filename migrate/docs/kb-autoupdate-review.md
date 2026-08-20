@@ -37,31 +37,30 @@ independently extensible.
 **Layer 1 — Ingestion.** Two intake modes, each with its own plug-in point:
 
 - _VERIFY — revisit known facts (pluggable verifiers):_ each registered fact carries its own
-  public source URL and a natural-language locate instruction ("in the lifetime-session table,
-  the row whose Phase is 'Maximum session duration' — read its Timeout column"). Every run
-  re-fetches the page and re-extracts that one field. The instruction is plain language instead of a CSS selector, so a page redesign
-  that reshuffles the HTML does not break it; and the extracted value is compared by
-  meaning rather than by string, so a page that rewords "15m" as "900 seconds" does not
-  raise a false alarm.
-  The web-page verifier is live, and so is a second, independent channel: on any non-agree
-  outcome, the MCP verifier asks the hosted AWS Knowledge MCP server the same question and
-  attaches what the docs say — value, verbatim quote, sources — as a second opinion for the
-  reviewer. (Deliberately no verdict: its job is evidence, not judgment.)
-- _DISCOVER — subscribe to what's new (pluggable adapters):_ two adapters are live — `rss`
-  for real feeds (AWS What's New, AWS News Blog, OpenAI News) and `url-watch` for changelog
-  pages without one (OpenAI API changelog, Anthropic release notes, Temporal changelog),
-  which segments their date-headed entries deterministically so item identity stays stable
-  across runs. All adapters normalize to one item shape, so downstream code never knows the
-  source format.
+  public source URL and a locate instruction in plain language ("in the lifetime-session
+  table, the row whose Phase is 'Maximum session duration' — read its Timeout column"). Every
+  run re-fetches the page and re-reads that one field. Plain language beats a CSS selector
+  here: a page redesign does not break it. And values are compared by meaning, not by text —
+  "15m" equals "900 seconds" — so a reworded page does not raise a false alarm. There is also
+  a second, independent check: whenever the page disagrees with the stored value, we ask the
+  hosted AWS Knowledge MCP server the same question and attach what the docs say — value,
+  exact quote, source links — for the reviewer. It gives evidence only, never a verdict.
+- _DISCOVER — subscribe to what's new (pluggable adapters):_ two adapters are live. `rss`
+  reads real feeds (AWS What's New, AWS News Blog, OpenAI News). `url-watch` reads changelog
+  pages that have no feed (OpenAI API changelog, Anthropic release notes, Temporal changelog)
+  by splitting them at their date headings, so each entry keeps a stable identity across
+  runs. Every adapter outputs the same item shape; downstream code never knows where an item
+  came from.
 
-**Layer 2 — Registry & Evidence.** A registry of _claims about_ the knowledge, in three stores:
-a fact registry (DynamoDB, UI-editable — value, source, last-verified timestamp, human pins), a
-source registry with per-source cursors (DynamoDB), and an evidence archive of every run's raw
-results (S3). Deliberately *not* a mirror of the knowledge — the storage rule: reviewable
-things live in git (the skill files remain the single authoritative copy), machine state lives
-in one DynamoDB table and one S3 bucket. That split is what keeps
-this system from creating the very drift it exists to fight. The registry is editable in the
-operator console (it is operations data, like cursors); the knowledge itself is not.
+**Layer 2 — Registry & Evidence.** Records _about_ the knowledge, in three stores: a fact
+registry (DynamoDB, editable in the console — value, source, last-verified time, human pins),
+a source registry with per-source cursors (DynamoDB), and an evidence archive with every
+run's raw results (S3). The registry never stores a copy of the knowledge itself. If it did,
+there would be two copies that could drift apart — the exact disease this system exists to
+cure. So the rule is simple: the skill files in git are the only copy of the knowledge, and
+the database holds only operational records about them. The registry is editable in the
+console because it is operations data, like cursors; the knowledge itself changes only
+through a reviewed PR.
 
 **Layer 3 — Orchestration & Judgment.** Three parts. The _scheduler_ is a weekly cron
 (deliberately weekly: the AWS What's New feed caps at 100 items at ~58/week, so a monthly poll
@@ -112,10 +111,10 @@ on its own, and when something goes wrong the failure is visible at a specific s
 of buried inside an agent's loop.
 
 **The human stays in charge.** Nothing merges without review, and nothing reversed is even
-_drafted_ without a maintainer's position. A rejected conclusion is recorded as a _pin_ on the
-fact (with the evidence that would lift it), so the system never re-proposes the same rejected
-change weekly — the mechanism that already protects the one case where a vendor's own docs
-were wrong.
+drafted without a maintainer's decision. When a human rejects a conclusion, the rejection is
+stored as a _pin_ on the fact, together with the evidence that would lift it. A pinned fact
+is never auto-edited, and the same rejected change is never proposed again. This already
+protects one real case where a vendor's own docs were wrong.
 
 ## 3. POC Verification and deployment
 
@@ -126,22 +125,22 @@ reasons):
 
 ![Deployment: two triggers — the operator console and a weekly EventBridge cron — start a Step Functions execution whose states share one Lambda; it talks to Bedrock, DynamoDB, S3 and Secrets Manager, and writes to GitHub only as draft PRs and one dashboard issue](../kb-autoupdate-poc/diagrams/kb-arch.png)
 
-A run starts one of two ways: the operator console's Run now button (hosted, Midway-gated,
-team-allowlisted — see the appendix) or the weekly EventBridge cron (deliberately DISABLED until a
-few supervised weeks pass, §5.3). The run is a Step Functions execution with one Lambda behind
-every state: each stage shallow-clones the branch (pushing code still deploys), and all state
-lives in one DynamoDB table (registries, cursors, run history) and one S3 evidence bucket
-(every run's raw results). Every stage — and every judged hit inside the Map state — is a
-separately visible state, so progress is first-class instead of log-grepping. Failure has its
-own channel — execution FAILED → EventBridge → SNS → email — so a dead pipeline cannot be
-mistaken for a quiet week.
+A run starts one of two ways: the Run now button on the operator console (hosted,
+Midway-gated, team-allowlisted — see the appendix), or the weekly EventBridge cron (currently
+DISABLED until a few supervised weeks pass, §5.3). A run is a Step Functions execution with
+one Lambda behind every state. Each stage clones the branch fresh, so pushing code is
+deploying. All state lives in one DynamoDB table (registries, cursors, run history) and one
+S3 bucket (every run's raw results); the compute keeps nothing. Every stage — and every
+judged announcement — shows up as its own state, so you can watch progress instead of
+reading logs. Failures have their own channel: a failed execution goes through EventBridge
+to SNS to email, so a dead pipeline never looks like a quiet week.
 
-On the GitHub side the pipeline only ever produces reviewable artifacts: draft PRs,
-review-brief issues, and one long-lived dashboard issue. `main` changes only through reviewed
-PRs; the pipeline never merges. The POC has so far run against a maintainer's fork, which means zero footprint on
-`awslabs/startups` — no secret, no workflow, no bot branch, and the GitHub token is
-fine-grained to the fork, returning 403 anywhere else _by construction_. Retargeting the real
-repo is a two-parameter change plus an org-scoped token (§5.2).
+On GitHub the pipeline only ever produces things a human can review: draft PRs,
+review-brief issues, and one dashboard issue. `main` changes only through reviewed PRs; the
+pipeline never merges. So far everything targets a maintainer's fork, so `awslabs/startups`
+is untouched — no secret, no workflow, no bot branch, and the GitHub token only works on the
+fork (it gets 403 anywhere else). Pointing at the real repo is a two-parameter change plus
+an org-scoped token (§5.2).
 
 
 Everything below was verified against the real world: live feeds and pages, real Bedrock
@@ -160,42 +159,43 @@ together with an independent second opinion — deliberately never auto-edited (
 | Discovery filters well without a hand-kept topic list | 100 feed items triaged against the skill's own 27 reference files → 12 kept / 88 dropped, the acceptance item among the kept; later, at six sources, 1,227 items in one run → 31 kept, all genuinely relevant                                       |
 | The judge adds real information                       | `schema_change` verdict, 13 affected locations (manual analysis had found 8), 3 conclusions flagged as _reversed_, and an unprompted "still true" clause that prevented the wrong rewrite |
 | The whole loop closes                                 | button-press → a 3–6 min Step Functions run, every stage and every judged hit visible as it executes → draft PR with per-edit justification. Re-verified end to end on the 2026-08-20 demo run: three announcements produced one draft PR, one flipped brief, and one needs_human brief, each linked from its own step                                                                       |
-| Configuration is self-serving                         | two-pass bootstrap: 11 facts from the skill's declared volatile spots plus 84 typed claims extracted from prose (each with an HTTP-verified source URL, arriving disabled for human review) — the registry grew 6 → 99; UI edits are live on the next run |
+| The registry builds itself from the skill                         | two-pass bootstrap: 11 facts from the skill's declared volatile spots plus 84 typed claims extracted from prose (each with an HTTP-verified source URL, arriving disabled for human review) — the registry grew 6 → 99; UI edits are live on the next run |
 | Failures retry instead of vanishing                   | a hit deferred by the per-run judge cap returned on the next run and produced its draft PR — "seen" means *handled*, not fetched, so a deferred hit, a crashed judge, or a dead build all come back automatically                                          |
 | A reversal is a decision, not a rewrite               | flipped verdicts route to a four-section decision brief instead of a PR: on the runtime-instances case the brief named 4 real options and 8 explicit assumptions (GA maturity, unmodeled capacity-provider pricing, region limits) — and its proposed position warned against exactly the blanket rewrite a silent PR would have made. The first live brief opened the same day (an out-of-order GPT-5.4 replay the judge refused to guess about), and a genuine live reversal followed a day later — OpenAI models arriving on AWS flipped an availability recommendation, and its brief again proposed a caveated split, not a swap |
-| A disagreement gets an independent second witness     | on any non-agree re-verification, the hosted AWS Knowledge MCP is asked the same question and answers with attributed evidence — value, verbatim quote, source URL — every quote mechanically validated against the result it cites (verified on the 9h-vs-8h fixture). Deliberately no verdict: evidence for the reviewer, not judgment |
-| A coverage outage cannot impersonate a quiet week     | per-source fetch failures are recorded in every run's result, and when every enabled source fails the run itself fails → SNS email; partial loss stays visible in the archive and the console                                          |
+| A disagreement gets a second, independent check     | on any non-agree re-verification, the hosted AWS Knowledge MCP is asked the same question and answers with attributed evidence — value, verbatim quote, source URL — every quote mechanically validated against the result it cites (verified on the 9h-vs-8h fixture). Deliberately no verdict: evidence for the reviewer, not judgment |
+| We notice when sources go down     | per-source fetch failures are recorded in every run's result, and when every enabled source fails the run itself fails → SNS email; partial loss stays visible in the archive and the console                                          |
 | Pending work survives reruns                          | open review briefs and draft PRs are published to a standing list on the console and the dashboard, independent of whichever run is displayed — verified in the 2026-08-20 demo: the list kept its items across repeated runs until a human acted on them |
 | Cost                                                  | ~$1–2 per full run at current caps (estimated from capped call counts — token usage is not yet instrumented); a quiet incremental run costs cents. Fixed cost ≈ the KMS key + one secret  |
 
 ## 4. Limits and open risks
 
-- **One week of live data.** False-negative rate (relevant announcements dropped) is unknowable
-  from one week; the dropped list is kept reviewable on every run precisely for this.
-- **Locate-instruction durability** across real page redesigns is untested — only calendar time
-  tests it.
-- **Review burden** is partially measured: 13 proposed edits in one PR was reviewable, and the
-  one subtle defect observed — a fluent rewrite of a human-readable reason string that left
-  the machine-read rule untouched — was caught only by reading beyond the diff.
-- **Auto-merge is not proposed and auto-PR for value changes stays off** until several silent
-  weeks have measured the false-positive rate.
-- The `url-watch` adapter is new: its segmentation is verified against today's page
-  structures (OpenAI and Anthropic via those sites' own documented `.md` endpoints, Temporal
-  via HTML), but a site redesign changes them — the same calendar-time risk as locate
-  instructions.
-- **Prose extraction is not deterministic across runs**: re-running bootstrap can propose the
-  same fact under a differently-spelled key, and exact-key dedup does not catch that. Until
-  dedup matches on source URL + normalized value, bootstrap re-runs need a curating human.
-- **The MCP second opinion is AWS-only.** Non-AWS facts (Temporal, OpenAI) still rest on
-  their single source page.
-- **Feed-archive backlog.** Turning on six sources queued 28 relevant-but-old announcements
-  behind the per-run judge cap. They drain at 3 per run (nothing is lost), but a one-time
-  "subscription starts now" baseline is the cheaper call for deep feed archives.
-- **Seen-set truncation churns.** Each source's seen set keeps 600 ids, truncated in
-  arbitrary set order; the OpenAI newsroom feed holds ~1,100 items, so every run randomly
-  evicts and re-triages ~540 old ones. The steady ~550-triaged figure in the run archives is
-  this defect, not news volume — cost noise, and occasionally an old item re-enters
-  judgment. Fix queued: keep the newest ids by feed order instead.
+- **We only have one week of live data.** We cannot yet measure how many relevant
+  announcements the filter wrongly drops. Until then, every run keeps its full dropped list
+  for a human to check.
+- **Page redesigns are untested.** Fact locations are written in plain language ("in this
+  table, read this row"). This has survived normal page edits, but no source page has gone
+  through a major redesign yet, so we do not know the failure rate.
+- **The url-watch adapter carries the same risk.** It parses today's changelog page
+  structures. If a site redesigns, the parser breaks, and we find out when it happens.
+- **Review effort is only partly measured.** One PR with 13 edits was comfortable to review.
+  But one bad edit — it rewrote a human-readable comment and left the actual rule untouched —
+  was only caught by reading beyond the diff. We do not know the review cost at higher
+  volume.
+- **Nothing merges or edits automatically, on purpose.** There is no auto-merge, and even "a
+  value changed → open a PR automatically" is switched off. We want a few quiet weeks first,
+  to measure the false-positive rate.
+- **Bootstrap re-runs need a human.** Extracting facts from prose is not deterministic: run
+  it twice and the same fact can come back under a different name, which key-based dedup
+  cannot catch. Someone has to clean up duplicates by hand.
+- **The second opinion only covers AWS.** Facts about Temporal or OpenAI still rest on a
+  single source page.
+- **A new source arrives with a backlog.** Turning on six sources queued 28 old-but-relevant
+  announcements behind the 3-per-run judge cap. Nothing is lost, but the cheaper choice is
+  to start each new source from "today".
+- **The seen-list is truncated badly.** Each source remembers only the last 600 item ids,
+  and the truncation order is arbitrary. The OpenAI feed holds ~1,100 items, so every run
+  re-processes ~540 random old ones — wasted cost, and occasionally an old item gets
+  re-judged. The fix (keep the newest ids) is queued.
 
 ## 5. Open questions
 
@@ -218,26 +218,24 @@ operator allowlist (the aws-cask team plus named individuals) held in the pipeli
 store — adding an operator is a config edit, not a redeploy. Every write action is audit-logged
 with the operator's alias.
 
-The header's three verbs are the three tabs.
+The console has three tabs: Execute, Results, Configuration.
 
-**Execute** — one button starts a Step Functions execution. The whole pipeline is laid out
-as a step list before anything runs, so the operator always knows what comes next; each step
-lights up while it executes and keeps its result on its own row when it finishes (the
-announcements being judged appear under Judge hits, by title, the moment the scan knows them,
-each ending in a draft-PR or review-brief link). The previous run's steps stay on screen
-between runs, and below them a standing waiting-on-a-human list shows every open review brief
-and draft PR — durable artifacts deliberately kept independent of whichever run is displayed,
-refreshed after every run, so a rerun can never hide work that still needs a person. A
-no-news run finishes in about a minute.
+**Execute** — one button starts a run. The whole pipeline is shown as a step list before
+anything runs, so the operator always knows what comes next. Each step lights up while it
+executes and keeps its result on its own row when it finishes. The announcements being
+judged appear under Judge hits, by title, as soon as the scan knows them; each one ends in a
+draft-PR or review-brief link. The previous run's steps stay on screen between runs. Below
+them, a standing waiting-on-a-human list shows every open review brief and draft PR — it is
+independent of whichever run is displayed and refreshes after every run, so a rerun can
+never hide work that still needs a person. A no-news run finishes in about a minute.
 
 ![The Execute tab: the full pipeline as a step list — every step's status and result on its own row, judged hits with their PR or brief links](../kb-autoupdate-poc/screenshots/console-execute.png)
 
-**Results** — every archived run, summary first: a one-line verdict (*Something changed / Needs
-a look / All quiet*) with the draft-PR or review-brief link when one was produced, a standing
-banner listing every brief still waiting on a maintainer's decision, four counters, and each
-monitor's detail behind a fold. The dropped-announcements list stays reviewable — every entry
-links to the original announcement, because that list is the only place a false negative can
-surface.
+**Results** — every archived run, summary first: a one-line verdict (*Something changed /
+Needs a look / All quiet*) with links to whatever the run produced, a banner listing every
+brief still waiting on a decision, four counters, and each monitor's detail behind a fold.
+The dropped-announcements list stays reviewable, with a link to each original announcement —
+this list is the only place a wrongly dropped item can be noticed.
 
 ![The Results tab: verdict headline linking to draft PR #12, counters, and per-monitor folds](../kb-autoupdate-poc/screenshots/console-results.png)
 

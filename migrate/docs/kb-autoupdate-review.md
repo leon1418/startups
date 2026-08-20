@@ -131,7 +131,7 @@ opinion attached — deliberately short of auto-editing, per §4's posture on va
 | The whole loop closes                                 | button-press → 2–5 min run → draft PR #11 with per-edit justification; a no-news run finishes silently in ~70 s                                                                       |
 | Configuration is self-serving                         | two-pass bootstrap: 11 facts from the skill's declared volatile spots plus 84 typed claims extracted from prose (each with an HTTP-verified source URL, arriving disabled for human review) — the registry grew 6 → 99; UI edits are live on the next run |
 | Failures retry instead of vanishing                   | a hit deferred by the per-run judge cap returned on the next run and produced its draft PR — "seen" means *handled*, not fetched, so a deferred hit, a crashed judge, or a dead build all come back automatically                                          |
-| A reversal is a decision, not a rewrite               | flipped verdicts route to a four-section decision brief instead of a PR: on the runtime-instances case the brief named 4 real options and 8 explicit assumptions (GA maturity, unmodeled capacity-provider pricing, region limits) — and its proposed position warned against exactly the blanket rewrite a silent PR would have made. The first live brief opened the same day: an out-of-order GPT-5.4 replay that the judge refused to guess about |
+| A reversal is a decision, not a rewrite               | flipped verdicts route to a four-section decision brief instead of a PR: on the runtime-instances case the brief named 4 real options and 8 explicit assumptions (GA maturity, unmodeled capacity-provider pricing, region limits) — and its proposed position warned against exactly the blanket rewrite a silent PR would have made. The first live brief opened the same day (an out-of-order GPT-5.4 replay the judge refused to guess about), and a genuine live reversal followed a day later — OpenAI models arriving on AWS flipped an availability recommendation, and its brief again proposed a caveated split, not a swap |
 | Cost                                                  | ~$1–2 per full run at current caps (estimated from capped call counts — token usage is not yet instrumented); a quiet incremental run costs cents. Fixed cost ≈ the KMS key + one secret  |
 
 Deployment is deliberately small — the whole pipeline is one CloudFormation stack (16
@@ -158,8 +158,8 @@ repo is a two-parameter change plus an org-scoped token (§5.2).
 
 ### Failure modes observed
 
-Live operation also produced negative evidence: fourteen real defects that no dry run would
-have surfaced. Five changed the design; reviewers should know them because they generalize to
+Live operation also produced negative evidence: fifteen real defects that no dry run would
+have surfaced. Six changed the design; reviewers should know them because they generalize to
 any LLM-operated pipeline:
 
 1. **A confident wrong answer beats no answer.** The model once returned an array as a
@@ -184,6 +184,12 @@ any LLM-operated pipeline:
    save path that stripped each fact to its visible columns, deleting a load-bearing pin. Two
    stacked defects, each masking the other; the fix round-trips the full record and the repair
    came from committed sources of truth.
+6. **A silent fallback makes success indistinguishable from a no-op.** The state store falls
+   back from DynamoDB to a local file when its table variable is unset. Operator scripts used
+   it to reset the demo environment: every write succeeded and every read-back agreed — against
+   the wrong backend, while the cloud state never changed and the next run behaved as if
+   nothing had been done. Read-back through the same path proves nothing; the operator scripts
+   now assert the backend before writing, and a first-class guard in the state module is queued.
 
 Also measured and worth stating plainly: blast radius is not stable between runs (9 vs 13
 locations on identical input, neither a superset). A single judge pass under-reports; the PR
@@ -211,6 +217,11 @@ says so on its face rather than pretending completeness.
 - **Feed-archive backlog.** Turning on six sources queued 28 relevant-but-old announcements
   behind the per-run judge cap. They drain at 3 per run (nothing is lost), but a one-time
   "subscription starts now" baseline is the cheaper call for deep feed archives.
+- **Seen-set truncation churns.** Each source's seen set keeps 600 ids, truncated in
+  arbitrary set order; the OpenAI newsroom feed holds ~1,100 items, so every run randomly
+  evicts and re-triages ~540 old ones. The steady ~550-triaged figure in the run archives is
+  this defect, not news volume — cost noise, and occasionally an old item re-enters
+  judgment. Fix queued: keep the newest ids by feed order instead.
 
 ## 5. Open questions
 
@@ -240,7 +251,10 @@ as a step list before anything runs, so the operator always knows what comes nex
 lights up while it executes and keeps its result on its own row when it finishes (the
 announcements being judged appear under Judge hits, by title, the moment the scan knows them,
 each ending in a draft-PR or review-brief link). The previous run's steps stay on screen
-between runs. A no-news run finishes in about a minute.
+between runs, and below them a standing waiting-on-a-human list shows every open review brief
+and draft PR — durable artifacts deliberately kept independent of whichever run is displayed,
+refreshed after every run, so a rerun can never hide work that still needs a person. A
+no-news run finishes in about a minute.
 
 ![The Execute tab: the full pipeline as a step list — every step's status and result on its own row, judged hits with their PR or brief links](../kb-autoupdate-poc/screenshots/console-execute.png)
 

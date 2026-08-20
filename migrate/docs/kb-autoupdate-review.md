@@ -45,8 +45,8 @@ one stale fact had silently invalidated ~13 statements across two skills and rev
 three recommendations. The verification channel existed and worked; what was missing was
 anything that runs unattended.
 
-The cost is not hypothetical rework — it is wrong advice delivered confidently to users who
-followed the skill's recommendation.
+Stale knowledge is not just future cleanup work. Until someone notices, the skill keeps
+giving users wrong advice — and gives it confidently.
 
 ## 2. System architecture
 
@@ -123,7 +123,7 @@ dashboard needs no webhook and no service of its own; GitHub's own permissions a
 and a dead pipeline must look different. New actions — notify a channel, regenerate a doc,
 target another repo — plug in without touching layers 1–3.
 
-**Where AI ends and code begins.** This is a fixed pipeline, not an agent. A model is
+**Model calls and code guards.** This is a fixed pipeline, not an agent. A model is
 consulted at exactly nine points, and every consultation has the same shape: code asks one
 narrow question, the model must answer in a fixed JSON format, and code checks the answer
 before it is allowed to do anything (e.g. is the quoted evidence really in the announcement? is

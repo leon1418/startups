@@ -1,4 +1,4 @@
-# Knowledge Auto-Update for Skills
+# Knowledge Auto-Update for Skills — Proposal & PoC validation
 
 ## 1. Problem statement
 
@@ -39,8 +39,10 @@ independently extensible.
 - _VERIFY — revisit known facts (pluggable verifiers):_ each registered fact carries its own
   public source URL and a natural-language locate instruction ("in the lifetime-session table,
   the row whose Phase is 'Maximum session duration' — read its Timeout column"). Every run
-  re-fetches the page and re-extracts that one field. Natural language survives page redesigns
-  that would break CSS selectors, and extraction compares by meaning ("900 seconds" == "15m").
+  re-fetches the page and re-extracts that one field. The instruction is plain language instead of a CSS selector, so a page redesign
+  that reshuffles the HTML does not break it; and the extracted value is compared by
+  meaning rather than by string, so a page that rewords "15m" as "900 seconds" does not
+  raise a false alarm.
   The web-page verifier is live, and so is a second, independent channel: on any non-agree
   outcome, the MCP verifier asks the hosted AWS Knowledge MCP server the same question and
   attaches what the docs say — value, verbatim quote, sources — as a second opinion for the
@@ -67,41 +69,41 @@ would silently drop entries) and owns the cost and runaway guards — per-run ju
 grep caps, a ≥10× magnitude guard — all in code, not in the model. The _relevance filter_ keeps
 no hand-maintained topic list, because a topic list is itself knowledge that goes stale: the
 skill's own 27 reference files *are* the filter. The _judge_ reads the actual skill files for
-every hit and answers two questions. First, _what the change means:_ the verdict set separates a
-value that moved (`value_change`) from a fact whose *shape* changed (`schema_change`), because
-a schema change forbids blindly overwriting the old value — part of it usually remains correct
-for the thing it described, and the judge records that in an explicit "still true" clause. This
-distinction is exactly what a naive diff-and-rewrite lacks (§1's worked example is the case in
-point). Second, _how far it reaches:_ blast radius comes from searching the whole tree rather
-than from file descriptions, because a file can depend on a fact without being "about" it — and
-those are the files whose conclusions flip. When any conclusion does flip, the judge writes one
-more thing: a _decision brief_ — what changed, the real options and what each depends on, a
-proposed position, and every assumption that position rests on — because a reversal opens a
-decision space (GA maturity, cost structure, workload fit) that no line-level rewrite can
-carry.
+every hit and answers two questions. First: what does this change mean? A value that moved
+(`value_change`) is not the same as a fact whose shape changed (`schema_change`) — when a
+single value splits into per-dimension values, part of the old value is usually still correct,
+so the judge records what remains true instead of overwriting it. That "still true" clause is
+exactly what a naive diff-and-rewrite lacks. Second: how far does it reach? The judge searches the whole tree for affected statements
+rather than trusting file descriptions, because a file can depend on a fact without being
+"about" it — and those are the files whose conclusions flip. When a conclusion does flip, the
+judge writes one more thing: a _decision brief_ — what changed, the real options and what each
+depends on, a proposed position, and every assumption that position rests on — because a
+reversal opens a decision space (GA maturity, cost structure, workload fit) that no
+line-level rewrite can carry.
 
 **Layer 4 — Actions.** Independent consumers of judge output, and the only layer that writes
-anywhere. The verdict decides which of two products a change becomes. Mechanical changes — a
-value moved, a derived sentence to update — become a draft PR, the only knowledge writer: it
-touches only locations the judge named, refuses any edit whose before-text is not actually
-present, and lists every skipped edit and its own known limits in the PR body — so the PR
-cannot be mistaken for a complete or infallible change. A reversed recommendation, or an
-announcement the judge could not classify, is never rewritten: it becomes a _review issue_
-carrying the decision brief, and waits. The maintainer sets the position on the issue (adopt,
-adopt with changes, or reject); the next run then does the typing — it propagates the approved
-position through the same blast-radius machinery and opens the draft PR, which is still
-reviewed. The human holds both gates, direction first and execution after; the machine only
-does the mechanical middle. The dashboard is a long-lived GitHub issue rewritten every run
-(plus the operator console over the same state), and it lists every brief still waiting on a
-decision; a ticked checkbox is a _request the next run acts on_, not a command executed on
-click — which is why it needs no API and no auth layer. The failure alert (SNS → email)
-exists because a quiet week and a dead pipeline must look different. New actions — notify a
-channel, regenerate a doc, target another repo — plug in without touching layers 1–3.
+anywhere. The verdict decides which of two products a change becomes. A mechanical change — a
+moved value, a derived sentence to update — becomes a draft PR. The PR is the only thing that
+writes knowledge, under three rules: it touches only the locations the judge named, it
+refuses any edit whose before-text is not actually in the file, and it lists every skipped
+edit in its own body — so it can never pass for a complete or infallible change. A reversed
+recommendation, or an announcement the judge could not classify, becomes a _review issue_
+instead, carrying the decision brief; nothing is rewritten. The maintainer picks a decision
+on the issue (adopt, adopt with changes, or reject), and the next run does the typing: it
+propagates the approved position through the same blast-radius machinery and opens a draft
+PR, which still gets reviewed. The human holds both gates — direction first, execution after
+— and the machine does the mechanical middle. Around the two products sit the dashboard and
+the alert. The dashboard is one long-lived GitHub issue rewritten every run (the operator
+console shows the same state); it lists every brief still waiting on a decision, and a ticked
+checkbox is a _request the next run acts on_, not a command executed on click — which is why
+no API and no auth layer exist. The failure alert (SNS → email) exists because a quiet week
+and a dead pipeline must look different. New actions — notify a channel, regenerate a doc,
+target another repo — plug in without touching layers 1–3.
 
 **Where AI ends and code begins.** This is a fixed pipeline, not an agent. A model is
 consulted at exactly nine points, and every consultation has the same shape: code asks one
 narrow question, the model must answer in a fixed JSON format, and code checks the answer
-before it is allowed to do anything (is the quoted evidence really in the announcement? is
+before it is allowed to do anything (e.g. is the quoted evidence really in the announcement? is
 the price change within a plausible range? is the text to be replaced actually in the file?).
 The model never decides what happens next — code does, and all nine questions are printed
 verbatim in the appendix. We chose this over a tool-using agent deliberately: a fixed

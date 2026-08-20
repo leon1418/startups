@@ -119,8 +119,10 @@ were wrong.
 
 ## 3. POC Verification and deployment
 
-Deployment is deliberately small — the whole pipeline is one CloudFormation stack (~20
-resources, Checkov clean, least-privilege verified by tests that failed for the right reasons):
+We built the four-layer architecture above as a working POC and ran it against the real
+world. The deployment is deliberately small — the whole pipeline is one CloudFormation stack
+(~20 resources, Checkov clean, least-privilege verified by tests that failed for the right
+reasons):
 
 ![Deployment: two triggers — the operator console and a weekly EventBridge cron — start a Step Functions execution whose states share one Lambda; it talks to Bedrock, DynamoDB, S3 and Secrets Manager, and writes to GitHub only as draft PRs and one dashboard issue](../kb-autoupdate-poc/diagrams/kb-arch.png)
 
@@ -142,14 +144,14 @@ fine-grained to the fork, returning 403 anywhere else _by construction_. Retarge
 repo is a two-parameter change plus an org-scoped token (§5.2).
 
 
-Verification ran against this deployment — live sources, real Bedrock models (Haiku for
-extraction/triage, Sonnet for judgment). One verified run works through the four layers top
-to bottom. Discovery hits
-feed the judge, whose verdict routes the outcome — `no_change` ends in silence, mechanical
-changes in a draft PR, and a reversed or unclassifiable change in a review issue that waits
-for a maintainer's decision. Re-verification outcomes take the shorter path: an `agree`
-refreshes the fact's timestamp, anything else surfaces for a human with an independent second
-opinion attached — deliberately short of auto-editing, per §4's posture on value changes.
+Everything below was verified against the real world: live feeds and pages, real Bedrock
+models (Haiku for extraction and triage, Sonnet for judgment), real PRs and issues on GitHub.
+A single run exercises all four layers. On the discovery side, every kept announcement ends
+in exactly one of three places: nothing (the judge found no change to make), a draft PR (a
+mechanical edit, ready for review), or a review issue (a reversal or an unclear case, waiting
+for a maintainer's decision). On the re-verification side the outcomes are simpler: a fact
+that still checks out gets its timestamp refreshed; anything else is shown to a human
+together with an independent second opinion — deliberately never auto-edited (§4).
 
 | Claim                                                 | Evidence                                                                                                                                                                                  |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

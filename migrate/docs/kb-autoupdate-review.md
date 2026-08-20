@@ -27,7 +27,10 @@ followed the skill's recommendation.
 
 ## 2. System architecture
 
-Four layers. Each is independently extensible.
+The system watches the outside world on the skill's behalf: it re-verifies what the skill
+already claims, discovers announcements that contradict it, judges what each change means,
+and turns every verdict into a reviewable artifact. That work divides into four layers, each
+independently extensible.
 
 ![Four-layer architecture: Ingestion, Registry & Evidence, Orchestration & Judgment, Actions — with each layer's extension point](../kb-autoupdate-poc/diagrams/kb-layers.png)
 
@@ -95,16 +98,16 @@ click — which is why it needs no API and no auth layer. The failure alert (SNS
 exists because a quiet week and a dead pipeline must look different. New actions — notify a
 channel, regenerate a doc, target another repo — plug in without touching layers 1–3.
 
-**Where AI ends and code begins.** The pipeline itself is deterministic; models appear at
-exactly nine points, each a narrow question under a forced JSON schema (all nine prompts
-are in the appendix, verbatim). A model never triggers an action — every answer passes a code
-gate before it has any effect: the magnitude guard, the pin, the single-location rule for
-auto-edits, the judge cap, the before-text check. The alternative — agents with tool loops —
-buys flexibility at the cost of unpredictable spend and prompt-managed boundaries; here,
-specialization lives in pipeline stages instead, so cost has a computable ceiling, every
-judgment point is unit-testable in isolation, and the one case that genuinely needs extra
-evidence (a re-verification that disagrees) is covered by a fixed second-opinion call rather
-than a loop.
+**Where AI ends and code begins.** This is a fixed pipeline, not an agent. A model is
+consulted at exactly nine points, and every consultation has the same shape: code asks one
+narrow question, the model must answer in a fixed JSON format, and code checks the answer
+before it is allowed to do anything (is the quoted evidence really in the announcement? is
+the price change within a plausible range? is the text to be replaced actually in the file?).
+The model never decides what happens next — code does, and all nine questions are printed
+verbatim in the appendix. We chose this over a tool-using agent deliberately: a fixed
+pipeline has a cost ceiling you can compute, each of the nine judgment points can be tested
+on its own, and when something goes wrong the failure is visible at a specific step instead
+of buried inside an agent's loop.
 
 **The human stays in charge.** Nothing merges without review, and nothing reversed is even
 _drafted_ without a maintainer's position. A rejected conclusion is recorded as a _pin_ on the
@@ -156,45 +159,6 @@ PRs; the pipeline never merges. The POC has so far run against a maintainer's fo
 fine-grained to the fork, returning 403 anywhere else _by construction_. Retargeting the real
 repo is a two-parameter change plus an org-scoped token (§5.2).
 
-### Failure modes observed
-
-Live operation also produced negative evidence: fifteen real defects that no dry run would
-have surfaced. Six changed the design; reviewers should know them because they generalize to
-any LLM-operated pipeline:
-
-1. **A confident wrong answer beats no answer.** The model once returned an array as a
-   comma-joined string; iterating it yielded single characters, all filtered as "too short",
-   producing a plausible "0 affected locations" with no error anywhere. Structured output on
-   Bedrock now goes through a payload-coercion layer, and silent-empty results are treated as
-   suspect.
-2. **Fluent prose over unchanged behaviour.** One proposed edit rewrote a rule's human-readable
-   `reason` string perfectly while leaving the machine-read rule untouched — invisible in a
-   diff review. Measured rate: 1 in 13 edits. This is the one failure class where human review
-   demonstrably does not protect, so structured files get a mechanical completeness check.
-3. **The guards must not trust the model.** A per-second price compared against a per-hour
-   record was one lucky conversion away from auto-writing a 3600× wrong price. The ≥10×
-   magnitude guard is code, not prompt.
-4. **A state label must mean what it says.** "Seen" originally meant *fetched*: an
-   announcement deferred by the per-run judge cap was already marked seen, so it silently never
-   returned — found by a team member's ad-hoc test, not by us. "Seen" now means *handled*
-   (marked only after a successful judge), which makes every failure path retry for free.
-5. **A silent guard hides a dead feature.** The configuration pane's event wiring sat behind an
-   `if (element exists)` guard — the element didn't exist yet at script time, so every control
-   on that pane had never worked, and nothing said so. Worse, fixing the wiring exposed a lossy
-   save path that stripped each fact to its visible columns, deleting a load-bearing pin. Two
-   stacked defects, each masking the other; the fix round-trips the full record and the repair
-   came from committed sources of truth.
-6. **A silent fallback makes success indistinguishable from a no-op.** The state store falls
-   back from DynamoDB to a local file when its table variable is unset. Operator scripts used
-   it to reset the demo environment: every write succeeded and every read-back agreed — against
-   the wrong backend, while the cloud state never changed and the next run behaved as if
-   nothing had been done. Read-back through the same path proves nothing; the operator scripts
-   now assert the backend before writing, and a first-class guard in the state module is queued.
-
-Also measured and worth stating plainly: blast radius is not stable between runs (9 vs 13
-locations on identical input, neither a superset). A single judge pass under-reports; the PR
-says so on its face rather than pretending completeness.
-
 ## 4. Limits and open risks
 
 - **One week of live data.** False-negative rate (relevant announcements dropped) is unknowable
@@ -202,7 +166,8 @@ says so on its face rather than pretending completeness.
 - **Locate-instruction durability** across real page redesigns is untested — only calendar time
   tests it.
 - **Review burden** is partially measured: 13 proposed edits in one PR was reviewable, and the
-  one subtle defect (failure mode 2 in §3) was caught only by reading beyond the diff.
+  one subtle defect observed — a fluent rewrite of a human-readable reason string that left
+  the machine-read rule untouched — was caught only by reading beyond the diff.
 - **Auto-merge is not proposed and auto-PR for value changes stays off** until several silent
   weeks have measured the false-positive rate.
 - The `url-watch` adapter is new: its segmentation is verified against today's page

@@ -189,10 +189,6 @@ together with an independent second opinion — deliberately never auto-edited (
   cannot catch. Someone has to clean up duplicates by hand.
 - **The second opinion only covers AWS.** Facts about Temporal or OpenAI still rest on a
   single source page.
-- **The seen-list fix awaits one confirming run.** Each source used to remember only 600
-  item ids, truncated in arbitrary order; the OpenAI feed holds ~1,100, so every run
-  re-processed ~540 random old items. The fix is in: the list now keeps every id still in
-  the feed window and drops the rest. The next run should confirm the re-processing stops.
 
 ## 5. Open questions
 

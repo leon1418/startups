@@ -159,7 +159,7 @@ Establishes baseline Bedrock recommendation. Override hierarchy: Q10 special fea
 
 _Skip when:_ `models[].model_id` is populated in `ai-workload-profile.json` — auto-detect from detected model IDs with `chosen_by: "extracted"` and do not present this question. The detected models are already shown in the Step 1 summary.
 
-> A) Gemini Flash | B) Gemini Pro | C) GPT-3.5 Turbo | D) GPT-4/4 Turbo | E) GPT-4o | F) GPT-5.4/Mini/Nano | G) GPT-5/5.x (older) | H) GPT-5.5/Pro | I) o-series | J) Claude (Anthropic SDK) | K) Other/Multiple | L) Don't know
+> A) Gemini Flash | B) Gemini Pro | C) GPT-3.5 Turbo | D) GPT-4/4 Turbo | E) GPT-4o | F) GPT-5.4/Mini/Nano | G) GPT-5/5.x (older) | H) GPT-5.5/Pro | I) GPT-5.6 Sol (preview) | J) o-series | K) Claude (Anthropic SDK) | L) Other/Multiple | M) Don't know
 
 | Source         | Baseline Recommendation           | Pricing Context                    |
 | -------------- | --------------------------------- | ---------------------------------- |

@@ -61,7 +61,7 @@ the SAME model line** if needed.
 
 🚫 **Hard rule — model line is sacred.** You may auto-resolve `gpt-5.4`
 to `gpt-5.4-2024-08-06` (a date-pinned variant of the same model). You
-MUST NOT resolve it to `gpt-5`, `gpt-5.5`, `gpt-4o`, `gpt-5.4-mini`,
+MUST NOT resolve it to `gpt-5`, `gpt-5.5`, `gpt-5.6`, `gpt-4o`, `gpt-5.4-mini`,
 `gpt-5.4-pro`, `gpt-5.4-latest`, or any other model line / alias. The
 migration report's pass rate is meaningful only when the live baseline
 is the SAME deterministic model the customer said they were running. A
@@ -81,7 +81,7 @@ Write a small resolver script and run it. The resolver:
      pinned to a date or version — same-line. Examples:
      `gpt-5.4` matches `gpt-5.4-2026-03-05`; `claude-3-5-sonnet`
      matches `claude-3-5-sonnet-20241022`. Does NOT match `gpt-5`,
-     `gpt-5.5`, `gpt-54` (different lines), nor `gpt-5.4-mini`,
+     `gpt-5.5`, `gpt-5.6`, `gpt-54` (different lines), nor `gpt-5.4-mini`,
      `gpt-5.4-pro`, `gpt-5.4-latest` (alphabetic suffixes — those are
      either different model lines or non-deterministic aliases).
      If multiple safe variants, pick the shortest ID (most general).

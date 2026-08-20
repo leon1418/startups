@@ -300,7 +300,7 @@ Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special
 > M) GPT-4o
 > N) GPT-5.4 / GPT-5.4 Mini / GPT-5.4 Nano
 > O) GPT-5 / GPT-5.x (older)
-> P) GPT-5.5 / GPT-5.5 Pro
+> P) GPT-5.5 / GPT-5.5 Pro | Q) GPT-5.6 Sol (preview)
 > Q) o-series (o1, o3)
 > R) Other / Multiple models
 > S) I don't know

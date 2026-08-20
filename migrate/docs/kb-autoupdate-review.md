@@ -189,9 +189,6 @@ together with an independent second opinion — deliberately never auto-edited (
   cannot catch. Someone has to clean up duplicates by hand.
 - **The second opinion only covers AWS.** Facts about Temporal or OpenAI still rest on a
   single source page.
-- **A new source arrives with a backlog.** Turning on six sources queued 28 old-but-relevant
-  announcements behind the 3-per-run judge cap. Nothing is lost, but the cheaper choice is
-  to start each new source from "today".
 - **The seen-list is truncated badly.** Each source remembers only the last 600 item ids,
   and the truncation order is arbitrary. The OpenAI feed holds ~1,100 items, so every run
   re-processes ~540 random old ones — wasted cost, and occasionally an old item gets

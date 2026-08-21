@@ -73,7 +73,12 @@ jobs:
 
       - name: Prepare trees
         run: |
-          git -C work fetch origin main
+          # Judge against UPSTREAM's current main, not the fork's possibly-stale copy: the
+          # work tree is reset to upstream/main, and PR branches are cut from it, so a PR's
+          # diff is exactly the pipeline's edit. Branches still push only to the fork.
+          git -C work remote add upstream https://github.com/awslabs/startups.git
+          git -C work fetch -q upstream main
+          git -C work checkout -q -B main upstream/main
           for t in work state; do
             git -C "$t" config user.name  "kb-autoupdate[bot]"
             git -C "$t" config user.email "kb-autoupdate@users.noreply.github.com"
@@ -110,7 +115,7 @@ jobs:
               --judge "$out" \
               --repo "$GITHUB_WORKSPACE/work" \
               --commit --push --draft-pr --run-id "$KB_RUN_ID" \
-              --base "$KB_PR_BASE" --from-ref "origin/$KB_PR_BASE" \
+              --base "$KB_PR_BASE" --from-ref "upstream/$KB_PR_BASE" \
               --remote origin --pr-repo "$KB_PR_REPO" || rc=$?
             if [ "$rc" -eq 0 ] || [ "$rc" -eq 3 ]; then
               python scan.py --mark-handled "$title" || true

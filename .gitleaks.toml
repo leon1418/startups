@@ -1,14 +1,17 @@
-# Gitleaks Configuration
-# https://github.com/gitleaks/gitleaks
-
-title = "gitleaks config"
-
+# Gitleaks config for this fork. The kb-autoupdate pipeline commits its machine state and
+# run results here (kb-state branch); fact-registry records carry a literal "key" field
+# with dotted identifiers (e.g. bedrock.claude_sonnet_5_intro_pricing) that the
+# generic-api-key rule mistakes for credentials. These are data files, not code.
 [extend]
 useDefault = true
 
 [allowlist]
-description = "Global allowlist"
+description = "kb-autoupdate state and run artifacts — registry data, not secrets"
 paths = [
-  '''\.gitleaksignore$''',
-  '''\.gitleaks-baseline\.json$''',
+  '''^kb-state\.json$''',
+  '''^runs/.*\.json$''',
+  '''^runs/.*\.md$''',
+  '''results-.*\.json$''',
+  '''kb-autoupdate-poc/dashboard\.html$''',
+  '''kb-autoupdate-poc/examples/.*''',
 ]

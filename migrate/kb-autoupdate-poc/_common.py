@@ -138,10 +138,13 @@ def _ask_json_openai_compat(model: str, system: str, user: str, schema: dict, ma
 
     github = _os.environ.get("KB_INFERENCE") == "github"
     url = _os.environ.get("KB_INFERENCE_URL") or GITHUB_MODELS_URL
-    token = (_os.environ.get("KB_INFERENCE_TOKEN")
-             or _os.environ.get("KB_GH_MODELS_TOKEN") or _os.environ.get("GITHUB_TOKEN"))
+    # The GITHUB_TOKEN fallback is for GitHub Models ONLY. A custom gateway must get its
+    # own token — falling back would send the repo token to a third-party URL and fail
+    # with a misleading 401 when the secret is simply unset.
+    token = _os.environ.get("KB_INFERENCE_TOKEN") or (
+        (_os.environ.get("KB_GH_MODELS_TOKEN") or _os.environ.get("GITHUB_TOKEN")) if github else None)
     if not token:
-        raise RuntimeError("KB_INFERENCE=openai/github needs KB_INFERENCE_TOKEN (or GITHUB_TOKEN)")
+        raise RuntimeError("KB_INFERENCE_TOKEN is not set (is the repo secret configured?)")
     body = {
         "model": model,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],

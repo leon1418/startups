@@ -39,7 +39,11 @@ import config
 import state
 from _common import CHEAP_MODEL, ask_json
 
-SKILLS = Path(__file__).resolve().parents[1] / "plugins" / "migration-to-aws" / "skills"
+# KB_SKILLS_ROOT points reads at a DIFFERENT checkout than the pipeline code — the GitHub
+# Actions deployment judges against the PR-base tree (fork main) so reads and writes see
+# the same skill content. Unset, reads come from the pipeline code's own tree.
+SKILLS = (Path(os.environ["KB_SKILLS_ROOT"]) if os.environ.get("KB_SKILLS_ROOT")
+          else Path(__file__).resolve().parents[1] / "plugins" / "migration-to-aws" / "skills")
 TOPIC_DIRS = [
     SKILLS / "agent-advisor" / "references" / "decision-refs",
     SKILLS / "gcp-to-aws" / "references" / "design-refs",

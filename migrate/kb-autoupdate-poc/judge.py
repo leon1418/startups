@@ -23,12 +23,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 
 from _common import STRONG_MODEL, ask_json
 
-SKILLS = Path(__file__).resolve().parents[1] / "plugins" / "migration-to-aws" / "skills"
+# KB_SKILLS_ROOT points reads at a DIFFERENT checkout than the pipeline code — the GitHub
+# Actions deployment judges against the PR-base tree (fork main) so reads and writes see
+# the same skill content. Unset, reads come from the pipeline code's own tree.
+SKILLS = (Path(os.environ["KB_SKILLS_ROOT"]) if os.environ.get("KB_SKILLS_ROOT")
+          else Path(__file__).resolve().parents[1] / "plugins" / "migration-to-aws" / "skills")
 SEARCH_EXT = {".md", ".json"}
 SKIP_DIRS = {"vendored", "node_modules", ".pytest_cache", ".venv"}
 

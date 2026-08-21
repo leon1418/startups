@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import httpx
@@ -43,7 +44,11 @@ import httpx
 import config
 from _common import STRONG_MODEL, ask_json
 
-SKILLS = Path(__file__).resolve().parents[1] / "plugins" / "migration-to-aws" / "skills"
+# KB_SKILLS_ROOT points reads at a DIFFERENT checkout than the pipeline code — the GitHub
+# Actions deployment judges against the PR-base tree (fork main) so reads and writes see
+# the same skill content. Unset, reads come from the pipeline code's own tree.
+SKILLS = (Path(os.environ["KB_SKILLS_ROOT"]) if os.environ.get("KB_SKILLS_ROOT")
+          else Path(__file__).resolve().parents[1] / "plugins" / "migration-to-aws" / "skills")
 
 SYSTEM = """You turn a skill's volatile-fact declarations into monitorable fact records.
 

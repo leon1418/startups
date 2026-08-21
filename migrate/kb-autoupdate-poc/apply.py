@@ -284,9 +284,14 @@ def review_issue_body(judge: dict) -> str:
 def upsert_review_issue(judge: dict, slug: str, body_path: Path, cwd: Path) -> str | None:
     """Create or update the review issue for this brief key. Returns the issue URL."""
     mark = f"<!-- kb-autoupdate-brief:{brief_key(judge)} -->"
-    title = ("[needs review] " + (judge["step1"].get("fact_key") or judge["hit"]["title"][:60])
-             + (" — could not classify" if judge["step1"]["verdict"] == "needs_human"
-                else " — recommendation reversed"))
+    # A reversal brief IS a request for comments — a proposed position awaiting a decision —
+    # so it uses the repo's native RFC convention. An unclassifiable item is only a triage
+    # ask, so it keeps the plainer prefix.
+    subject = judge["step1"].get("fact_key") or judge["hit"]["title"][:60]
+    if judge["step1"]["verdict"] == "needs_human":
+        title = f"[needs review] {subject} — could not classify"
+    else:
+        title = f"RFC: {subject} — recommendation reversed"
 
     sh(["gh", "label", "create", REVIEW_LABEL, "--repo", slug, "--color", "B60205",
         "--description", "kb-autoupdate: a human decides before anything is rewritten",

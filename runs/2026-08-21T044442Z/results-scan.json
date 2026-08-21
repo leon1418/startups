@@ -1,0 +1,66 @@
+{
+  "sources": [
+    "aws-whats-new",
+    "aws-news-blog",
+    "openai-news",
+    "openai-api-changelog",
+    "anthropic-release-notes",
+    "temporal-changelog"
+  ],
+  "state_backend": "local:/home/runner/work/startups/startups/state/kb-state.json",
+  "counts": {
+    "fetched": 1333,
+    "in": 1,
+    "already_seen": 1332,
+    "hits": 1,
+    "dropped": 0,
+    "errors": 0
+  },
+  "source_failures": [],
+  "filter_files": [
+    "agentcore.md",
+    "batch.md",
+    "cost-levers.md",
+    "ecs.md",
+    "eks.md",
+    "freshness.md",
+    "lambda-microvms.md",
+    "lambda.md",
+    "managed-alternatives.md",
+    "model-selection.md",
+    "poc-shapes.md",
+    "temporal.md",
+    "workload-classes.md",
+    "ai-anthropic-to-bedrock.md",
+    "ai-gemini-to-bedrock.md",
+    "ai-openai-to-bedrock.md",
+    "ai.md",
+    "compute.md",
+    "database.md",
+    "design-ref-agentic-to-agentcore.md",
+    "design-ref-harness.md",
+    "fast-path.md",
+    "index.md",
+    "messaging.md",
+    "networking.md",
+    "security.md",
+    "storage.md"
+  ],
+  "hits": [
+    {
+      "id": "https://openai.com/index/openai-frontier-models-and-codex-are-now-available-on-aws",
+      "title": "OpenAI frontier models and Codex are now available on AWS",
+      "body": "OpenAI frontier models and Codex are now generally available on AWS, giving enterprises a new path to build with OpenAI through the AWS environments, controls, and procurement workflows they already use. Customers can get started with OpenAI on AWS and move faster from evaluation to production.",
+      "url": "https://openai.com/index/openai-frontier-models-and-codex-are-now-available-on-aws",
+      "published_at": "Mon, 01 Jun 2026 10:00:00 GMT",
+      "source": "openai-news",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md"
+      ],
+      "reason": "OpenAI's availability on AWS as a managed service creates a new deployment path outside Bedrock that the model-selection guidance must acknowledge as an alternative when users are committed to OpenAI."
+    }
+  ],
+  "dropped": [],
+  "errors": []
+}

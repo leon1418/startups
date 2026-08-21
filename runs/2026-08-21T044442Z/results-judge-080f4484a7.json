@@ -1,0 +1,133 @@
+{
+  "hit": {
+    "id": "https://openai.com/index/openai-frontier-models-and-codex-are-now-available-on-aws",
+    "title": "OpenAI frontier models and Codex are now available on AWS",
+    "body": "OpenAI frontier models and Codex are now generally available on AWS, giving enterprises a new path to build with OpenAI through the AWS environments, controls, and procurement workflows they already use. Customers can get started with OpenAI on AWS and move faster from evaluation to production.",
+    "url": "https://openai.com/index/openai-frontier-models-and-codex-are-now-available-on-aws",
+    "published_at": "Mon, 01 Jun 2026 10:00:00 GMT",
+    "source": "openai-news",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md"
+    ],
+    "reason": "OpenAI's availability on AWS as a managed service creates a new deployment path outside Bedrock that the model-selection guidance must acknowledge as an alternative when users are committed to OpenAI."
+  },
+  "step1": {
+    "fact_key": "ai.openai_to_bedrock.migration_framing",
+    "verdict": "schema_change",
+    "summary": "OpenAI's frontier models (and Codex) being natively available on AWS (via a new first-party path) adds a new axis to the \"OpenAI vs Bedrock\" decision — customers can now run actual OpenAI models on AWS infrastructure/procurement without migrating to Bedrock/Nova/Claude equivalents at all.",
+    "old_value": "Guide frames OpenAI-to-AWS migration purely as \"migrate to Bedrock\" (switch to Claude/Nova models) vs \"stay on OpenAI\" (keep using OpenAI's own API/infrastructure) — a two-option binary based on price/feature comparison tables.",
+    "new_value": "New third option: run OpenAI frontier models + Codex directly on AWS (native availability, not gpt-oss open-weight equivalents) using AWS environments/controls/procurement, while still calling actual OpenAI models rather than switching to Bedrock model families.",
+    "still_true": "The existing Bedrock-vs-OpenAI pricing/feature comparison tables remain valid for customers choosing between OpenAI's own hosting and Bedrock-native models (Claude/Nova/etc.).",
+    "false_positive_files": [],
+    "search_terms": [
+      "OpenAI on AWS",
+      "Codex on AWS",
+      "gpt-oss",
+      "Mantle",
+      "OpenAI SDK",
+      "frontier models",
+      "OpenAI-compat endpoints",
+      "stay on OpenAI",
+      "Assistants API",
+      "Realtime API"
+    ],
+    "reasoning": "The file's \"Consider staying on OpenAI if\" section and gpt-oss section assume the only AWS-native options are Bedrock's own models or gpt-oss open-weight ports; this announcement introduces a distinct third path (OpenAI's actual frontier models/Codex hosted for/via AWS) that changes the shape of the decision framework, not just a price update."
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 134,
+        "kind": "flipped",
+        "before": "- Want to stay on OpenAI models → gpt-oss on Bedrock (same models, AWS infrastructure)",
+        "after": "- Want to stay on OpenAI models on AWS infrastructure → run OpenAI frontier models + Codex natively on AWS (actual OpenAI models, not gpt-oss open-weight equivalents on Bedrock)",
+        "why": "The announcement establishes that OpenAI frontier models and Codex are now natively available on AWS, contradicting the old framing that 'staying on OpenAI models' on AWS infrastructure meant using gpt-oss (an open-weight approximation) on Bedrock — the correct recommendation now flips to using real OpenAI models directly on AWS.",
+        "evidence_quote": "OpenAI frontier models and Codex are now generally available on AWS, giving enterprises a new path to build with OpenAI through the AWS environments, controls, and procurement workflows they already use."
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 163,
+        "kind": "derived",
+        "before": "| Realtime API         | No equivalent                            | Stay on OpenAI for this                                                                                                        |",
+        "after": "| Realtime API         | No equivalent on Bedrock                 | Stay on OpenAI for this — now also available natively on AWS via the new OpenAI-on-AWS offering                                | ",
+        "why": "Announcement states OpenAI frontier models and Codex are generally available on AWS, meaning 'stay on OpenAI' no longer strictly means staying off AWS — the recommendation should note the native-on-AWS option.",
+        "evidence_quote": "OpenAI frontier models and Codex are now generally available on AWS"
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 143,
+        "kind": "derived",
+        "before": "- Need Realtime API (no Bedrock equivalent)",
+        "after": "- Need Realtime API (no Bedrock equivalent, but now available by running OpenAI natively on AWS)",
+        "why": "The new native-on-AWS path changes the judgment for use cases requiring OpenAI-only features like Realtime API — they no longer force staying entirely off AWS.",
+        "evidence_quote": "OpenAI frontier models and Codex are now generally available on AWS, giving enterprises a new path to build with OpenAI"
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 3,
+        "kind": "derived",
+        "before": "**Applies to:** OpenAI SDK usage detected in GCP-hosted applications → Amazon Bedrock",
+        "after": "**Applies to:** OpenAI SDK usage detected in GCP-hosted applications → Amazon Bedrock or native OpenAI-on-AWS",
+        "why": "The scope of this migration doc is now incomplete since the announcement introduces a third destination for OpenAI SDK usage on AWS beyond Bedrock.",
+        "evidence_quote": "giving enterprises a new path to build with OpenAI through the AWS environments, controls, and procurement workflows they already use"
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 108,
+        "kind": "derived",
+        "before": "### OpenAI Models on Bedrock (gpt-oss)",
+        "after": "### OpenAI Models on Bedrock (gpt-oss) — note: a fourth option now exists: run actual OpenAI frontier models natively on AWS, not just the gpt-oss open-weight approximations",
+        "why": "The announcement introduces native OpenAI model availability on AWS as a distinct option from the gpt-oss open-weight Bedrock equivalents, which this section presents as the only way to get 'OpenAI models' on AWS.",
+        "evidence_quote": "OpenAI frontier models and Codex are now generally available on AWS"
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 112,
+        "kind": "derived",
+        "before": "| OpenAI Model | Price (in/out per 1M) | Bedrock gpt-oss | Bedrock Price | Notes                                 |",
+        "after": "| OpenAI Model | Price (in/out per 1M) | Bedrock gpt-oss | Bedrock Price | Notes                                 | (add: OpenAI frontier models are also now natively available on AWS, not only via gpt-oss equivalents)",
+        "why": "This table frames gpt-oss as the only way to get OpenAI-flavored models on Bedrock/AWS, but the announcement establishes native OpenAI model availability as a separate, non-equivalent option.",
+        "evidence_quote": "OpenAI frontier models and Codex are now generally available on AWS"
+      }
+    ],
+    "notes": "[b1] Most hits in this batch are structural/technical descriptions of the Mantle/Bedrock migration path (OpenAI-compatible endpoints, Assistants API decision tree, boto3 Converse API, discover/generate phase code, retarget-gotchas) that describe how to move OFF OpenAI onto Bedrock-native models. These remain valid per the 'still true' clause since the Bedrock-vs-OpenAI comparison/migration tooling is unaffected — only the framing of the binary choice (stay-on-OpenAI vs move-to-Bedrock) is affected, specifically where it implies gpt-oss is the only way to 'stay on OpenAI' on AWS, or where lack of Bedrock equivalents (Realtime API) is used to justify staying off AWS entirely. Lines about Assistants API, generate-ai.md, generate-artifacts-ai.md, discover-app-code.md, retarget-gotchas.md, design-ai.md, and index.md are unaffected because they describe the Bedrock/Mantle SDK-compatibility mechanics, which remain valid regardless of the new third option existing. [b2] 1 edit(s) rejected: evidence_quote not found verbatim in the announcement [b2] Most gpt-oss hits are purely technical/mechanical (config field names, pricing tables, code paths for the gpt-oss Bedrock model) and are unaffected by the announcement, since gpt-oss remains a valid distinct option (open-weight approximation) separate from native OpenAI-on-AWS. The genuinely affected hits are those that frame gpt-oss as *the* way to get OpenAI-flavored models on AWS/Bedrock, or that present the migration decision as a fixed set of paths without accounting for the new native-AWS option — especially design-ai.md:296, which explicitly claims gpt-oss is the way to 'preserve OpenAI model architecture' on AWS, a claim now undercut by true native availability of actual OpenAI models. Mantle-related hits are about a different migration mechanism (OpenAI-compatible endpoint on Bedrock) and are not affected by the change, since Mantle's positioning vs OpenAI's own API is untouched; the 'still true' clause confirms Bedrock-vs-OpenAI comparisons remain valid. [b3] This batch (batch 3 of 3) consists entirely of Mantle-specific implementation details: throughput/RPM/TPM limits, API migration mechanics (threads/runs -> responses.create), env var configuration, rewrite strategy code paths, and Converse-vs-Mantle tradeoffs. All of these concern migrating TO Bedrock-native services (Mantle's OpenAI-compat endpoint, or the Converse API), which is a mechanism entirely separate from the new fact: that actual OpenAI frontier models/Codex can now run natively on AWS infrastructure without going through Bedrock at all. None of these lines assert the old binary framing (\\\"migrate to Bedrock\\\" vs \\\"stay on OpenAI\\\") that the change is targeting — they are all deep implementation details of the \\\"migrate to Bedrock\\\" option, which the announcement's \\\"still true\\\" clause confirms remains valid. None contained a judgment/recommendation that depended on the absence of native OpenAI-on-AWS as an option, so no derived/flipped reclassification applies here. All 24 hits are classified unaffected. The evidence_quote field is only the announcement's generic availability statement since no line-specific evidence was needed for an unaffected classification, and no genuine before/after content changes are being made to any of these lines.\""
+  },
+  "brief": {
+    "assumptions": [
+      "The AWS GA announcement means real OpenAI frontier models + Codex are callable via an AWS-native path (e.g. Bedrock or adjacent service) with SLA-backed availability, not a limited preview or allowlisted beta — verify current access model/region list before publishing.",
+      "Pricing for this new path has not been independently verified against direct OpenAI API pricing or existing Bedrock gpt-oss pricing; assume it is unknown/unfavorable until confirmed, since AWS-hosted frontier models may carry a premium or different metering (e.g. per-token vs. committed throughput).",
+      "gpt-oss on Bedrock is open-weight and architecturally different from OpenAI's frontier models (GPT-4-class/Codex); it is NOT a lower-fidelity substitute for teams who specifically need frontier-model behavior/quality, so the two options serve different fidelity tiers, not a strict upgrade/downgrade pair.",
+      "Regional availability of the new native-OpenAI-on-AWS path is likely narrower at GA than existing Bedrock regions; teams with strict data-residency requirements must verify region parity before migrating workloads.",
+      "No independent evidence yet on latency, rate limits, or enterprise support SLAs for OpenAI-on-AWS versus OpenAI's own API or Bedrock gpt-oss — treat as unproven for production-critical workloads until customer reports or benchmarks exist.",
+      "Procurement/billing consolidation (the main stated benefit) is only valuable for customers already committed to AWS EDP/Marketplace spend; it is irrelevant or even a negative for customers optimizing purely for model cost or already on direct OpenAI billing.",
+      "This is a same-day GA announcement with no third-party production case studies yet; the maintainer should treat this as 'newly available' not 'battle-tested' when framing confidence level in the skill."
+    ],
+    "decision_space": [
+      {
+        "option": "Keep gpt-oss on Bedrock as the recommended path for teams wanting to 'stay on OpenAI-style models but move to AWS infra' when they are open-weight-model-tolerant and prioritize Bedrock-native tooling/pricing simplicity over exact frontier-model parity",
+        "depends_on": "workload accepts open-weight model quality/behavior differences from actual OpenAI frontier models, and team wants single Bedrock billing/IAM surface"
+      },
+      {
+        "option": "Adopt native OpenAI frontier models + Codex on AWS as the recommended path when the requirement is 'actual OpenAI models, AWS procurement/controls' — i.e., the workload specifically depends on GPT-frontier or Codex behavior and cannot be satisfied by gpt-oss",
+        "depends_on": "confirmed GA access in the customer's AWS region, verified pricing vs. direct OpenAI API, and no unacceptable latency/support gaps discovered in evaluation"
+      },
+      {
+        "option": "Stay on direct OpenAI API/infrastructure (no AWS involvement) for customers who have no procurement/compliance driver to move to AWS and want simplest, most mature integration path",
+        "depends_on": "customer has no AWS commitment/EDP pressure and prioritizes maturity/simplicity over infra consolidation"
+      },
+      {
+        "option": "Migrate fully to Bedrock-native models (Claude/Nova) per existing comparison tables when the customer is model-agnostic and optimizing for AWS-native ecosystem fit, cost, or feature set rather than OpenAI-specific capabilities",
+        "depends_on": "workload does not require OpenAI-specific model behavior and existing price/feature tables favor Claude/Nova for the use case"
+      }
+    ],
+    "proposed_position": "Replace the binary framing with a three-way decision: (1) if the workload requires actual OpenAI frontier models or Codex AND the customer needs AWS procurement/IAM/controls, evaluate the new native OpenAI-on-AWS GA offering — but pilot it first to confirm region availability, pricing vs. direct OpenAI API, and latency/support before committing production workloads; (2) if the customer is open to open-weight models and wants the simplest single-vendor Bedrock billing/tooling story, gpt-oss on Bedrock remains a valid 'stay-OpenAI-style, move-to-AWS' path — do not present it as obsolete; (3) if there's no AWS procurement driver, staying on direct OpenAI infrastructure is still reasonable. Do not default to the new native-AWS OpenAI path as a blanket replacement for gpt-oss-on-Bedrock — they solve different problems (model fidelity vs. open-weight/AWS-native simplicity) and the new path is unproven in production at GA.",
+    "what_changed": "AWS announced GA availability of OpenAI's actual frontier models and Codex running natively within AWS environments, using AWS procurement, IAM, and controls — this is distinct from the existing gpt-oss open-weight models already available on Bedrock. This adds a third migration option (real OpenAI models on AWS infra) rather than replacing the existing choice between staying on OpenAI's own hosting and moving to Bedrock-native models like Claude/Nova."
+  },
+  "grep_count": 84,
+  "review_issue": {
+    "url": "https://github.com/awslabs/startups/issues/235",
+    "reason": "1 conclusion reversed",
+    "flipped": 1
+  }
+}

@@ -10,6 +10,8 @@
 #
 # This file lives at .github/workflows/kb-autoupdate-experiment.yml on the default branch;
 # the copy under experiments/ is the reviewed source.
+# checkov:skip=CKV_GHA_7: the ref input only selects which branch of THIS repo supplies the
+# pipeline code for a manual test run; scheduled runs use the fixed default.
 name: kb-autoupdate
 
 on:

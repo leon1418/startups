@@ -1,0 +1,153 @@
+{
+  "hit": {
+    "id": "530833947a7720c73b5527e9cfba225d55cc1d07",
+    "title": "AgentCore runtime instances are now generally available",
+    "body": " Today, AWS announces runtime instances, a new feature in Amazon Bedrock AgentCore that lets you run agents on your own Amazon EC2 instances without managing infrastructure. AgentCore runtime provides purpose-built infrastructure to deploy and operate AI agents securely at scale. Runtime instances complement the existing microVM-based option in AgentCore runtime and give teams running sustained, resource-intensive, or specialized-hardware agents access to the breadth of EC2 instance types, while AgentCore handles provisioning, patching, scaling, and lifecycle management. Using the AWS Management Console, CLI, SDKs, or APIs, you create a capacity provider that specifies the EC2 instance types your agents need, including GPU-accelerated, memory-optimized, and compute-optimized families, and attach your agents to it. Runtime instances support long-running agent sessions of up to 14 days, while the default serverless, microVM-based runtime is designed for sessions of up to 8 hours that need fast startup . You can choose the right compute for each agent, or run a mix, without changing how you deploy or invoke your agents. You can use runtime instances in the following AWS Regions: US Ea",
+    "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aws-bedrock-agentcore-runtime-instances-generally-available/",
+    "published_at": "Thu, 06 Aug 2026 20:00:00 GMT",
+    "relevant": true,
+    "files": [
+      "agentcore.md",
+      "lambda-microvms.md",
+      "poc-shapes.md",
+      "design-ref-agentic-to-agentcore.md"
+    ],
+    "reason": "AgentCore runtime now supports EC2-backed instances with 14-day session limits and specialized hardware, fundamentally expanding its capability profile beyond the existing microVM option and changing deployment recommendations for sustained/resource-intensive agents."
+  },
+  "step1": {
+    "fact_key": "agentcore.session_cap",
+    "verdict": "schema_change",
+    "summary": "AgentCore runtime now splits into two compute options: default serverless microVM (8h session cap, unchanged) and new EC2-backed \"runtime instances\" (sessions up to 14 days). The 8h cap is no longer the single session-cap value for AgentCore — it now applies only to the microVM path.",
+    "old_value": "AgentCore Runtime session cap: 8h (single value, applies to all AgentCore runtime)",
+    "new_value": "AgentCore Runtime session cap now dimensioned by compute type: microVM (default, serverless) = 8h (unchanged); EC2-backed runtime instances (new, GA) = up to 14 days, using capacity providers with GPU/memory/compute-optimized EC2 instance families",
+    "still_true": "The 8h session cap remains correct for the default serverless microVM-based AgentCore runtime path.",
+    "false_positive_files": [
+      "agent-advisor/references/decision-refs/poc-shapes.md"
+    ],
+    "search_terms": [
+      "8h session cap",
+      "8 hours",
+      "8-hour session",
+      "28800",
+      "session cap",
+      "AgentCore runtime",
+      "microVM",
+      "runtime instances",
+      "EC2 instance types",
+      "GPU-accelerated",
+      "14 days",
+      "capacity provider"
+    ],
+    "reasoning": "This is a genuine AgentCore feature affecting agentcore.md and design-ref-agentic-to-agentcore.md, which both state '8h' as the single session cap value; now that value only holds for the microVM path while a new EC2-backed path allows 14-day sessions, so the fact's shape gains a new dimension (compute type) rather than simply changing its number. poc-shapes.md's use of 'temporal_worker_poll'/'ecs' etc. is unrelated to AgentCore session caps, so it's a false positive for this specific fact even though it appears in the scan."
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "agent-advisor/references/decision-refs/agentcore.md",
+        "line": 15,
+        "kind": "value",
+        "before": "- Session cap: 8h (extending — verify)",
+        "after": "- Session cap: dimensioned by compute type — microVM (default, serverless) = 8h (unchanged); EC2-backed runtime instances (new, GA) = up to 14 days via capacity providers (GPU/memory/compute-optimized EC2 families)",
+        "why": "Announcement replaces the single flat 8h cap with a compute-type-dimensioned cap: microVM stays 8h, EC2-backed runtime instances now support up to 14 days."
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/freshness.md",
+        "line": 5,
+        "kind": "value",
+        "before": "- AgentCore session cap (currently \"8h, extending\")",
+        "after": "- AgentCore session cap (now dimensioned: microVM = 8h unchanged; EC2-backed runtime instances = up to 14 days, GA)",
+        "why": "The 'extending — verify' placeholder is resolved by the announcement; the cap is no longer a single value but split by compute type, with EC2-backed runtime instances now GA at up to 14 days."
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/lambda-microvms.md",
+        "line": 17,
+        "kind": "derived",
+        "before": "- Session cap: 8h (max 28,800s) — same as AgentCore; NOT longer",
+        "after": "- Session cap: 8h (max 28,800s) — same as AgentCore's default microVM runtime path; AgentCore's new EC2-backed runtime instances now support up to 14 days, so Lambda MicroVMs is shorter than that option",
+        "why": "The claim 'same as AgentCore; NOT longer' was true only for the old flat 8h AgentCore cap. AgentCore now offers a 14-day option via EC2-backed runtime instances, so Lambda MicroVMs is no longer equal to the full range of AgentCore session caps — this comparison needs updating even though it's not a full flip (microVM path is unchanged)."
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/temporal.md",
+        "line": 56,
+        "kind": "flipped",
+        "before": "- **AgentCore Runtime**: 8-hour max execution → OUT as Worker host. (Its correct",
+        "after": "- **AgentCore Runtime**: 8-hour max execution applies to the default microVM path; EC2-backed runtime instances now support up to 14 days → for sustained/long-running Worker-host use cases, AgentCore Runtime (EC2-backed) may now be IN, not automatically OUT",
+        "why": "The verdict 'OUT as Worker host' was derived from a single flat 8h cap. The announcement introduces EC2-backed runtime instances with up to 14-day sessions, which reverses the automatic disqualification for long-running Worker-host scenarios."
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/temporal.md",
+        "line": 95,
+        "kind": "value",
+        "before": "typical winner AgentCore Runtime (≤8h) — DAF pattern",
+        "after": "typical winner AgentCore Runtime — default microVM path ≤8h, or EC2-backed runtime instances up to 14 days for longer sessions — DAF pattern",
+        "why": "The (≤8h) qualifier stated the old flat cap; the announcement shows the cap now depends on compute type, with EC2-backed runtime instances supporting far longer sessions."
+      },
+      {
+        "file": "agent-advisor/references/runtimes/agentcore.json",
+        "line": 8,
+        "kind": "derived",
+        "before": "{ \"field\": \"session_duration\", \"value\": \"over_8hr\", \"reason\": \"AgentCore has an 8hr session cap\" },",
+        "after": "{ \"field\": \"session_duration\", \"value\": \"over_8hr\", \"reason\": \"AgentCore's default microVM runtime has an 8hr session cap; use EC2-backed runtime instances (capacity providers) for sessions up to 14 days\" },",
+        "why": "The announcement states the 8h cap now only applies to the default serverless microVM path, while EC2-backed runtime instances support sessions up to 14 days. This scoring rule's blanket 'AgentCore has an 8hr session cap' reason is now only true for one compute type and must be updated to avoid disqualifying long-session agents that could use runtime instances."
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/design-ref-agentic-to-agentcore.md",
+        "line": 141,
+        "kind": "flipped",
+        "before": "| `very_long` (1hr+)                 | AgentCore Runtime with session chaining. Break into sub-tasks if > 8 hours.            |",
+        "after": "| `very_long` (1hr+)                 | AgentCore Runtime with session chaining is one option; alternatively, use EC2-backed runtime instances (up to 14-day sessions) to avoid chaining/sub-tasking for very long agent sessions.            |",
+        "why": "The announcement introduces EC2-backed runtime instances supporting sessions up to 14 days, so the previous recommendation to break tasks into sub-tasks past 8 hours is no longer the only or best path — the conclusion reverses for very long sessions since native long sessions are now possible without chaining."
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/design-ref-agentic-to-agentcore.md",
+        "line": 17,
+        "kind": "value",
+        "before": "- **AWS-native deployment:** First-class deployment on AgentCore Runtime with microVM isolation, 8-hour sessions, auto-scaling",
+        "after": "- **AWS-native deployment:** First-class deployment on AgentCore Runtime with microVM isolation (8-hour sessions, default) or EC2-backed runtime instances (up to 14-day sessions), auto-scaling",
+        "why": "The announcement states the 8-hour figure now only applies to the default microVM path; this line states it as the single unqualified value for AgentCore Runtime deployment, which is now incomplete/incorrect given the new EC2-backed runtime instances option."
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/design-ref-agentic-to-agentcore.md",
+        "line": 130,
+        "kind": "value",
+        "before": "- Up to 8-hour session duration for long-running agent tasks",
+        "after": "- Up to 8-hour session duration (default microVM runtime) or up to 14 days with EC2-backed runtime instances, for long-running agent tasks",
+        "why": "The announcement's 'new' value explicitly adds a 14-day option via EC2-backed runtime instances; describing 'up to 8-hour' as the ceiling for long-running tasks is now the old, superseded value."
+      },
+      {
+        "file": "gcp-to-aws/references/phases/clarify/clarify-ai.md",
+        "line": 489,
+        "kind": "flipped",
+        "before": "| Very long | AgentCore Runtime required (8-hour max session). If tasks exceed 8 hours: recommend breaking into sub-tasks with session chaining, or evaluate custom compute (ECS/EKS). |",
+        "after": "| Very long | AgentCore Runtime required. Default microVM path is capped at 8 hours; for tasks exceeding 8 hours, recommend EC2-backed runtime instances (GA), which support sessions up to 14 days via capacity providers, instead of defaulting to sub-task decomposition or custom compute (ECS/EKS). |",
+        "why": "The announcement states EC2-backed runtime instances now support sessions up to 14 days, directly resolving the 'very long' task case that previously required workarounds (sub-tasking or ECS/EKS) due to the old single 8h cap. The recommendation conclusion flips from 'always decompose/migrate off AgentCore' to 'use runtime instances within AgentCore.'"
+      },
+      {
+        "file": "gcp-to-aws/references/phases/clarify/clarify-ai.md",
+        "line": 488,
+        "kind": "derived",
+        "before": "| Long      | AgentCore Runtime strongly recommended (supports up to 8-hour sessions). Serverless alternatives (Lambda) will timeout.                                                  |",
+        "after": "| Long      | AgentCore Runtime strongly recommended. Default serverless microVM path supports up to 8-hour sessions; if longer sustained execution is needed, EC2-backed runtime instances (GA) support sessions up to 14 days. Serverless alternatives (Lambda) will timeout.                                                  |",
+        "why": "The recommendation basis (8-hour session support) is now only true for the default microVM path per 'still true' note; the announcement adds a new higher-capacity option (runtime instances, up to 14 days) that changes the judgment for the 'Long' task category."
+      },
+      {
+        "file": "gcp-to-aws/references/phases/clarify/clarify-ai.md",
+        "line": 518,
+        "kind": "derived",
+        "before": "| B (harness) + D (very long tasks)       | Flag: 8-hour session limit. Recommend task decomposition or session chaining.    |",
+        "after": "| B (harness) + D (very long tasks)       | Flag: 8-hour session limit applies to default serverless microVM runtime. For very long tasks, recommend EC2-backed runtime instances (GA, up to 14-day sessions) instead of task decomposition or session chaining.    |",
+        "why": "The old recommendation (decomposition/chaining) was the only mitigation under a flat 8h cap; the announcement's new 14-day runtime instances option changes the recommended path for very long tasks."
+      },
+      {
+        "file": "gcp-to-aws/references/phases/clarify/clarify-ai.md",
+        "line": 581,
+        "kind": "derived",
+        "before": "- `task_duration` — Determines AgentCore Runtime recommendation and session limit warnings",
+        "after": "- `task_duration` — Determines AgentCore Runtime recommendation, compute type (default microVM vs. EC2-backed runtime instances), and session limit warnings",
+        "why": "Session limit is no longer a single value; task_duration must now also determine which compute type (microVM vs. runtime instances) is recommended, per the new dimensioned session cap."
+      }
+    ],
+    "notes": "[b1] Only hits directly discussing AgentCore's session cap value or judgments/comparisons derived from that cap were treated as affected. Generic mentions of 'AgentCore runtime', 'microVM', or 'Lambda MicroVMs' unrelated to session duration (e.g., SKILL.md triggers, poc-shapes.md artifacts, confirm.md/design.md routing logic, billing notes) are unaffected because they don't state or depend on the specific 8h/session-cap value. The lambda-microvms.md line 17 hit is borderline between value and derived since it repeats the old cap as a comparison basis but its real content is a comparative judgment ('same as...NOT longer') that no longer holds fully true. [b2] All 30 grep hits in this batch are unaffected by the session-cap change. The \"[microVM]\" hits refer to \"Lambda MicroVMs\" — a distinct Lambda-based deployment/runtime target used in design/estimate/generate/migration-plan/poc docs for enumerating runtime options (agentcore | lambda_microvms | ecs | eks | lambda | batch | fargate) and cost anchors — this is an unrelated concept from AWS Lambda, not the AgentCore Runtime's microVM-based default execution environment discussed in the announcement. None of these lines state or depend on any session duration/cap value. The \"[AgentCore runtime]\" hits describe architectural/deployment facts (entrypoint server, container image, POC staging, retarget logic, harness injection) that do not reference or depend on session length/duration at all — they are about routing/POC/deployment mechanics unrelated to the 8h/14-day session cap distinction. Since the change is scoped specifically to session duration limits (agentcore.session_cap), and none of these lines mention session duration, timeouts, or make a duration-dependent recommendation, all are classified unaffected. [b3] Key affected hits: agentcore.json line 8 is a scoring rule that hard-codes the old blanket 8hr cap as disqualifying for AgentCore — this needs to be updated since EC2-backed runtime instances now support up to 14 days, otherwise agents needing long sessions could be wrongly scored against AgentCore. design-ref-agentic-to-agentcore.md line 141 is the clearest 'flipped' case: the recommendation to break tasks into sub-tasks for >8h sessions is a workaround for a limitation that the new EC2-backed runtime instances tier removes. Lines 17 and 130 in the same file state the 8-hour figure as an unqualified fact about AgentCore Runtime generally, which is now incomplete since it's specific to the default microVM path. All lambda_microvms.json and scoring-result.json hits are about a different, unrelated product (Lambda MicroVMs) despite the similar naming, and are unaffected. The poc.md hits reference lambda_microvms infra/deployment mechanics unrelated to the AgentCore session-duration fact. [b4] Batch 4 focuses mainly on clarify-ai.md's task_duration decision table, which is the most directly affected content since it encodes judgments/recommendations keyed to the old flat 8h session cap. Lines 488, 489, and 518 required rewrites: line 489 is a 'flipped' classification because the old recommendation (decompose tasks / use ECS/EKS for >8h tasks) is now reversed — AgentCore Runtime with EC2-backed instances can now handle up to 14-day sessions directly. Lines 488 and 518 are 'derived' since the underlying judgment (recommend AgentCore, or flag session limit issues) needs updated nuance about compute type, but the core recommendation direction doesn't fully reverse. Line 581 is 'derived' since task_duration's role expands to also determine compute type.\n\nAll other hits (Harness-specific session limits, monitoring/rollback windows, region tables, pricing, deployment script text, and an unrelated Heroku '14 days' replay window) are unaffected because they either reference a different system (Harness, not AgentCore Runtime), a different kind of duration (monitoring/rollback windows), or no session-cap-specific claim at all. Note that Harness's 8-hour limit (line 17 in design-ref-harness.md) is explicitly a Harness session limit, distinct from AgentCore Runtime's session cap discussed in the announcement, so left unaffected despite the surface-level 8-hour match. [b5] The single grep hit in this batch does not relate to AgentCore Runtime session caps — it appears to be a generic interview question option about a '14 days' timeframe unconnected to compute type or session duration limits. No rewrite needed."
+  },
+  "grep_count": 121
+}

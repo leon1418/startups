@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import html as html_mod
 import json
+import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -346,7 +347,7 @@ def main() -> int:
             )
         return 0
 
-    with ThreadPoolExecutor(max_workers=12) as ex:
+    with ThreadPoolExecutor(max_workers=int(os.environ.get("KB_SCAN_WORKERS", "12"))) as ex:
         results = list(ex.map(lambda i: triage(i, manifest, names), items))
 
     hits = [r for r in results if r["relevant"]]

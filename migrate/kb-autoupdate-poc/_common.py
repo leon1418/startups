@@ -74,11 +74,12 @@ def ask_json(model: str, system: str, user: str, schema: dict, max_tokens: int =
     temperature=0 is requested for reproducibility, but the newest models reject it
     ("`temperature` is deprecated for this model"), so fall back to omitting it.
 
-    KB_INFERENCE=github routes every call to GitHub Models instead of Bedrock — the
-    zero-AWS experiment. Same contract, same guards; only the transport differs.
+    KB_INFERENCE=github|openai routes every call to an OpenAI-compatible endpoint instead
+    of the Bedrock SDK — the no-AWS-credentials experiment. Same contract, same guards;
+    only the transport differs.
     """
-    if _os.environ.get("KB_INFERENCE") == "github":
-        return _ask_json_github(model, system, user, schema, max_tokens)
+    if _os.environ.get("KB_INFERENCE") in ("github", "openai"):
+        return _ask_json_openai_compat(model, system, user, schema, max_tokens)
     kwargs = dict(
         modelId=model,
         system=[{"text": system}],
@@ -123,32 +124,38 @@ def ask_json(model: str, system: str, user: str, schema: dict, max_tokens: int =
 GITHUB_MODELS_URL = "https://models.github.ai/inference/chat/completions"
 
 
-def _ask_json_github(model: str, system: str, user: str, schema: dict, max_tokens: int) -> dict:
-    """GitHub Models backend: OpenAI-compatible chat completions with a forced tool call.
+def _ask_json_openai_compat(model: str, system: str, user: str, schema: dict, max_tokens: int) -> dict:
+    """OpenAI-compatible chat-completions backend with a forced tool call.
 
-    Auth is the Actions GITHUB_TOKEN (permissions: models: read) — no cloud account at all.
-    Free-tier limits are tight (requests/minute and /day, ~4-8k output tokens), so output is
-    clamped and 429s wait and retry instead of failing the run.
+    KB_INFERENCE=openai talks to KB_INFERENCE_URL (a /chat/completions endpoint) with
+    KB_INFERENCE_TOKEN as the bearer — any OpenAI-compatible gateway works, including a
+    Bedrock access gateway, so the workflow itself needs no cloud credentials.
+    KB_INFERENCE=github keeps the (retiring) GitHub Models defaults: the Actions
+    GITHUB_TOKEN and a tight output clamp for its free tier. 429s wait and retry instead
+    of failing the run.
     """
     import time
 
-    token = _os.environ.get("KB_GH_MODELS_TOKEN") or _os.environ.get("GITHUB_TOKEN")
+    github = _os.environ.get("KB_INFERENCE") == "github"
+    url = _os.environ.get("KB_INFERENCE_URL") or GITHUB_MODELS_URL
+    token = (_os.environ.get("KB_INFERENCE_TOKEN")
+             or _os.environ.get("KB_GH_MODELS_TOKEN") or _os.environ.get("GITHUB_TOKEN"))
     if not token:
-        raise RuntimeError("KB_INFERENCE=github needs GITHUB_TOKEN or KB_GH_MODELS_TOKEN")
+        raise RuntimeError("KB_INFERENCE=openai/github needs KB_INFERENCE_TOKEN (or GITHUB_TOKEN)")
     body = {
         "model": model,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        "max_tokens": min(max_tokens, 4000),
+        "max_tokens": min(max_tokens, 4000) if github else max_tokens,
         "tools": [{"type": "function",
                    "function": {"name": "answer", "description": "Return the answer.", "parameters": schema}}],
         "tool_choice": {"type": "function", "function": {"name": "answer"}},
     }
     for attempt in range(5):
-        r = httpx.post(GITHUB_MODELS_URL, json=body, timeout=120,
-                       headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+        r = httpx.post(url, json=body, timeout=180,
+                       headers={"Authorization": f"Bearer {token}"})
         if r.status_code == 429:
             wait = int(r.headers.get("retry-after", "15"))
-            print(f"    [gh-models] rate limited, waiting {wait}s (attempt {attempt + 1}/5)")
+            print(f"    [inference] rate limited, waiting {wait}s (attempt {attempt + 1}/5)")
             time.sleep(min(wait, 120))
             continue
         r.raise_for_status()
@@ -168,7 +175,7 @@ def _ask_json_github(model: str, system: str, user: str, schema: dict, max_token
                 payload[k] = empties.get(t, "")
             payload["_missing_keys"] = missing
         return payload
-    raise RuntimeError("GitHub Models: still rate-limited after 5 attempts")
+    raise RuntimeError("inference endpoint: still rate-limited after 5 attempts")
 
 
 def coerce_payload(payload: dict, schema: dict) -> dict:

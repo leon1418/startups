@@ -1,0 +1,92 @@
+{
+ "config:facts": [
+  {
+   "key": "agentcore.session_cap",
+   "value": "8h",
+   "unit": "duration",
+   "current_value_from": "skills/agent-advisor/references/runtimes/agentcore.json volatile_facts[0]",
+   "recheck": {
+    "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html",
+    "locate": "In the table of lifetime session lifecycle parameters, the row whose Phase is 'Maximum session duration' — read its Timeout column."
+   },
+   "appears_in": [
+    "skills/agent-advisor/references/runtimes/agentcore.json:30",
+    "skills/agent-advisor/references/decision-refs/agentcore.md:15",
+    "skills/agent-advisor/references/decision-refs/temporal.md:56",
+    "skills/agent-advisor/references/decision-refs/ecs.md:13"
+   ],
+   "observed_at": "2026-08-18",
+   "pin": null,
+   "origin": "seed",
+   "enabled": true
+  },
+  {
+   "key": "temporal.serverless_workers.status",
+   "value": "Public Preview",
+   "unit": "maturity",
+   "current_value_from": "skills/agent-advisor/references/decision-refs/freshness.md:55-61",
+   "recheck": {
+    "url": "https://docs.temporal.io/production-deployment/worker-deployments/serverless-workers/aws-lambda",
+    "locate": "The maturity or availability label for Serverless Workers on AWS Lambda (for example 'Public Preview', 'Available', 'GA')."
+   },
+   "appears_in": [
+    "skills/agent-advisor/references/decision-refs/freshness.md:55",
+    "skills/agent-advisor/references/decision-refs/temporal.md"
+   ],
+   "observed_at": "2026-08-18",
+   "pin": {
+    "at": "2026-07",
+    "reason": "The docs page showed 'Available' while the feature was pre-release. A docs label alone is not GA evidence.",
+    "lift_when": "A GA announcement post from Temporal.",
+    "last_observed": {
+     "value": "Available",
+     "at": "2026-07"
+    }
+   },
+   "origin": "seed",
+   "enabled": true
+  },
+  {
+   "key": "agentcore.idle_timeout",
+   "value": "15 minutes of inactivity",
+   "unit": "duration",
+   "current_value_from": "not yet asserted in the skills — included to test extraction of a second field from the same page",
+   "recheck": {
+    "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html",
+    "locate": "In the table of lifetime session lifecycle parameters, the row whose Phase is 'Idle session timeout' — read its Timeout column."
+   },
+   "appears_in": [],
+   "observed_at": "2026-08-18",
+   "pin": null,
+   "origin": "seed",
+   "enabled": true
+  },
+  {
+   "key": "lambda.timeout",
+   "value": "15m",
+   "unit": "duration",
+   "current_value_from": "skills/agent-advisor/references/runtimes/lambda.json volatile_facts[0]",
+   "recheck": {
+    "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+    "locate": "The quota for a function's maximum execution time per invocation (function timeout). Report the value with its unit."
+   },
+   "appears_in": [
+    "skills/agent-advisor/references/runtimes/lambda.json:*"
+   ],
+   "observed_at": "2026-08-18",
+   "pin": null,
+   "origin": "seed",
+   "enabled": true
+  }
+ ],
+ "config:sources": [
+  {
+   "id": "anthropic-release-notes",
+   "name": "Anthropic Release Notes",
+   "type": "url-watch",
+   "url": "https://docs.claude.com/en/release-notes/api.md",
+   "enabled": true,
+   "note": "experiment: the only enabled source (25-item window keeps model calls low)"
+  }
+ ]
+}

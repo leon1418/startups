@@ -45,7 +45,11 @@ jobs:
       # on the fork as operations infrastructure.
       KB_PR_REPO: awslabs/startups
       KB_DASHBOARD_REPO: ${{ github.repository }}
-      KB_SKILLS_ROOT: ${{ github.workspace }}/work/migrate/plugins/migration-to-aws/skills
+      # The skill migration keeps two copies. aws-startup-advisor is the baseline the
+      # judge reads; every edit is mirrored to migration-to-aws in the same PR.
+      KB_SKILLS_ROOT: ${{ github.workspace }}/work/advisor/plugins/aws-startup-advisor/skills
+      KB_SKILLS_REL: advisor/plugins/aws-startup-advisor/skills
+      KB_MIRROR_RELS: migrate/plugins/migration-to-aws/skills
       KB_STATE_FILE: ${{ github.workspace }}/state/kb-state.json
       KB_RUN_ARCHIVE: ${{ github.workspace }}/state/runs
       # A fine-grained PAT scoped to awslabs/startups (PRs + Issues) — gh needs it for the

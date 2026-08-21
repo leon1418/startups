@@ -112,10 +112,20 @@ def extract_position(body: str) -> str:
 
 
 def fetch_judge(run_id: str, fname: str) -> dict | None:
-    bucket = os.environ["KB_EVIDENCE_BUCKET"]
     # `decision-` prefix: this judge result belongs to ANOTHER run's archive. Without it the
     # file would match results-*.json and be re-uploaded into (and rendered as) THIS run.
     dst = Path("decision-" + fname)
+    # KB_RUN_ARCHIVE: a local run-archive directory (the GitHub Actions deployment keeps
+    # runs/<runId>/ on a state branch instead of in S3).
+    local = os.environ.get("KB_RUN_ARCHIVE")
+    if local:
+        src = Path(local) / run_id / fname
+        if not src.exists():
+            print(f"  no judge result at {src}")
+            return None
+        dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        return json.loads(dst.read_text(encoding="utf-8"))
+    bucket = os.environ["KB_EVIDENCE_BUCKET"]
     try:
         boto3.client("s3").download_file(bucket, f"runs/{run_id}/{fname}", str(dst))
         return json.loads(dst.read_text(encoding="utf-8"))

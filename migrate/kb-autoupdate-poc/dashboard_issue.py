@@ -201,9 +201,15 @@ def render(rc: dict, sc: dict, judges: list[dict], last_run: dict | None, briefs
     a("This list is the only place a false negative can surface. Tick an item to send it back "
       "into judgment on the next run.")
     a("")
-    for d in sc.get("dropped", []):
+    # GitHub caps an issue body at 65,536 characters; a busy scan can drop 500+ items and
+    # blow straight through it (observed live: "Body is too long"). Render the newest slice
+    # and say what was left out — the full list is always in the archived results-scan.json.
+    dropped = sc.get("dropped", [])
+    for d in dropped[:120]:
         payload = json.dumps({"kind": "reexamine", "item_id": d["id"]}, separators=(",", ":"))
         a(f"- [ ] [{d['title']}]({d['url']}) — {d['reason']} <!-- {payload} -->")
+    if len(dropped) > 120:
+        a(f"- …and {len(dropped) - 120} more dropped items — the full list is in this run's archived results-scan.json")
     a("")
     a("</details>")
     a("")

@@ -1,16 +1,16 @@
-# No-AWS-credentials experiment: the knowledge pipeline on GitHub Actions.
+# Knowledge auto-update pipeline on GitHub Actions — the fork deployment.
 #
-# The workflow holds no cloud credentials. Inference = an OpenAI-compatible gateway
-# (KB_INFERENCE_URL + the KB_INFERENCE_TOKEN secret). State = a throwaway file seeded from
-# experiments/gh-models-state-seed.json (4 facts, 1 source, judge cap 1). Evidence = a workflow artifact. PRs and review briefs
-# land in this repo via the same apply.py contract as the AWS pipeline.
-#
-# Deliberately skipped in the experiment: decisions.py (needs the S3 run archive),
-# dashboard_issue.py (would overwrite the real dashboard with experiment data).
+# Runs the full pipeline with no cloud credentials while the AWS deployment awaits AppSec
+# review. Inference goes through an OpenAI-compatible gateway (KB_INFERENCE_URL + the
+# KB_INFERENCE_TOKEN secret). Durable state (fact/source registries, seen sets, pins) lives
+# on the kb-state branch and is committed back after every run; each run's raw results are
+# archived under runs/<runId>/ on the same branch, which is also where decisions.py finds
+# the judge results behind review-brief markers. PRs, review briefs, and the dashboard
+# issue all land in this repo via the runner's own GITHUB_TOKEN.
 #
 # This file lives at .github/workflows/kb-autoupdate-experiment.yml on the default branch;
 # the copy under experiments/ is the reviewed source.
-name: kb-autoupdate-experiment
+name: kb-autoupdate
 
 on:
   workflow_dispatch:
@@ -23,14 +23,13 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  models: read
 
-concurrency: kb-autoupdate-experiment
+concurrency: kb-autoupdate
 
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       KB_INFERENCE: openai
       KB_INFERENCE_URL: https://bedrock.genli.people.aws.dev/api/v1/chat/completions
@@ -38,17 +37,19 @@ jobs:
       KB_CHEAP_MODEL: global.anthropic.claude-haiku-4-5-20251001-v1:0
       KB_STRONG_MODEL: global.anthropic.claude-sonnet-5
       KB_SCAN_WORKERS: "4"
-      KB_MAX_JUDGE_PER_RUN: "1"
+      KB_MAX_JUDGE_PER_RUN: "3"
       KB_PR_BASE: main
       KB_PR_REPO: ${{ github.repository }}
-      KB_STATE_FILE: ${{ github.workspace }}/code/migrate/kb-autoupdate-poc/experiments/kb-state.json
+      KB_DASHBOARD_REPO: ${{ github.repository }}
+      KB_STATE_FILE: ${{ github.workspace }}/state/kb-state.json
+      KB_RUN_ARCHIVE: ${{ github.workspace }}/state/runs
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       POC: code/migrate/kb-autoupdate-poc
     steps:
       - name: Check out pipeline code
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || 'feat/kb-autoupdate-pipeline' }}
           path: code
 
       - name: Check out work tree (PR base)
@@ -57,25 +58,31 @@ jobs:
           ref: main
           path: work
 
-      - name: Prepare work tree for pushes
+      - name: Check out state branch
+        uses: actions/checkout@v5
+        with:
+          ref: kb-state
+          path: state
+
+      - name: Prepare trees
         run: |
           git -C work fetch origin main
-          git -C work config user.name  "kb-autoupdate[bot]"
-          git -C work config user.email "kb-autoupdate@users.noreply.github.com"
+          for t in work state; do
+            git -C "$t" config user.name  "kb-autoupdate[bot]"
+            git -C "$t" config user.email "kb-autoupdate@users.noreply.github.com"
+          done
+          echo "KB_RUN_ID=$(date -u +%Y-%m-%dT%H%M%SZ)" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: pip install --quiet boto3 httpx beautifulsoup4 lxml defusedxml
 
-      - name: Seed experiment state
-        run: cp "$POC/experiments/gh-models-state-seed.json" "$KB_STATE_FILE"
-
-      - name: Recheck (4 facts)
+      - name: Recheck every registered fact
         run: cd "$POC" && python recheck.py --out results-recheck.json
 
-      - name: Scan (1 source)
+      - name: Scan sources
         run: cd "$POC" && python scan.py --out results-scan.json
 
-      - name: Judge and apply (cap 1)
+      - name: Judge and apply
         run: |
           cd "$POC"
           python3 - "$KB_MAX_JUDGE_PER_RUN" <<'PY' > hits.txt
@@ -95,7 +102,7 @@ jobs:
             python apply.py \
               --judge "$out" \
               --repo "$GITHUB_WORKSPACE/work" \
-              --commit --push --draft-pr --run-id "gha-${{ github.run_id }}" \
+              --commit --push --draft-pr --run-id "$KB_RUN_ID" \
               --base "$KB_PR_BASE" --from-ref "origin/$KB_PR_BASE" \
               --remote origin --pr-repo "$KB_PR_REPO" || rc=$?
             if [ "$rc" -eq 0 ] || [ "$rc" -eq 3 ]; then
@@ -106,6 +113,28 @@ jobs:
             fi
           done < hits.txt
           [ "$apply_failures" -eq 0 ] || exit 1
+
+      - name: Execute maintainer decisions
+        run: cd "$POC" && python decisions.py --repo "$GITHUB_WORKSPACE/work" --pr-repo "$KB_PR_REPO" --base "$KB_PR_BASE"
+
+      - name: Refresh the dashboard issue
+        run: cd "$POC" && python dashboard_issue.py --repo-for-issue "$KB_DASHBOARD_REPO" --briefs-repo "$KB_PR_REPO"
+
+      - name: Archive run and commit state
+        if: always()
+        run: |
+          mkdir -p "state/runs/$KB_RUN_ID"
+          cp "$POC"/results-*.json "$POC"/*.pr-body.md "$POC"/*.issue-body.md "state/runs/$KB_RUN_ID/" 2>/dev/null || true
+          ls -1d state/runs/*/ 2>/dev/null | sort | head -n -30 | xargs -r rm -rf
+          cd state
+          git add -A
+          git diff --cached --quiet && { echo "state unchanged"; exit 0; }
+          git commit -q -m "state: run $KB_RUN_ID"
+          for i in 1 2 3; do
+            git push origin HEAD:kb-state && exit 0
+            git pull --rebase origin kb-state
+          done
+          exit 1
 
       - name: Upload run results
         if: always()

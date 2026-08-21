@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -114,7 +115,8 @@ def apply_edits(repo: Path, skills_rel: str, affected: list[dict]) -> tuple[list
     return applied, skipped
 
 
-def pr_body(judge: dict, applied: list[dict], skipped: list[dict], skills_rel: str) -> str:
+def pr_body(judge: dict, applied: list[dict], skipped: list[dict], skills_rel: str,
+            mirrors: list[tuple[str, list[dict], list[dict]]] | None = None) -> str:
     s1 = judge["step1"]
     hit = judge["hit"]
     fp = s1.get("false_positive_files") or []
@@ -172,6 +174,15 @@ def pr_body(judge: dict, applied: list[dict], skipped: list[dict], skills_rel: s
         a("")
         for f in fp:
             a(f"- `{f}`")
+        a("")
+    for rel, m_applied, m_skipped in (mirrors or []):
+        a(f"## Mirrored to `{rel}`")
+        a("")
+        a(f"The same edits were applied to this second copy: {len(m_applied)} applied"
+          + (f", {len(m_skipped)} skipped:" if m_skipped else "."))
+        a("")
+        for x in m_skipped:
+            a(f"- `{x['file']}:{x['line']}` ({x['kind']}) — {x['skip_reason']}")
         a("")
     a("## Known limits of this proposal")
     a("")
@@ -311,7 +322,14 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--judge", required=True)
     ap.add_argument("--repo", required=True, help="repo root to edit (use a worktree)")
-    ap.add_argument("--skills-rel", default="migrate/plugins/migration-to-aws/skills")
+    ap.add_argument("--skills-rel",
+                    default=os.environ.get("KB_SKILLS_REL") or "migrate/plugins/migration-to-aws/skills",
+                    help="primary skills root, relative to --repo; judged content lives here")
+    ap.add_argument("--mirror-rel", action="append",
+                    default=None,
+                    help="additional skills roots that receive the SAME edits (repeatable; "
+                         "default from KB_MIRROR_RELS, space-separated). Used while a skill "
+                         "migration keeps two copies that must not drift.")
     ap.add_argument("--branch", default=None)
     ap.add_argument(
         "--from-ref",
@@ -334,6 +352,8 @@ def main() -> int:
     # updated, or a review issue opened or updated), 3 = judged but nothing to apply (benign —
     # the item counts as handled), anything else = a real failure and the item must RETRY.
     repo = Path(args.repo).resolve()
+    if args.mirror_rel is None:
+        args.mirror_rel = (os.environ.get("KB_MIRROR_RELS") or "").split() or []
     judge = json.loads(Path(args.judge).read_text(encoding="utf-8"))
     affected = [a for a in (judge.get("step2") or {}).get("affected", []) if isinstance(a, dict)]
 
@@ -378,9 +398,17 @@ def main() -> int:
     for x in skipped:
         print(f"  SKIP  {x['file']}:{x['line']}  {x['skip_reason']}")
 
+    # Mirror roots get the SAME edits under the same before-text contract: if a copy has
+    # drifted, its edit is skipped with a reason (and listed in the PR body) — never forced.
+    mirrors: list[tuple[str, list[dict], list[dict]]] = []
+    for rel in args.mirror_rel:
+        m_applied, m_skipped = apply_edits(repo, rel, affected)
+        mirrors.append((rel, m_applied, m_skipped))
+        print(f"mirror    {rel}: {len(m_applied)} applied, {len(m_skipped)} skipped")
+
     # Written OUTSIDE the target repo: a stray .md inside it gets picked up by `lint:md`
     # (which scans all 806 files) and would be committed by `git add -A`.
-    body = pr_body(judge, applied, skipped, args.skills_rel)
+    body = pr_body(judge, applied, skipped, args.skills_rel, mirrors)
     body_path = Path(args.judge).resolve().with_suffix(".pr-body.md")
     body_path.write_text(body.rstrip("\n") + "\n", encoding="utf-8")
 
@@ -389,7 +417,8 @@ def main() -> int:
         print(f"\n(dry run — nothing committed. PR body written to {body_path.name})")
         return 0
 
-    sh(["git", "add", "-A", args.skills_rel], repo)
+    for rel in [args.skills_rel, *args.mirror_rel]:
+        sh(["git", "add", "-A", rel], repo, check=False)
     if not sh(["git", "diff", "--cached", "--name-only"], repo):
         # Every proposed edit was skipped (before-text gone). Deterministic: a retry would
         # skip identically, so this is handled-with-nothing-to-show, not a failure. The

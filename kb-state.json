@@ -3102,18 +3102,17 @@
     "https://openai.com/signals/research/2026q1-update"
   ],
   "last_run": {
-    "at": "2026-08-21 03:57 UTC",
+    "at": "2026-08-21 04:04 UTC",
     "recheck": {
-      "agree": 28,
-      "recheck_failed": 61,
-      "changed": 3,
-      "needs_human": 7
+      "agree": 27,
+      "recheck_failed": 63,
+      "changed": 5,
+      "needs_human": 4
     },
     "scan": {
       "fetched": 1333,
-      "new": 2,
-      "hits": 2,
-      "dropped": 0
+      "new": 0,
+      "hits": 0
     }
   },
   "run_history": [
@@ -3169,6 +3168,29 @@
         "new": 2,
         "hits": 2,
         "dropped": 0
+      }
+    },
+    {
+      "at": "2026-08-21 04:04 UTC",
+      "recheck": {
+        "agree": 27,
+        "recheck_failed": 63,
+        "changed": 5,
+        "needs_human": 4
+      }
+    },
+    {
+      "at": "2026-08-21 04:04 UTC",
+      "recheck": {
+        "agree": 27,
+        "recheck_failed": 63,
+        "changed": 5,
+        "needs_human": 4
+      },
+      "scan": {
+        "fetched": 1333,
+        "new": 0,
+        "hits": 0
       }
     }
   ]

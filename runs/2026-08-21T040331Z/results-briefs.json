@@ -1,0 +1,28 @@
+{
+  "briefs": [
+    {
+      "createdAt": "2026-08-21T03:52:14Z",
+      "number": 25,
+      "title": "[needs review] openai.model_lineup.gpt-5.4 \u2014 could not classify",
+      "url": "https://github.com/leon1418/startups/issues/25"
+    },
+    {
+      "createdAt": "2026-08-21T03:51:55Z",
+      "number": 24,
+      "title": "[needs review] ai-openai-to-bedrock.migration_framing \u2014 recommendation reversed",
+      "url": "https://github.com/leon1418/startups/issues/24"
+    },
+    {
+      "createdAt": "2026-08-20T03:52:59Z",
+      "number": 23,
+      "title": "[needs review] ai_model_pricing.openai_gpt5.4_mini_nano \u2014 could not classify",
+      "url": "https://github.com/leon1418/startups/issues/23"
+    },
+    {
+      "createdAt": "2026-08-20T03:52:45Z",
+      "number": 22,
+      "title": "[needs review] openai.bedrock_availability \u2014 recommendation reversed",
+      "url": "https://github.com/leon1418/startups/issues/22"
+    }
+  ]
+}

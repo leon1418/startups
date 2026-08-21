@@ -46,13 +46,13 @@ jobs:
       POC: code/migrate/kb-autoupdate-poc
     steps:
       - name: Check out pipeline code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref }}
           path: code
 
       - name: Check out work tree (PR base)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
           path: work
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload run results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: kb-run-${{ github.run_id }}
           path: |

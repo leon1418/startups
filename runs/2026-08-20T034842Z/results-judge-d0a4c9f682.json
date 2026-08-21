@@ -1,0 +1,56 @@
+{
+  "hit": {
+    "id": "https://openai.com/index/previewing-gpt-5-6-sol",
+    "title": "Previewing GPT-5.6 Sol: a next-generation model",
+    "body": "OpenAI previews GPT-5.6 Sol, a next-generation model with stronger capabilities in coding, science, and cybersecurity, paired with its most advanced safety stack.",
+    "url": "https://openai.com/index/previewing-gpt-5-6-sol",
+    "published_at": "Fri, 26 Jun 2026 10:00:00 GMT",
+    "source": "openai-news",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md"
+    ],
+    "reason": "OpenAI's new model announcement requires review of the OpenAI-to-Bedrock migration guide to assess whether GPT-5.6 Sol changes the competitive positioning, pricing, or model mapping recommendations for migrations from OpenAI to AWS Bedrock."
+  },
+  "step1": {
+    "fact_key": "openai.model_lineup",
+    "verdict": "new_knowledge",
+    "summary": "GPT-5.6 Sol is a newly previewed OpenAI model with no pricing or benchmark data yet; the migration guide's model tables only go up to GPT-5.5 and don't reference it.",
+    "old_value": "Latest documented flagship is GPT-5.5 (April 23, 2026), $5.00/$30.00 per 1M tokens, with comparison tables against Bedrock models.",
+    "new_value": "GPT-5.6 Sol previewed as next-gen model (coding, science, cybersecurity, safety improvements); no pricing, context window, or availability details given in announcement.",
+    "still_true": "All existing GPT-5.5 and earlier pricing/comparison data remains valid until GPT-5.6 Sol pricing is announced.",
+    "false_positive_files": [],
+    "search_terms": [
+      "GPT-5.6",
+      "GPT-5.6 Sol",
+      "next-generation model",
+      "GPT-5.5",
+      "openai flagship model"
+    ],
+    "reasoning": "This is a preview announcement with no pricing or technical specs, so it cannot yet update the pricing/comparison tables in ai-openai-to-bedrock.md; it should be tracked as new knowledge to watch for once pricing details emerge, since the file currently has no entry for GPT-5.6 Sol at all."
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 28,
+        "kind": "value",
+        "before": "### GPT-5.5 Series (Latest — April 23, 2026)",
+        "after": "### GPT-5.5 Series (previous flagship — April 23, 2026; superseded by GPT-5.6 Sol preview)",
+        "why": "The heading claims GPT-5.5 is the 'Latest' model, but the announcement introduces GPT-5.6 Sol as the new next-generation model, making this labeling outdated.",
+        "evidence_quote": "Previewing GPT-5.6 Sol: a next-generation model"
+      }
+    ],
+    "notes": "[b1] The announcement only previews GPT-5.6 Sol with no pricing, context window, or availability details, and explicitly states all existing GPT-5.5 and earlier pricing/comparison data remains valid until GPT-5.6 Sol pricing is announced. Therefore almost all GPT-5.5 pricing/comparison content in these files is unaffected — it should NOT be rewritten to reference GPT-5.6 Sol since there is no comparable data (price, context window) to substitute. The one genuinely affected line is the '(Latest — April 23, 2026)' heading, which asserts GPT-5.5 is the most recent/latest model — that claim is now stale since GPT-5.6 Sol has been previewed as the next-generation model. This is a 'value' type change (a label claiming latest status) rather than a full judgment reversal, since no comparison judgments about cost superiority are reversed (no pricing exists yet for GPT-5.6 Sol to compare)."
+  },
+  "brief": null,
+  "grep_count": 26,
+  "pr": {
+    "url": "https://github.com/leon1418/startups/pull/21",
+    "branch": "kb-autoupdate/openai-model_lineup",
+    "title": "fix(agent-advisor): openai.model_lineup — new knowledge",
+    "applied": 1,
+    "skipped": 0,
+    "commit": "bf7ba9a"
+  }
+}

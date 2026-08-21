@@ -1,0 +1,40 @@
+{
+  "hit": {
+    "id": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano",
+    "title": "Introducing GPT-5.4 mini and nano",
+    "body": "GPT-5.4 mini and nano are smaller, faster versions of GPT-5.4 optimized for coding, tool use, multimodal reasoning, and high-volume API and sub-agent workloads.",
+    "url": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano",
+    "published_at": "Tue, 17 Mar 2026 10:00:00 GMT",
+    "source": "openai-news",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md"
+    ],
+    "reason": "New OpenAI models (GPT-5.4 mini and nano) require updating the model mapping table and competitive pricing analysis in the OpenAI-to-Bedrock migration guide."
+  },
+  "step1": {
+    "fact_key": "ai_model_pricing.openai_gpt5.4_mini_nano",
+    "verdict": "needs_human",
+    "summary": "OpenAI announced GPT-5.4 mini and nano as new smaller models, but the announcement lacks pricing information, while the file's entire value proposition rests on precise per-token pricing comparisons against Bedrock.",
+    "old_value": "GPT-5.4 Mini: $0.75/$4.50 per 1M (in/out); GPT-5.4 Nano: $0.20/$1.25 per 1M — both already listed in the file's GPT-5.4 Series table",
+    "new_value": "Unknown — announcement does not state pricing for the newly introduced GPT-5.4 mini/nano; unclear if these are the SAME models already in the table (already released) or a NEW distinct release superseding/renaming them",
+    "still_true": "If these are simply confirming previously-released pricing, the existing GPT-5.4 Mini/Nano rows remain accurate; not confirmed either way.",
+    "false_positive_files": [],
+    "search_terms": [
+      "GPT-5.4 Mini",
+      "GPT-5.4 Nano",
+      "$0.75 / $4.50",
+      "$0.20 / $1.25",
+      "Nova Lite",
+      "Nova Micro",
+      "GPT-5.4 Series"
+    ],
+    "reasoning": "The file already contains a GPT-5.4 Mini/Nano row with specific pricing, but this announcement (titled 'Introducing GPT-5.4 mini and nano') implies these are newly launched, suggesting the file's existing entries may have been speculative/placeholder or need pricing verification. Without confirmed pricing from the actual OpenAI announcement, it's unclear whether the old table values are correct, outdated, or premature, so a human should verify against OpenAI's actual pricing page before deciding value_change vs no_change."
+  },
+  "step2": null,
+  "review_issue": {
+    "url": "https://github.com/leon1418/startups/issues/23",
+    "reason": "could not classify",
+    "flipped": 0
+  }
+}

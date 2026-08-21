@@ -1,0 +1,126 @@
+{
+  "hit": {
+    "id": "https://openai.com/index/openai-on-aws",
+    "title": "OpenAI models, Codex, and Managed Agents come to AWS",
+    "body": "OpenAI GPT models, Codex, and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their AWS environments.",
+    "url": "https://openai.com/index/openai-on-aws",
+    "published_at": "Tue, 28 Apr 2026 00:00:00 GMT",
+    "source": "openai-news",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md",
+      "managed-alternatives.md"
+    ],
+    "reason": "OpenAI models now available directly on AWS changes the competitive landscape and availability facts that these files use to guide migration decisions away from OpenAI."
+  },
+  "step1": {
+    "fact_key": "openai.bedrock_availability",
+    "verdict": "schema_change",
+    "summary": "OpenAI models, Codex, and Managed Agents are now natively available on AWS itself (not just via Bedrock as competing/alternative model), adding a new \"OpenAI-on-AWS-native\" axis distinct from the existing \"OpenAI vs Bedrock model comparison\" and \"gpt-oss on Bedrock\" framing.",
+    "old_value": "ai-openai-to-bedrock.md frames OpenAI and Bedrock as competing/alternative platforms requiring migration (SDK swap, model mapping, pricing comparison); managed-alternatives.md frames \"Bedrock Managed Agents (OpenAI-committed)\" as one lock-in path among several, implying OpenAI's own managed agents are a separate, non-AWS ecosystem.",
+    "new_value": "OpenAI is now also a first-party option ON AWS: OpenAI GPT models, Codex, and Managed Agents can run natively within AWS environments, not solely as an external SDK/API needing migration to Bedrock equivalents.",
+    "still_true": "Bedrock's native model catalog (Claude, Nova, DeepSeek, Llama) and pricing comparisons vs OpenAI's own hosted API remain valid for customers using OpenAI's standalone API rather than AWS-hosted OpenAI offerings.",
+    "false_positive_files": [],
+    "search_terms": [
+      "OpenAI on AWS",
+      "Codex",
+      "Managed Agents",
+      "Bedrock Managed Agents",
+      "OpenAI-committed",
+      "gpt-oss",
+      "Mantle",
+      "OPENAI_BASE_URL",
+      "AgentCore",
+      "OpenAI SDK migration"
+    ],
+    "reasoning": "The announcement introduces a new dimension — OpenAI's own models/Codex/Managed Agents running natively on AWS infrastructure — that didn't exist before in either file's framing of OpenAI-vs-Bedrock as separate ecosystems. This affects both the migration guide (which assumed OpenAI meant leaving AWS or using compat endpoints) and the managed-alternatives file (which treats 'Bedrock Managed Agents' as the AWS path and OpenAI as a separate committed vendor), so both need review though the core pricing/model-mapping content likely still applies for non-AWS-hosted OpenAI usage."
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "agent-advisor/references/decision-refs/managed-alternatives.md",
+        "line": 12,
+        "kind": "flipped",
+        "before": "## Bedrock Managed Agents (OpenAI-committed)",
+        "after": "## Bedrock Managed Agents (OpenAI-committed) — now includes native OpenAI Managed Agents running on AWS, not just a Bedrock-hosted alternative to OpenAI",
+        "why": "The announcement states OpenAI Managed Agents are now available natively on AWS, so framing 'Bedrock Managed Agents (OpenAI-committed)' as a lock-in path distinct from OpenAI's own ecosystem is reversed — OpenAI's managed agents ARE now part of the AWS ecosystem, not a separate one requiring a Bedrock substitute.",
+        "evidence_quote": "OpenAI GPT models, Codex, and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their AWS environments."
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/managed-alternatives.md",
+        "line": 15,
+        "kind": "derived",
+        "before": "- If the customer needs model flexibility, governance, or code export → AgentCore wins.",
+        "after": "- If the customer needs model flexibility, governance, or code export → AgentCore wins; note OpenAI Managed Agents natively on AWS may now also satisfy governance/code-export needs without requiring migration off OpenAI.",
+        "why": "Since OpenAI Managed Agents can now run natively within AWS, the governance/lock-in tradeoff that favored AgentCore over 'OpenAI-committed' Bedrock agents needs re-evaluation.",
+        "evidence_quote": "OpenAI GPT models, Codex, and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their AWS environments."
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/managed-alternatives.md",
+        "line": 19,
+        "kind": "derived",
+        "before": "Multi-provider or undecided → AgentCore (only option supporting all models natively, no lock-in).",
+        "after": "Multi-provider or undecided → AgentCore (only option supporting all models natively, no lock-in) — though OpenAI models/Managed Agents are now also natively available on AWS, reducing the lock-in gap for OpenAI-only cases.",
+        "why": "The claim that AgentCore is 'the only option supporting all models natively' is undermined now that OpenAI models and Managed Agents run natively on AWS through their own first-party integration.",
+        "evidence_quote": "OpenAI GPT models, Codex, and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their AWS environments."
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 108,
+        "kind": "derived",
+        "before": "### OpenAI Models on Bedrock (gpt-oss)",
+        "after": "### OpenAI Models on Bedrock (gpt-oss) — applies to OpenAI's standalone API usage; AWS-hosted OpenAI GPT models/Codex/Managed Agents are now a separate first-party path",
+        "why": "The announcement states OpenAI GPT models and Managed Agents are now first-party on AWS, so this section's framing of gpt-oss-on-Bedrock as *the* way to 'stay on OpenAI models... on AWS' needs qualification since native OpenAI hosting is now also available.",
+        "evidence_quote": "OpenAI GPT models, Codex, and Managed Agents are now available on AWS"
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 134,
+        "kind": "flipped",
+        "before": "- Want to stay on OpenAI models → gpt-oss on Bedrock (same models, AWS infrastructure)",
+        "after": "- Want to stay on OpenAI models → now can run natively via AWS-hosted OpenAI GPT models/Codex/Managed Agents, OR use gpt-oss on Bedrock (same-family models, AWS infrastructure) if using open-weight variants",
+        "why": "The announcement makes native AWS-hosted OpenAI GPT models directly available, so the previous conclusion that gpt-oss-on-Bedrock is the way to 'stay on OpenAI models' on AWS is superseded/reversed by a genuine first-party option.",
+        "evidence_quote": "OpenAI GPT models, Codex, and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their AWS environments."
+      }
+    ],
+    "notes": "term 'AgentCore' hit its 40-location cap — probably too generic [b1] Batch 1: Most hits are about AgentCore, OPENAI_BASE_URL env-var mechanics, or unrelated service cards (ecs.md, eks.md, lambda.md, freshness.md, poc-shapes.md, agentcore.md, lambda-microvms.md) — these describe AWS-native runtime mechanics or Bedrock/Claude-specific facts untouched by the OpenAI-on-AWS announcement, so left unaffected (not itemized individually since no genuine judgment about OpenAI-vs-Bedrock competition appears in them). The genuinely affected hits are in managed-alternatives.md, where 'OpenAI-committed' Bedrock agents were framed as a lock-in alternative to OpenAI's own ecosystem — that framing is now reversed/weakened since OpenAI's Managed Agents run natively on AWS. design.md:66 is just a tag-mapping reference untouched by the fact change and marked unaffected explicitly for clarity. The OPENAI_BASE_URL/SDK-compat hits in gcp-to-aws design-refs remain valid per the 'still true' clause (customers using OpenAI's own hosted API still need Mantle/Bedrock-compat migration), so not marked affected. [b2] Most hits in this batch are AgentCore-related (AWS's own agent runtime) and are unrelated to the OpenAI/Bedrock relationship fact change — they concern Temporal, workload classification, diagrams, and templates for AWS-native agent runtimes, not OpenAI's positioning vis-à-vis Bedrock. The gpt-oss hits in poc.md concern an internal migration_path enum value and are unaffected. The genuinely affected hits are in ai-openai-to-bedrock.md: line 108's section framing needs a qualifying note since OpenAI is now also natively available on AWS (derived), and line 134 is a flipped conclusion because the previous 'only path to stay on OpenAI models on AWS is gpt-oss' recommendation is superseded by native first-party OpenAI availability. Lines 112/114/115/175 remain valid per the announcement's explicit 'still true' carve-out for pricing comparisons and standalone-API-to-Bedrock migration steps. [b3] None of the grep hits in this batch are affected by the fact change. All hits relate to gpt-oss (an open-source OpenAI model architecture hosted natively on Bedrock as an open-weights model, distinct from OpenAI's own hosted GPT models/Codex/Managed Agents) or to Mantle (Bedrock's OpenAI-compatible SDK endpoint for migrating OpenAI SDK-based apps to Bedrock's own hosted models). The announcement is about OpenAI's own GPT models, Codex, and Managed Agents becoming natively available on AWS as first-party offerings — it does not change how gpt-oss (a separate, already-Bedrock-native open model) is described, nor does it change the Mantle migration mechanics (SDK swap, model mapping, region availability, hard gates, decision tree) since Mantle is about running OpenAI-compatible API calls against Bedrock's own models, not about OpenAI's actual GPT/Codex/Managed Agents products. The 'still true' clause explicitly confirms Bedrock's native model catalog and pricing comparisons remain valid, and none of these hits state that OpenAI's own hosted GPT/Codex/Managed Agents require migration to Bedrock as an alternative platform (that framing appears in ai-openai-to-bedrock.md's migration-path sections, but the specific lines quoted here are mechanical/technical details about Mantle and gpt-oss that are unaffected by the new fact about OpenAI-on-AWS availability). No line in this batch makes a judgment/recommendation that depends specifically on the old fact (OpenAI and Bedrock being separate/competing ecosystems) in a way that would flip or need updating — they are all describing legitimate, still-valid technical migration mechanics for customers using OpenAI's standalone API/SDK who want to move to Bedrock's own models. [b4] All 26 grep hits in this batch are unrelated to the fact change about OpenAI models/Codex/Managed Agents becoming natively available on AWS. They concern: (1) Bedrock Mantle — a distinct AWS feature providing OpenAI-compatible API endpoints for SDK compatibility/throughput purposes, which is a technical mechanism unrelated to whether OpenAI itself runs natively on AWS; (2) 'Codex' as a substring match in unrelated contexts (agent-advisor's CLAUDE_PLUGIN_ROOT/Cursor discussion, and run-source-model-baseline's generic model-name-prefix matching logic like 'codex', 'latest', 'mini', 'nano' as arbitrary example strings, not referring to OpenAI's Codex product); (3) the GPT-5.5 pricing note which discusses model-generation pricing dynamics between OpenAI's standalone API and Bedrock's Claude models — this remains valid per the 'still true' clause since it's comparing OpenAI's own hosted API pricing vs Bedrock native models, not affected by OpenAI now also running natively on AWS. None of these lines assert that OpenAI/Bedrock are competing platforms requiring migration in a way that the announcement contradicts, nor do they mention Managed Agents lock-in framing. No verbatim announcement evidence supports rewriting any of these specific lines."
+  },
+  "brief": {
+    "what_changed": "AWS now offers OpenAI GPT models, Codex, and Managed Agents as a first-party, natively hosted option inside AWS environments — not just as an external API that customers must migrate away from toward Bedrock equivalents. This means \"OpenAI vs Bedrock\" is no longer strictly a competing-platform choice requiring SDK swap and model mapping; there's now an AWS-native path that keeps OpenAI's models/tooling while staying in AWS infra. This is a new GA capability announced by the vendor, not something the maintainer has independently verified for pricing, regional rollout, or feature parity with OpenAI's standalone API.",
+    "decision_space": [
+      {
+        "option": "Keep old recommendation (migrate OpenAI workloads to Bedrock-native models like Claude/Nova/DeepSeek/Llama, treating OpenAI as external)",
+        "depends_on": "customers using OpenAI's standalone hosted API (not AWS-hosted OpenAI offering), or workloads where Bedrock-native models are already a better fit on cost/capability grounds independent of vendor lock-in concerns"
+      },
+      {
+        "option": "Adopt new AWS-hosted OpenAI option in place of migration advice, for customers who want to keep OpenAI models/Codex/Managed Agents but need AWS residency/compliance",
+        "depends_on": "confirming GA scope (which regions, which OpenAI models/versions, Managed Agents feature parity) and confirming pricing is not worse than Bedrock-native or OpenAI-direct"
+      },
+      {
+        "option": "Treat AWS-hosted OpenAI as a third distinct path (alongside Bedrock-native and OpenAI-direct) in decision-refs, rather than replacing either old recommendation outright",
+        "depends_on": "whether the maintainer wants decision-refs to present a 3-way tradeoff (lock-in, cost, model choice) instead of a binary migration call"
+      },
+      {
+        "option": "Hold off updating recommendation until pricing/perf benchmarks are published independently",
+        "depends_on": "risk tolerance for shipping guidance based on vendor announcement alone vs waiting for third-party validation"
+      }
+    ],
+    "proposed_position": "Update both flagged locations to present AWS-hosted OpenAI (GPT models, Codex, Managed Agents) as a third option alongside (a) Bedrock-native models and (b) OpenAI's standalone API — not as a replacement for either. Specifically: in managed-alternatives.md, rename/reframe \"Bedrock Managed Agents (OpenAI-committed)\" to distinguish \"OpenAI Managed Agents hosted natively on AWS\" (new, first-party, lock-in profile TBD) from \"Bedrock Managed Agents using Bedrock-native models\" (existing). In ai-openai-to-bedrock.md:134, add \"Want to stay on OpenAI models AND stay on AWS → AWS-hosted OpenAI (GPT/Codex/Managed Agents), not just gpt-oss on Bedrock\" as a new bullet, while keeping the existing gpt-oss-on-Bedrock and full-migration-to-Bedrock-native-models bullets for customers who want AWS-native models specifically rather than OpenAI models. Do not mark the old paths as deprecated — they remain correct for their respective workload fits. Flag this section as \"based on vendor GA announcement, pricing/regional availability unverified\" until confirmed.",
+    "assumptions": [
+      "The AWS-hosted OpenAI offering is actually GA (not preview/limited-access) at the time this guidance ships — verify launch stage before removing any hedging language.",
+      "Pricing for AWS-hosted OpenAI models is comparable to or better than both Bedrock-native models and OpenAI's standalone API — unverified, must be confirmed with published rate cards.",
+      "Regional availability of AWS-hosted OpenAI matches or is close to Bedrock's existing region footprint — if it's US-only at launch, the recommendation must be scoped accordingly.",
+      "Feature/capability parity: Codex and Managed Agents on AWS behave identically to their OpenAI-direct counterparts (no reduced tool access, rate limits, or model version lag) — unverified.",
+      "This offering runs through Bedrock or a separate AWS service — architecturally unclear from the announcement alone, and affects how decision-refs should categorize it (as a Bedrock feature vs a parallel AWS service).",
+      "Enterprise customers' actual driver for the old Bedrock-migration recommendation was avoiding OpenAI lock-in/vendor risk broadly (not just infra location) — if so, moving OpenAI's own stack onto AWS may not fully address that original concern and the old recommendation's rationale may still apply for those customers.",
+      "No indication yet of SLA, support model, or data residency/compliance certifications for the AWS-hosted OpenAI path — relevant for regulated workloads that were the original motivation for migrating to Bedrock-native models.",
+      "The 3 other affected locations (not detailed here) may need consistent reframing using the same three-path structure once this position is finalized — should be audited before shipping."
+    ]
+  },
+  "grep_count": 116,
+  "review_issue": {
+    "url": "https://github.com/leon1418/startups/issues/22",
+    "reason": "2 conclusions reversed",
+    "flipped": 2
+  }
+}

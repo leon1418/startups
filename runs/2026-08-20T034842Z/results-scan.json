@@ -1,0 +1,93 @@
+{
+  "sources": [
+    "aws-whats-new",
+    "aws-news-blog",
+    "openai-news",
+    "openai-api-changelog",
+    "anthropic-release-notes",
+    "temporal-changelog"
+  ],
+  "state_backend": "dynamodb:kb-autoupdate-state@us-east-1",
+  "counts": {
+    "fetched": 1331,
+    "in": 3,
+    "already_seen": 1328,
+    "hits": 3,
+    "dropped": 0,
+    "errors": 0
+  },
+  "source_failures": [],
+  "filter_files": [
+    "agentcore.md",
+    "batch.md",
+    "cost-levers.md",
+    "ecs.md",
+    "eks.md",
+    "freshness.md",
+    "lambda-microvms.md",
+    "lambda.md",
+    "managed-alternatives.md",
+    "model-selection.md",
+    "poc-shapes.md",
+    "temporal.md",
+    "workload-classes.md",
+    "ai-anthropic-to-bedrock.md",
+    "ai-gemini-to-bedrock.md",
+    "ai-openai-to-bedrock.md",
+    "ai.md",
+    "compute.md",
+    "database.md",
+    "design-ref-agentic-to-agentcore.md",
+    "design-ref-harness.md",
+    "fast-path.md",
+    "index.md",
+    "messaging.md",
+    "networking.md",
+    "security.md",
+    "storage.md"
+  ],
+  "hits": [
+    {
+      "id": "https://openai.com/index/previewing-gpt-5-6-sol",
+      "title": "Previewing GPT-5.6 Sol: a next-generation model",
+      "body": "OpenAI previews GPT-5.6 Sol, a next-generation model with stronger capabilities in coding, science, and cybersecurity, paired with its most advanced safety stack.",
+      "url": "https://openai.com/index/previewing-gpt-5-6-sol",
+      "published_at": "Fri, 26 Jun 2026 10:00:00 GMT",
+      "source": "openai-news",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md"
+      ],
+      "reason": "OpenAI's new model announcement requires review of the OpenAI-to-Bedrock migration guide to assess whether GPT-5.6 Sol changes the competitive positioning, pricing, or model mapping recommendations for migrations from OpenAI to AWS Bedrock."
+    },
+    {
+      "id": "https://openai.com/index/openai-on-aws",
+      "title": "OpenAI models, Codex, and Managed Agents come to AWS",
+      "body": "OpenAI GPT models, Codex, and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their AWS environments.",
+      "url": "https://openai.com/index/openai-on-aws",
+      "published_at": "Tue, 28 Apr 2026 00:00:00 GMT",
+      "source": "openai-news",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md",
+        "managed-alternatives.md"
+      ],
+      "reason": "OpenAI models now available directly on AWS changes the competitive landscape and availability facts that these files use to guide migration decisions away from OpenAI."
+    },
+    {
+      "id": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano",
+      "title": "Introducing GPT-5.4 mini and nano",
+      "body": "GPT-5.4 mini and nano are smaller, faster versions of GPT-5.4 optimized for coding, tool use, multimodal reasoning, and high-volume API and sub-agent workloads.",
+      "url": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano",
+      "published_at": "Tue, 17 Mar 2026 10:00:00 GMT",
+      "source": "openai-news",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md"
+      ],
+      "reason": "New OpenAI models (GPT-5.4 mini and nano) require updating the model mapping table and competitive pricing analysis in the OpenAI-to-Bedrock migration guide."
+    }
+  ],
+  "dropped": [],
+  "errors": []
+}

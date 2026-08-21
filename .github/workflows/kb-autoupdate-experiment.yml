@@ -1,9 +1,8 @@
-# Zero-AWS experiment: the knowledge pipeline on GitHub Actions + GitHub Models.
+# No-AWS-credentials experiment: the knowledge pipeline on GitHub Actions.
 #
-# No AWS resource is touched. Inference = GitHub Models (free tier, via the runner's own
-# GITHUB_TOKEN with `models: read`). State = a throwaway file seeded from
-# experiments/gh-models-state-seed.json (4 facts, 1 source, judge cap 1 — sized to stay
-# inside the free-tier rate limits). Evidence = a workflow artifact. PRs and review briefs
+# The workflow holds no cloud credentials. Inference = an OpenAI-compatible gateway
+# (KB_INFERENCE_URL + the KB_INFERENCE_TOKEN secret). State = a throwaway file seeded from
+# experiments/gh-models-state-seed.json (4 facts, 1 source, judge cap 1). Evidence = a workflow artifact. PRs and review briefs
 # land in this repo via the same apply.py contract as the AWS pipeline.
 #
 # Deliberately skipped in the experiment: decisions.py (needs the S3 run archive),
@@ -33,9 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      KB_INFERENCE: github
-      KB_CHEAP_MODEL: openai/gpt-4o-mini
-      KB_STRONG_MODEL: openai/gpt-4o
+      KB_INFERENCE: openai
+      KB_INFERENCE_URL: https://bedrock.genli.people.aws.dev/api/v1/chat/completions
+      KB_INFERENCE_TOKEN: ${{ secrets.KB_INFERENCE_TOKEN }}
+      KB_CHEAP_MODEL: global.anthropic.claude-haiku-4-5-20251001-v1:0
+      KB_STRONG_MODEL: global.anthropic.claude-sonnet-5
+      KB_SCAN_WORKERS: "4"
       KB_MAX_JUDGE_PER_RUN: "1"
       KB_PR_BASE: main
       KB_PR_REPO: ${{ github.repository }}

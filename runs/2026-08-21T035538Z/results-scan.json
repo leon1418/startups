@@ -1,0 +1,80 @@
+{
+  "sources": [
+    "aws-whats-new",
+    "aws-news-blog",
+    "openai-news",
+    "openai-api-changelog",
+    "anthropic-release-notes",
+    "temporal-changelog"
+  ],
+  "state_backend": "local:/home/runner/work/startups/startups/state/kb-state.json",
+  "counts": {
+    "fetched": 1333,
+    "in": 2,
+    "already_seen": 1331,
+    "hits": 2,
+    "dropped": 0,
+    "errors": 0
+  },
+  "source_failures": [],
+  "filter_files": [
+    "agentcore.md",
+    "batch.md",
+    "cost-levers.md",
+    "ecs.md",
+    "eks.md",
+    "freshness.md",
+    "lambda-microvms.md",
+    "lambda.md",
+    "managed-alternatives.md",
+    "model-selection.md",
+    "poc-shapes.md",
+    "temporal.md",
+    "workload-classes.md",
+    "ai-anthropic-to-bedrock.md",
+    "ai-gemini-to-bedrock.md",
+    "ai-openai-to-bedrock.md",
+    "ai.md",
+    "compute.md",
+    "database.md",
+    "design-ref-agentic-to-agentcore.md",
+    "design-ref-harness.md",
+    "fast-path.md",
+    "index.md",
+    "messaging.md",
+    "networking.md",
+    "security.md",
+    "storage.md"
+  ],
+  "hits": [
+    {
+      "id": "https://openai.com/index/gpt-4-1",
+      "title": "Introducing GPT-4.1 in the API",
+      "body": "Introducing GPT-4.1 in the API—a new family of models with across-the-board improvements, including major gains in coding, instruction following, and long-context understanding. We’re also releasing our first nano model. Available to developers worldwide starting today.",
+      "url": "https://openai.com/index/gpt-4-1",
+      "published_at": "Mon, 14 Apr 2025 10:00:00 GMT",
+      "source": "openai-news",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md",
+        "model-selection.md"
+      ],
+      "reason": "New GPT-4.1 family and first nano model introduce capabilities and price-performance tiers that affect OpenAI→Bedrock model mapping tables and availability facts in model-selection guidance."
+    },
+    {
+      "id": "https://openai.com/index/new-models-and-developer-products-announced-at-devday",
+      "title": "New models and developer products announced at DevDay",
+      "body": "GPT-4 Turbo with 128K context and lower prices, the new Assistants API, GPT-4 Turbo with Vision, DALL·E 3 API, and more.",
+      "url": "https://openai.com/index/new-models-and-developer-products-announced-at-devday",
+      "published_at": "Mon, 06 Nov 2023 08:00:00 GMT",
+      "source": "openai-news",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md"
+      ],
+      "reason": "OpenAI model availability, pricing, and capability changes (GPT-4 Turbo context window, new APIs, Vision, DALL-E 3) directly affect the competitive analysis and migration guidance in the OpenAI-to-Bedrock model selection guide."
+    }
+  ],
+  "dropped": [],
+  "errors": []
+}

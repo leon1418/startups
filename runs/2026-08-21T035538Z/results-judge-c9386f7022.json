@@ -1,0 +1,35 @@
+{
+  "hit": {
+    "id": "https://openai.com/index/new-models-and-developer-products-announced-at-devday",
+    "title": "New models and developer products announced at DevDay",
+    "body": "GPT-4 Turbo with 128K context and lower prices, the new Assistants API, GPT-4 Turbo with Vision, DALL·E 3 API, and more.",
+    "url": "https://openai.com/index/new-models-and-developer-products-announced-at-devday",
+    "published_at": "Mon, 06 Nov 2023 08:00:00 GMT",
+    "source": "openai-news",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md"
+    ],
+    "reason": "OpenAI model availability, pricing, and capability changes (GPT-4 Turbo context window, new APIs, Vision, DALL-E 3) directly affect the competitive analysis and migration guidance in the OpenAI-to-Bedrock model selection guide."
+  },
+  "step1": {
+    "fact_key": "openai.model_lineup",
+    "verdict": "no_change",
+    "summary": "This is a 2023 DevDay historical announcement about GPT-4 Turbo, Assistants API, and DALL·E 3 — all long superseded in the current file's model lineup (GPT-5.5, GPT-4.1, etc.) and lifecycle tables. The file already lists GPT-4 Turbo as Legacy with current pricing.",
+    "old_value": "GPT-4 Turbo 128K context, lower prices; Assistants API introduced; DALL·E 3 API introduced (2023 DevDay)",
+    "new_value": "N/A — no dimension changes; file already reflects a much later model generation",
+    "still_true": "GPT-4 Turbo remains listed as a Legacy model with pricing $10/$30 in the current file, and Assistants API is still referenced as a feature to migrate.",
+    "false_positive_files": [
+      "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md"
+    ],
+    "search_terms": [
+      "GPT-4 Turbo",
+      "Assistants API",
+      "DALL-E 3",
+      "GPT-4 Turbo with Vision",
+      "128K context"
+    ],
+    "reasoning": "This announcement is from 2023 DevDay and describes products (GPT-4 Turbo, original Assistants API, DALL·E 3) that the file already treats as legacy/superseded by far newer models (GPT-5.5, GPT-4.1, gpt-image-1.5). No new fact is introduced and no existing value needs updating since the file's current data already supersedes this announcement.</reasoning>\n</invoke>\n"
+  },
+  "step2": null
+}

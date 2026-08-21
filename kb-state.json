@@ -2383,6 +2383,7 @@
     "https://openai.com/index/gpt-3-5-turbo-fine-tuning-and-api-updates",
     "https://openai.com/index/gpt-3-apps",
     "https://openai.com/index/gpt-3-edit-insert",
+    "https://openai.com/index/gpt-4-1",
     "https://openai.com/index/gpt-4-5-system-card",
     "https://openai.com/index/gpt-4-api-general-availability",
     "https://openai.com/index/gpt-4-research",
@@ -2681,6 +2682,7 @@
     "https://openai.com/index/new-chatgpt-images-is-here",
     "https://openai.com/index/new-credit-facility-enhances-financial-flexibility",
     "https://openai.com/index/new-embedding-models-and-api-updates",
+    "https://openai.com/index/new-models-and-developer-products-announced-at-devday",
     "https://openai.com/index/new-policy-ideas-for-the-intelligence-age",
     "https://openai.com/index/new-result-theoretical-physics",
     "https://openai.com/index/new-tools-and-features-in-the-responses-api",
@@ -3100,18 +3102,18 @@
     "https://openai.com/signals/research/2026q1-update"
   ],
   "last_run": {
-    "at": "2026-08-21 03:50 UTC",
+    "at": "2026-08-21 03:57 UTC",
     "recheck": {
       "agree": 28,
-      "recheck_failed": 63,
-      "needs_human": 3,
-      "changed": 5
+      "recheck_failed": 61,
+      "changed": 3,
+      "needs_human": 7
     },
     "scan": {
       "fetched": 1333,
-      "new": 563,
-      "hits": 5,
-      "dropped": 558
+      "new": 2,
+      "hits": 2,
+      "dropped": 0
     }
   },
   "run_history": [
@@ -3137,6 +3139,36 @@
         "new": 563,
         "hits": 5,
         "dropped": 558
+      }
+    },
+    {
+      "at": "2026-08-21 03:57 UTC",
+      "recheck": {
+        "agree": 28,
+        "recheck_failed": 61,
+        "changed": 3,
+        "needs_human": 7
+      },
+      "scan": {
+        "fetched": 1333,
+        "new": 563,
+        "hits": 5,
+        "dropped": 558
+      }
+    },
+    {
+      "at": "2026-08-21 03:57 UTC",
+      "recheck": {
+        "agree": 28,
+        "recheck_failed": 61,
+        "changed": 3,
+        "needs_human": 7
+      },
+      "scan": {
+        "fetched": 1333,
+        "new": 2,
+        "hits": 2,
+        "dropped": 0
       }
     }
   ]

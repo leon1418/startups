@@ -1,0 +1,34 @@
+{
+  "hit": {
+    "id": "https://openai.com/index/gpt-4-1",
+    "title": "Introducing GPT-4.1 in the API",
+    "body": "Introducing GPT-4.1 in the API—a new family of models with across-the-board improvements, including major gains in coding, instruction following, and long-context understanding. We’re also releasing our first nano model. Available to developers worldwide starting today.",
+    "url": "https://openai.com/index/gpt-4-1",
+    "published_at": "Mon, 14 Apr 2025 10:00:00 GMT",
+    "source": "openai-news",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md",
+      "model-selection.md"
+    ],
+    "reason": "New GPT-4.1 family and first nano model introduce capabilities and price-performance tiers that affect OpenAI→Bedrock model mapping tables and availability facts in model-selection guidance."
+  },
+  "step1": {
+    "fact_key": "openai.gpt-4.1_release",
+    "verdict": "no_change",
+    "summary": "The announcement is the original April 2025 GPT-4.1 launch news, which is already superseded historical context — the skill's files already reflect GPT-4.1 with current (April 2026) pricing and comparisons, and even newer models (GPT-5.x) beyond it.",
+    "old_value": "GPT-4.1 pricing $2.00/$8.00 per 1M tokens vs Claude Sonnet 4.6 $3.00/$15.00 (OpenAI 43% cheaper); GPT-4.1 Mini/Nano rows also present.",
+    "new_value": "N/A — announcement is a launch-day press release predating the skill's current data snapshot; no new pricing, dates, or model shape info is introduced.",
+    "still_true": "GPT-4.1 pricing and mapping table entries in ai-openai-to-bedrock.md remain the current reference point.",
+    "false_positive_files": [],
+    "search_terms": [
+      "GPT-4.1",
+      "GPT-4.1 Mini",
+      "GPT-4.1 Nano",
+      "nano model",
+      "OpenAI API"
+    ],
+    "reasoning": "This announcement is OpenAI's original GPT-4.1 launch announcement (April 2025), which only introduces the model family and mentions a first nano model — no pricing or technical details that would update the skill. The skill files already have GPT-4.1 fully documented with pricing as of April 2026, well past this announcement's info, so nothing needs updating."
+  },
+  "step2": null
+}

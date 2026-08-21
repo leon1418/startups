@@ -41,6 +41,7 @@ jobs:
       KB_PR_BASE: main
       KB_PR_REPO: ${{ github.repository }}
       KB_DASHBOARD_REPO: ${{ github.repository }}
+      KB_SKILLS_ROOT: ${{ github.workspace }}/work/migrate/plugins/migration-to-aws/skills
       KB_STATE_FILE: ${{ github.workspace }}/state/kb-state.json
       KB_RUN_ARCHIVE: ${{ github.workspace }}/state/runs
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

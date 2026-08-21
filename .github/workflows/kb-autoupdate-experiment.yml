@@ -18,6 +18,8 @@ on:
       ref:
         description: Branch holding the pipeline code
         default: feat/kb-autoupdate-pipeline
+  schedule:
+    - cron: "0 9 * * *"   # daily, 09:00 UTC
 
 permissions:
   contents: write

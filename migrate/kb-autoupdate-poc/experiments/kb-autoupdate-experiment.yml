@@ -10,16 +10,10 @@
 #
 # This file lives at .github/workflows/kb-autoupdate-experiment.yml on the default branch;
 # the copy under experiments/ is the reviewed source.
-# checkov:skip=CKV_GHA_7: the ref input only selects which branch of THIS repo supplies the
-# pipeline code for a manual test run; scheduled runs use the fixed default.
 name: kb-autoupdate
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Branch holding the pipeline code
-        default: feat/kb-autoupdate-pipeline
   schedule:
     - cron: "0 9 * * *"   # daily, 09:00 UTC
 
@@ -62,7 +56,7 @@ jobs:
       - name: Check out pipeline code
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.ref || 'feat/kb-autoupdate-pipeline' }}
+          ref: feat/kb-autoupdate-pipeline
           path: code
 
       - name: Check out work tree (PR base)

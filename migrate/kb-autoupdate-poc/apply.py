@@ -296,6 +296,12 @@ def upsert_review_issue(judge: dict, slug: str, body_path: Path, cwd: Path) -> s
     out = sh(["gh", "issue", "create", "--repo", slug, "--title", title,
               "--body-file", str(body_path), "--label", REVIEW_LABEL], cwd, check=False)
     m = re.search(r"https://github\.com/\S+/issues/\d+", out or "")
+    if not m:
+        # The label may not exist and may not be creatable on this repo. The issue matters
+        # more than its label — create it bare rather than losing the brief.
+        out = sh(["gh", "issue", "create", "--repo", slug, "--title", title,
+                  "--body-file", str(body_path)], cwd, check=False)
+        m = re.search(r"https://github\.com/\S+/issues/\d+", out or "")
     if m:
         print(f"created review issue {m.group(0)}")
     return m.group(0) if m else None

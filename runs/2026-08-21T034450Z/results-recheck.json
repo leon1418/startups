@@ -1,0 +1,2355 @@
+{
+  "counts": {
+    "agree": 28,
+    "recheck_failed": 63,
+    "needs_human": 3,
+    "changed": 5
+  },
+  "results": [
+    {
+      "key": "agentcore.session_cap",
+      "stored_value": "8h",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html",
+      "locate": "In the table of lifetime session lifecycle parameters, the row whose Phase is 'Maximum session duration' — read its Timeout column.",
+      "appears_in_count": 4,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "8 hrs",
+      "quote": "| Maximum session duration | 8 hrs | Yes, through the maxLifetime API parameter in the LifecycleConfiguration data type |",
+      "reasoning": "The page table for \"Lifetime session lifecycle parameters\" shows the row with Phase \"Maximum session duration\" has a Timeout value of \"8 hrs\", which matches the stored value \"8h\" in meaning (both represent 8 hours).",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "agentcore.idle_timeout",
+      "stored_value": "15 minutes of inactivity",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html",
+      "locate": "In the table of lifetime session lifecycle parameters, the row whose Phase is 'Idle session timeout' — read its Timeout column.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "15 minutes of inactivity",
+      "quote": "| Idle session timeout | 15 minutes of inactivity | Yes, through the idleRuntimeSessionTimeout API parameter in the LifecycleConfiguration data type | When this limit is reached, the execution environment is terminated and a new one is created for the session |",
+      "reasoning": "The page's \"Lifetime session lifecycle parameters\" table row for \"Idle session timeout\" states exactly \"15 minutes of inactivity\" in the Timeout column, matching the stored value precisely.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "lambda.timeout",
+      "stored_value": "15m",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "The quota for a function's maximum execution time per invocation (function timeout). Report the value with its unit.",
+      "appears_in_count": 1,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "15 minutes",
+      "quote": "Function timeout | 900 seconds (15 minutes)",
+      "reasoning": "The page states the function timeout as \"900 seconds (15 minutes)\" in the Function configuration, deployment, and execution table, which is equivalent to the stored value of \"15m\".",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "fargate.per_vcpu_hour",
+      "stored_value": "0.04048",
+      "unit": "USD per vCPU-hour",
+      "url": "https://aws.amazon.com/fargate/pricing/",
+      "locate": "The on-demand Linux/x86 price per vCPU per hour in US East (N. Virginia) for Amazon ECS on Fargate.",
+      "appears_in_count": 2,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "0.04048",
+      "quote": "CPU cost: $0.000011244 per vCPU second",
+      "reasoning": "The page states $0.000011244 per vCPU-second for Linux/X86 in US East (N. Virginia), which converts to exactly $0.04048 per vCPU-hour (0.000011244 × 3600 = 0.04047840 ≈ 0.04048).",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "fargate.per_vcpu_hour_arm64",
+      "stored_value": "0.03238",
+      "unit": "USD per vCPU-hour",
+      "url": "https://aws.amazon.com/fargate/pricing/",
+      "locate": "The on-demand ARM/Graviton price per vCPU per hour in US East (N. Virginia) for Amazon ECS on Fargate.",
+      "appears_in_count": 1,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "0.03238",
+      "quote": "CPU cost: $0.0000089944 per vCPU second... Total vCPU charges = 5 x 1 x 0.0000089944 x 600 x 30 = $0.81",
+      "reasoning": "Converting the per-vCPU-second rate of $0.0000089944 to per-vCPU-hour: $0.0000089944 × 3600 seconds/hour = $0.03238, which exactly matches the stored value.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "temporal.serverless_workers.status",
+      "stored_value": "Public Preview",
+      "unit": "maturity",
+      "url": "https://docs.temporal.io/production-deployment/worker-deployments/serverless-workers/aws-lambda",
+      "locate": "The maturity or availability label for Serverless Workers on AWS Lambda (for example 'Public Preview', 'Available', 'GA').",
+      "appears_in_count": 2,
+      "pin": {
+        "at": "2026-07",
+        "reason": "The docs page showed 'Available' while the feature was pre-release. A docs label alone is not GA evidence.",
+        "lift_when": "A GA announcement post from Temporal.",
+        "last_observed": {
+          "value": "Available",
+          "at": "2026-07"
+        }
+      },
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "Public Preview",
+      "quote": "Currently in:\nPublic Preview\nAPIs and configuration may change before the stable release.",
+      "reasoning": "The page explicitly states \"Currently in: Public Preview\" which matches the stored value exactly.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "agentcore.compute_cap",
+      "stored_value": "2vCPU/8GB",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-quotas.html",
+      "locate": "In the quotas table for Amazon Bedrock AgentCore, find the row describing the compute (vCPU/memory) allocation per runtime session and read its value.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is empty or does not contain the quotas table for Amazon Bedrock AgentCore, so the compute allocation per runtime session cannot be verified.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "2vCPU/8GB",
+            "quote": "Maximum hardware allocation per session | 2vCPU/8GB | No | The maximum memory/CPU usage and allocation per Runtime session",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore.fedramp",
+      "stored_value": "in_progress (WIP — verify current status)",
+      "unit": "status",
+      "url": "https://aws.amazon.com/compliance/services-in-scope/",
+      "locate": "Search for 'Bedrock AgentCore' in the AWS services in scope for FedRAMP compliance list and read its current authorization status.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text does not contain any information about 'Bedrock AgentCore' or its FedRAMP authorization status; the page only shows the header structure and compliance programs list but not the actual service table with individual service statuses.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "KeyError: 'url'"
+      }
+    },
+    {
+      "key": "ecs.regions",
+      "stored_value": "all",
+      "unit": "text",
+      "url": "https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/",
+      "locate": "Find the row for 'Amazon Elastic Container Service (ECS)' and check which AWS regions it is marked as available in.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text does not contain a detailed table showing AWS Elastic Container Service (ECS) regional availability; while ECS is mentioned in the core services list included in all region launches, the specific per-region availability table is not displayed in the provided page text.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "eks.regions",
+      "stored_value": "all",
+      "unit": "text",
+      "url": "https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/",
+      "locate": "Find the row for 'Amazon Elastic Kubernetes Service (EKS)' and check which AWS regions it is marked as available in.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain a table or detailed row for 'Amazon Elastic Kubernetes Service (EKS)' with regional availability information; it only mentions that \"Amazon EKS\" is included in core services launched in all regions.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "us-east-2, us-east-1, us-west-1, us-west-2, af-south-1, ap-east-1, ap-south-2, ap-southeast-3, ap-southeast-5, ap-southeast-4, ap-south-1, ap-southeast-6, ap-northeast-3, ap-northeast-2, ap-southeast-1, ap-southeast-2, ap-east-2 (and additional regions in truncated content)",
+            "quote": "| US East (Ohio) | us-east-2 | eks.us-east-2.amazonaws.com fips.eks.us-east-2.amazonaws.com | HTTPS HTTPS |\n| US East (N. Virginia) | us-east-1 | eks.us-east-1.amazonaws.com fips.eks.us-east-1.amazonaws.com | HTTPS HTTPS |\n| US West (N. California) | us-west-1 | eks.us-west-1.amazonaws.com fips.eks.",
+            "source_url": "https://docs.aws.amazon.com/general/latest/gr/eks.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "lambda_microvms.session_cap",
+      "stored_value": "8h (max 28,800s)",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Look for the maximum session/execution duration quota related to Lambda microVMs (e.g., RunMicrovm or extended execution) and read its value.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "8 hours (28,800 seconds)",
+      "quote": "Maximum execution duration per MicroVM | 8 hours (28,800 seconds)",
+      "reasoning": "The page states the maximum execution duration for Lambda MicroVMs is \"8 hours (28,800 seconds)\", which matches the stored value exactly in meaning.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "lambda_microvms.max_compute",
+      "stored_value": "16vCPU/32GB",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Find the quota row specifying maximum vCPU and memory allocation available for a Lambda microVM instance and read its value.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "needs_human",
+      "model_verdict": "unclear",
+      "observed_at": null,
+      "observed_value": "16 vCPU / 32 GB",
+      "quote": "Requests per second per MicroVM | 40 (4 vCPU / 8 GB), 160 (16 vCPU / 32 GB) | No |",
+      "reasoning": "The page shows 16 vCPU/32 GB in a table row about \"Requests per second per MicroVM\" (a throughput limit), not as a maximum vCPU and memory quota row as instructed; the actual maximum vCPU and memory allocation for a Lambda microVM instance is not explicitly stated in a dedicated quota row.",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "16 vCPUs and 32 GB of memory",
+            "quote": "Lambda MicroVMs support up to 32 GB of memory and 16 vCPUs.",
+            "source_url": "https://aws.amazon.com/lambda/faqs/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "lambda_microvms.launch_tps",
+      "stored_value": "5 (not adjustable)",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Find the quota row for RunMicrovm API launch rate (transactions per second) and confirm whether it is adjustable, reading its current TPS value.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "changed",
+      "model_verdict": "changed",
+      "observed_at": null,
+      "observed_value": "5 (adjustable)",
+      "quote": "| RunMicrovm | 5 | 5 | Yes |",
+      "reasoning": "The page shows RunMicrovm API launch rate as 5 TPS and explicitly marks it as \"Yes\" (adjustable), but the stored value states \"not adjustable\".",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "lambda_microvms.fedramp",
+      "stored_value": "unknown",
+      "unit": "status",
+      "url": "https://aws.amazon.com/compliance/services-in-scope/",
+      "locate": "Search for 'Lambda' or microVM-related service in the AWS FedRAMP services-in-scope list and read its authorization status.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is the header and navigation section of the AWS compliance services-in-scope page, but it does not contain the actual detailed table of services with their FedRAMP authorization statuses; only a legend and list of compliance program names are visible, with no information about Lambda or any microVM service.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "KeyError: 'url'"
+      }
+    },
+    {
+      "key": "lambda_microvms.account_memory_cap",
+      "stored_value": "~1,024 GB in select regions",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Find the quota row for total concurrent memory (account-level memory cap) for Lambda microVMs and read the value along with region availability notes.",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "1,024 GB in US East (N. Virginia), US West (Oregon), US East (Ohio), and Asia Pacific (Tokyo)",
+      "quote": "Memory allocated across all MicroVMs (per account, per Region) | 400 GB (that is, 200 MicroVMs at 2 GB configured memory each or 400 MicroVMs at 1 GB configured memory each). 1,024 GB in US East (N. Virginia), US West (Oregon), US East (Ohio), and Asia Pacific (Tokyo) (that is, 512 MicroVMs at 2 GB configured memory each or 1,024 MicroVMs at 1 GB configured memory each).",
+      "reasoning": "The page states \"1,024 GB in select regions\" (specifically named as US East (N. Virginia), US West (Oregon), US East (Ohio), and Asia Pacific (Tokyo)) for the total concurrent memory quota at the account level for Lambda MicroVMs, which exactly matches the stored value.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "agentcore.fedramp_status",
+      "stored_value": "authorization in progress (WIP)",
+      "unit": "status",
+      "url": "https://aws.amazon.com/compliance/services-in-scope/",
+      "locate": "Search for Bedrock AgentCore and its FedRAMP authorization status",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page lists AWS compliance programs and services in scope, but does not contain any information about Bedrock AgentCore or its FedRAMP authorization status; the page only shows the compliance program categories and general information about AWS services in scope.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "FedRAMP (Class C and Class D) compliant",
+            "quote": "Amazon Bedrock AgentCore is HIPAA eligible and FedRAMP (Class C and Class D), SOC 2 and ISO (27001:2022, 27017:2015, 27018:2019, 27701:2019, 22301:2019, 20000-1:2018, 9001:2015) and CSA STAR compliant.",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/compliance-validation.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore.max_concurrent_sessions",
+      "stored_value": "5,000",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html",
+      "locate": "Find the default quota for maximum concurrent sessions in AgentCore Runtime",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is minimal and does not contain any information about quotas or maximum concurrent sessions for AgentCore Runtime.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "5,000 concurrent sessions (US East N. Virginia and US West Oregon); 2,500 in other AWS Regions",
+            "quote": "Active session workloads per account are now 5,000 in US East (N. Virginia) and US West (Oregon), and 2,500 in other AWS Regions (previously 1,000 and 500 respectively).",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/release-notes.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore.session_launch_tps",
+      "stored_value": "25 TPS",
+      "unit": "quota",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html",
+      "locate": "Find the default quota for session launch transactions per second (TPS) in AgentCore Runtime",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is minimal and does not contain any information about AgentCore Runtime quotas, session launch transactions, or TPS values.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "25 TPS",
+            "quote": "New Runtime session creation rate | 25 TPS | Yes | Transactions per second per account.",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore.billing_during_io_wait",
+      "stored_value": "$0 billing during I/O wait",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/agentcore/pricing/",
+      "locate": "Find whether AgentCore Runtime charges $0 during LLM I/O wait time",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "$0 during I/O wait (if no other background process is running)",
+      "quote": "With the active resource consumption-based pricing in AgentCore Runtime, I/O wait and idle time is free, if no other background process is running.",
+      "reasoning": "The page explicitly states that AgentCore Runtime charges $0 during I/O wait periods when no background process is running, matching the stored value.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "agentcore.protocols",
+      "stored_value": "HTTP/1.1, WebSocket; MCP, A2A",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html",
+      "locate": "Find the list of supported protocols for AgentCore Runtime",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The provided page text does not contain any information about supported protocols for AgentCore Runtime.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "HTTP, MCP, A2A, AG-UI",
+            "quote": "The AgentCore Runtime service contract supports the following communication protocols: * HTTP : Direct REST API endpoints for traditional request/response patterns * MCP : Model Context Protocol for tools and agent servers * A2A : Agent-to-Agent protocol for multi-agent communication and discovery *",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-service-contract.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "cost_levers.prompt_caching_discount",
+      "stored_value": "up to ~90% off cached input tokens",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find the discount percentage for prompt caching (cached input tokens) on Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "90% off",
+      "quote": "Price per 1M input tokens (cache read) | $0.60 for Claude 3.5 Sonnet v2, compared to $6.00 for standard input tokens, which is a 90% discount",
+      "reasoning": "The page shows Claude 3.5 Sonnet v2 cache read tokens at $0.60 per 1M compared to $6.00 per 1M for standard input tokens, which equals exactly 90% off ($0.60 is 10% of $6.00).",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "cost_levers.batch_inference_discount",
+      "stored_value": "~50% off tokens",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find the discount percentage for batch inference on Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "50% lower price",
+      "quote": "Amazon Bedrock offers select foundation models (FMs) from leading AI providers like Anthropic, Meta, Mistral AI, and Amazon for batch inference at a 50% lower price compared to on-demand inference pricing.",
+      "reasoning": "The page explicitly states that batch inference is offered at a \"50% lower price\" compared to on-demand inference, which is equivalent to the stored value of \"~50% off tokens\".",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "cost_levers.model_tier_routing_effect",
+      "stored_value": "≈5× cheaper on routed traffic",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Compare per-token pricing of Claude Sonnet vs Claude Haiku models to verify approximate cost ratio",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "changed",
+      "model_verdict": "changed",
+      "observed_at": null,
+      "observed_value": "~5× cheaper on routed traffic",
+      "quote": "For example, with the Anthropic's Claude model family, Amazon Bedrock can intelligently route requests between Claude 3.5 Sonnet and Claude 3 Haiku depending on the complexity of the prompt... Intelligent Prompt Routing can reduce costs by up to 30 percent without compromising on accuracy.",
+      "reasoning": "The page states that Intelligent Prompt Routing between Claude models can reduce costs by up to 30%, not that Haiku is ~5× cheaper than Sonnet on routed traffic; while per-token pricing tables show Haiku is cheaper, the stored value's specific claim about routed traffic cost ratio is not substantiated on this page.",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "lambda.microvms_launch_tps",
+      "stored_value": "5, not adjustable",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Find the launch transactions-per-second limit for Lambda MicroVMs and whether it is adjustable",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "changed",
+      "model_verdict": "changed",
+      "observed_at": null,
+      "observed_value": "5, not adjustable",
+      "quote": "RunMicrovm | 5 | 5 | Yes",
+      "reasoning": "The page states that RunMicrovm has a rate limit of 5 TPS with an \"Adjustable\" value of \"Yes\", whereas the stored value claims it is \"not adjustable\".",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "temporal.marketplace_pricing_per_action",
+      "stored_value": "$0.01/action",
+      "unit": "price",
+      "url": "https://aws.amazon.com/marketplace/pp/prodview-xx2x66m6fp2lo",
+      "locate": "Find the per-action price on the Temporal Cloud (Pay-as-you-Go) AWS Marketplace listing",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page shows a pricing table with \"Consumption\" at \"$0.01\" per unit, but does not explicitly state a per-action price; instead it describes actions as one component of Consumption Units alongside storage and capacity.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "temporal.marketplace_product_name",
+      "stored_value": "Temporal Cloud (Pay-as-you-Go)",
+      "unit": "text",
+      "url": "https://aws.amazon.com/marketplace/pp/prodview-xx2x66m6fp2lo",
+      "locate": "Find the product name on the AWS Marketplace listing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "Temporal Cloud (Pay-as-you-Go)",
+      "quote": "AWS Marketplace: Temporal Cloud (Pay-as-you-Go)",
+      "reasoning": "The product name on the AWS Marketplace listing page is exactly \"Temporal Cloud (Pay-as-you-Go)\", which matches the stored value precisely.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "temporal.serverless_workers_status",
+      "stored_value": "Public Preview (as of 2026-08)",
+      "unit": "status",
+      "url": "https://docs.temporal.io/",
+      "locate": "Find the current status label for Temporal Serverless Workers feature",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text does not contain any mention of \"Temporal Serverless Workers\" or any status label for this feature.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "lambda_microvm.session_cap",
+      "stored_value": "8h (max 28,800s)",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/microvm.html",
+      "locate": "Find the maximum session duration for Lambda MicroVMs",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is incomplete and contains only the title \"AWS Lambda\" with no content about maximum session duration for Lambda MicroVMs.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "28,800 seconds (8 hours)",
+            "quote": "The maximum duration in seconds that the MicroVM can exist before being terminated by the platform. Valid range: 1–28,800 (8 hours).",
+            "source_url": "https://docs.aws.amazon.com/sdk-for-kotlin/api/latest/lambdamicrovms/aws.sdk.kotlin.services.lambdamicrovms.model/-run-microvm-request/maximum-duration-in-seconds.html"
+          },
+          {
+            "observed_value": "28,800 seconds (8 hours)",
+            "quote": "Set `maximumDurationInSeconds` as a ceiling for stuck sessions (max 28,800 s).",
+            "source_url": "https://docs.aws.amazon.com/lambda/latest/dg/microvms-integrations-claude-managed-agents.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "lambda_microvm.max_vcpu",
+      "stored_value": "16",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/microvm.html",
+      "locate": "Find the maximum vCPU allowed per Lambda MicroVM",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is incomplete and contains only the header \"AWS Lambda\" with no content about MicroVM vCPU specifications.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "lambda_microvm.max_memory_gb",
+      "stored_value": "32",
+      "unit": "quota",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/microvm.html",
+      "locate": "Find the maximum memory (GB) allowed per Lambda MicroVM",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The provided page text appears to be incomplete or missing the relevant content about Lambda MicroVM memory quotas.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "32 GB",
+            "quote": "Lambda MicroVMs support up to 32 GB of memory and 16 vCPUs.",
+            "source_url": "https://aws.amazon.com/lambda/faqs/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "lambda_microvm.launch_rate_tps",
+      "stored_value": "5 TPS",
+      "unit": "quota",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/microvm.html",
+      "locate": "Find the RunMicrovm API launch rate limit (transactions per second)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The provided page text does not contain any information about RunMicrovm API launch rate limits or any transaction per second (TPS) quota values.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "lambda_microvm.account_memory_cap_gb",
+      "stored_value": "~1,024 GB in select regions",
+      "unit": "quota",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/microvm.html",
+      "locate": "Find the account-level memory cap for Lambda MicroVMs",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain information about an account-level memory cap for Lambda MicroVMs.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "1,024 GB in US East (N. Virginia), US West (Oregon), US East (Ohio), and Asia Pacific (Tokyo)",
+            "quote": "1,024 GB in US East (N. Virginia), US West (Oregon), US East (Ohio), and Asia Pacific (Tokyo) (that is, 512 MicroVMs at 2 GB configured memory each or 1,024 MicroVMs at 1 GB configured memory each).",
+            "source_url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "lambda.execution_timeout_max",
+      "stored_value": "15 minutes",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Maximum function timeout value",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "15 minutes",
+      "quote": "Function timeout | 900 seconds (15 minutes)",
+      "reasoning": "The page states the maximum function timeout is \"900 seconds (15 minutes)\", which matches the stored value of \"15 minutes\" in meaning.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "bedrock_managed_agents.regions",
+      "stored_value": "us-east-1 and expanding",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html",
+      "locate": "Search for the list of AWS regions where Bedrock Managed Agents (agents feature) is available",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text does not contain any list of AWS regions where Bedrock Managed Agents is available; it only describes how agents work and their capabilities.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "16 regions total: ap-northeast-1, ap-northeast-2, ap-south-1, ap-southeast-1, ap-southeast-2, ca-central-1, eu-central-1, eu-central-2, eu-west-1, eu-west-2, eu-west-3, sa-east-1, us-east-1, us-east-2, us-gov-west-1, us-west-2",
+            "quote": "Amazon Bedrock Agents is supported in the following Regions: * ap-northeast-1 * ap-northeast-2 * ap-south-1 * ap-southeast-1 * ap-southeast-2 * ca-central-1 * eu-central-1 * eu-central-2 * eu-west-1 * eu-west-2 * eu-west-3 * sa-east-1 * us-east-1 * us-east-2 * us-gov-west-1 * us-west-2",
+            "source_url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agents-supported.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "model-selection.last_aligned_date",
+      "stored_value": "2026-06-30",
+      "unit": "date",
+      "url": "https://github.com/",
+      "locate": "Find the ai-model-lifecycle.md file's 'last aligned' date reference in the migration-to-aws plugin",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is the GitHub homepage and does not contain any reference to an \"ai-model-lifecycle.md\" file, a \"migration-to-aws plugin,\" or any \"last aligned\" date reference.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "bedrock.anthropic_catalog_date",
+      "stored_value": "2026-07-21",
+      "unit": "date",
+      "url": "https://github.com/",
+      "locate": "Find the filename date suffix of the anthropic-bedrock capability catalog JSON file",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The provided page text is the GitHub homepage with general marketing content and navigation, containing no mention of an anthropic-bedrock capability catalog JSON file or any filename date suffix.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "bedrock.openai_catalog_date",
+      "stored_value": "2026-07-21",
+      "unit": "date",
+      "url": "https://github.com/",
+      "locate": "Find the filename date suffix of the openai-bedrock capability catalog JSON file",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page provided is the GitHub homepage with general marketing content and navigation menus; it contains no information about an openai-bedrock capability catalog JSON file or any filename date suffixes.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "bedrock.sonnet_4_6_path_snapshot",
+      "stored_value": "runtime-only in the 2026-06-24 snapshot",
+      "unit": "status",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html",
+      "locate": "Check Claude Sonnet 4.6 supported API paths (Converse/Invoke vs Messages) in Bedrock model catalog",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page provided only shows a redirect/summary page that indicates detailed model information has moved to a \"models at a glance\" page, with no specific details about Claude Sonnet 4.6, its API paths (Converse/Invoke vs Messages), or any snapshot status information visible in this page text.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "KeyError: 'url'"
+      }
+    },
+    {
+      "key": "bedrock.sonnet_5_launch",
+      "stored_value": "launched six days after 2026-06-24 snapshot with full Mantle Messages support",
+      "unit": "date",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html",
+      "locate": "Check Claude Sonnet 5 release/support date and Messages API support in Bedrock model catalog",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The provided page text is a documentation landing page that redirects to \"models at a glance\" and contains no specific information about Claude Sonnet 5, its release date, snapshot dates, or Messages API support details.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "2 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "poc_shapes.ecs.vcpu_range",
+      "stored_value": "0.25–0.5 vCPU",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html",
+      "locate": "Fargate task CPU/memory configuration values",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain specific CPU/memory configuration values; it only discusses Fargate in general terms and references a \"Task CPU and memory\" link but does not include the actual configuration details.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "0.25 vCPU, 0.5 vCPU",
+            "quote": "256 (.25 vCPU) - Available memory values: 512 (0.5 GB), 1024 (1 GB), 2048 (2 GB) 512 (.5 vCPU) - Available memory values: 1024 (1 GB), 2048 (2 GB), 3072 (3 GB), 4096 (4 GB)",
+            "source_url": "https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ecs.FargateTaskDefinition.html"
+          }
+        ],
+        "note": "2 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "poc_shapes.lambda.timeout",
+      "stored_value": "60s",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Lambda function timeout limits",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "needs_human",
+      "model_verdict": "changed_but_magnitude_suspect",
+      "observed_at": null,
+      "observed_value": "900s",
+      "quote": "Function timeout | 900 seconds (15 minutes)",
+      "reasoning": "MAGNITUDE GUARD: observed differs from stored by 15x — likely a unit mismatch, not a change. The page states the Lambda function timeout is 900 seconds (15 minutes), not 60 seconds.",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "poc_shapes.lambda.memory",
+      "stored_value": "512 MB",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Lambda function memory allocation limits",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "changed",
+      "model_verdict": "changed",
+      "observed_at": null,
+      "observed_value": "128 MB to 10,240 MB",
+      "quote": "Function memory allocation | 128 MB to 10,240 MB, in 1-MB increments.",
+      "reasoning": "The stored value of 512 MB represents a single allocation size, but the page shows the function memory allocation limits as a range from 128 MB to 10,240 MB, not a fixed 512 MB minimum or exclusive value.",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "512 MB",
+            "quote": "You can configure the amount of memory allocated to a Lambda function, between 128 MB and 10,240 MB.",
+            "source_url": "https://aws.amazon.com/blogs/compute/operating-lambda-performance-optimization-part-2/"
+          },
+          {
+            "observed_value": "512 MB",
+            "quote": "The amount of memory allocated to a Lambda function is between 128 MB and 10,240 MB.",
+            "source_url": "https://repost.aws/knowledge-center/lambda-memory-compute-cost"
+          }
+        ]
+      }
+    },
+    {
+      "key": "poc_shapes.lambda.function_url_auth",
+      "stored_value": "AWS_IAM",
+      "unit": "status",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html",
+      "locate": "Lambda Function URL authentication types",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "AWS_IAM",
+      "quote": "When you configure your function URL, you must specify one of the following AuthType options: AWS_IAM – Lambda uses AWS Identity and Access Management (IAM) to authenticate and authorize requests based on the IAM principal's identity policy and the function's resource-based policy.",
+      "reasoning": "The page explicitly lists AWS_IAM as one of the Lambda Function URL authentication types, confirming the stored value matches the page content.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "poc_shapes.serverless_workers.status",
+      "stored_value": "Public Preview",
+      "unit": "status",
+      "url": "https://temporal.io/blog",
+      "locate": "status of Temporal 'serverless workers' feature",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text is a blog index and does not contain any information about the status of Temporal's 'serverless workers' feature.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "poc_shapes.ecs.desired_count",
+      "stored_value": "1",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html",
+      "locate": "ECS service desired_count configuration",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "needs_human",
+      "model_verdict": "unclear",
+      "observed_at": null,
+      "observed_value": "1",
+      "quote": "You can use an Amazon ECS service to run and maintain a specified number of instances of a task definition simultaneously in an Amazon ECS cluster.",
+      "reasoning": "The page discusses desiredCount as a configuration parameter but does not specify a default or example value of \"1\" for the ECS service desired_count configuration.",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "temporal.lambda_classic_time_limit",
+      "stored_value": "15 minutes",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Maximum function timeout for AWS Lambda",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "15 minutes",
+      "quote": "Function timeout | 900 seconds (15 minutes)",
+      "reasoning": "The page states the maximum function timeout for AWS Lambda is \"900 seconds (15 minutes)\", which matches the stored value of \"15 minutes\" exactly in meaning.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "temporal.agentcore_runtime_max_execution",
+      "stored_value": "8 hours",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime.html",
+      "locate": "Maximum session/execution duration for Bedrock AgentCore Runtime",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page content provided shows only the title and header of the Bedrock AgentCore documentation page, but does not contain any information about maximum session or execution duration limits.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "8 hrs",
+            "quote": "Maximum session duration | 8 hrs | Yes, through the `maxLifetime` API parameter in the `LifecycleConfiguration` data type |",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html"
+          },
+          {
+            "observed_value": "28800 seconds (8 hours)",
+            "quote": "Default: 28800 seconds (8 hours). The session itself can persist beyond this with a new instance provisioned.",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-lifecycle-settings.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "temporal.privatelink_status",
+      "stored_value": "GA",
+      "unit": "status",
+      "url": "https://docs.temporal.io/cloud/network",
+      "locate": "Status of self-serve PrivateLink support for Temporal Cloud",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "error": "HTTP 404",
+      "observed_value": null,
+      "quote": null
+    },
+    {
+      "key": "temporal.external_payload_storage_status",
+      "stored_value": "Preview",
+      "unit": "status",
+      "url": "https://docs.temporal.io/cloud/data-encryption",
+      "locate": "Status of External Payload Storage feature (Preview/GA)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "error": "HTTP 404",
+      "observed_value": null,
+      "quote": null
+    },
+    {
+      "key": "temporal.lambda_serverless_workers_status",
+      "stored_value": "Public Preview",
+      "unit": "status",
+      "url": "https://docs.temporal.io/cloud/serverless",
+      "locate": "Status of Temporal Cloud Serverless Workers (Public Preview/GA)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "error": "HTTP 404",
+      "observed_value": null,
+      "quote": null
+    },
+    {
+      "key": "temporal.worker_versioning_status",
+      "stored_value": "GA",
+      "unit": "status",
+      "url": "https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning",
+      "locate": "Status of Worker Versioning feature (GA/Preview)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains extensive documentation about Worker Versioning features but does not explicitly state whether the feature is in \"GA\" (General Availability) or \"Preview\" status.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "temporal.server_license",
+      "stored_value": "MIT (open-source)",
+      "unit": "text",
+      "url": "https://github.com/temporalio/temporal/blob/main/LICENSE",
+      "locate": "License type declared in the Temporal server repository",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "error": "HTTP 429",
+      "observed_value": null,
+      "quote": null
+    },
+    {
+      "key": "bedrock.claude_opus_4_8.price",
+      "stored_value": "$5 / $25 per 1M input/output tokens",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find the input/output price per 1,000 tokens or per 1M tokens for Anthropic Claude Opus 4 model on Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains Anthropic Claude pricing tables, but does not include any model called \"Claude Opus 4\"; the most recent Claude models listed are Claude 3.5 Sonnet and Claude 3.5 Sonnet v2.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "$5 per million input tokens and $25 per million output tokens",
+            "quote": "The model is priced at $5 per million input tokens and $25 per million output tokens, making Opus-level intelligence accessible at one-third the cost of previous offerings",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/claude-opus-4-5-now-in-amazon-bedrock/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "bedrock.claude_sonnet_5.intro_price",
+      "stored_value": "$2 / $10 per 1M input/output tokens (intro pricing)",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find the input/output price per 1M tokens for Anthropic Claude Sonnet 5 model on Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains pricing for Claude 3.5 Sonnet and Claude 3.5 Sonnet v2, but there is no model called \"Claude Sonnet 5\" listed on the AWS Bedrock pricing page.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "bedrock.claude_sonnet_5.intro_price_end_date",
+      "stored_value": "Aug 31, 2026",
+      "unit": "date",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find the expiration date of Claude Sonnet 5 introductory pricing on Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains extensive Bedrock pricing information but does not mention Claude Sonnet 5 introductory pricing or any expiration date for such pricing.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "bedrock.claude_sonnet_4_6_post_intro_price",
+      "stored_value": "$3 / $15 per 1M input/output tokens",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find the input/output price per 1M tokens for Anthropic Claude Sonnet 4.6 model on Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "$3.00 / $15.00 per 1M input/output tokens",
+      "quote": "| Anthropic | Claude 3.5 Sonnet (Public Extended Access, Effective 1 Dec 2025) | US East (N. Virginia), US East (Ohio), US West (Oregon), Europe (Frankfurt), Europe (Ireland), Europe (Zurich), Europe (Paris) | $6.00 | $30.00 | $3.00 | $15.00 | N/A | N/A |",
+      "reasoning": "The page shows Claude 3.5 Sonnet batch pricing at $3.00 per 1M input tokens and $15.00 per 1M output tokens, which matches the stored value exactly.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "bedrock.claude_haiku_4_5.price",
+      "stored_value": "$1 / $5 per 1M input/output tokens",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find the input/output price per 1M tokens for Anthropic Claude Haiku 4.5 model on Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains Anthropic Claude pricing tables but does not include any model named \"Claude Haiku 4.5\"—only Claude 3.5 Sonnet variants are listed in the Anthropic section.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "bedrock.claude_haiku_4_5.model_id",
+      "stored_value": "anthropic.claude-haiku-4-5-20251001-v1:0",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html",
+      "locate": "Find the Bedrock model ID for Anthropic Claude Haiku 4.5",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page has been redirected and now only contains a notice that model information \"has moved to models at a glance,\" with no actual model IDs or list visible in the provided page text.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "anthropic.claude-haiku-4-5-20251001-v1:0",
+            "quote": "Base model \"anthropic.claude-haiku-4-5-20251001-v1:0\".",
+            "source_url": "https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_bedrock.FoundationModelIdentifier.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "bedrock.claude_sonnet_4_6.status",
+      "stored_value": "Active",
+      "unit": "status",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html",
+      "locate": "Find the lifecycle status of Anthropic Claude Sonnet 4.6 model on Bedrock",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page does not contain any information about Anthropic Claude Sonnet 4.6 model or its lifecycle status; it only states that model information has moved to a \"models at a glance\" page.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "bedrock.claude_opus_4_8.model_id",
+      "stored_value": "anthropic.claude-opus-4-8",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html",
+      "locate": "Find the Bedrock model ID for Anthropic Claude Opus 4.8",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain any model IDs or specific information about Claude Opus models; it only states that model information has moved to a \"models at a glance\" page.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "us.anthropic.claude-opus-4-8",
+            "quote": "response = bedrock_runtime.invoke_model(\n modelId=\"us.anthropic.claude-opus-4-8\",",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/claude-opus-4-8-is-now-available-on-aws/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "bedrock.claude_sonnet_5.price",
+      "stored_value": "$3.00 / $15.00 per 1M tokens (in/out), intro $2/$10 through Aug 31, 2026",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find Claude Sonnet 5 input/output price per 1M tokens on Amazon Bedrock pricing page",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains pricing for Claude 3.5 Sonnet (not Claude Sonnet 5), and no model called \"Claude Sonnet 5\" appears anywhere in the provided text.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "gemini.3_1_pro.price",
+      "stored_value": "$2.00 / $12.00 per 1M tokens",
+      "unit": "price",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "locate": "Find Gemini 3.1 Pro input/output price per 1M tokens",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "$2.00 / $12.00 per 1M tokens",
+      "quote": "Input price: Not available | $2.00, prompts <= 200k tokens $4.00, prompts > 200k tokens. Output price (including thinking tokens): Not available | $12.00, prompts <= 200k tokens $18.00, prompts > 200k",
+      "reasoning": "The page shows Gemini 3.1 Pro Preview Standard pricing with input at $2.00 and output at $12.00 per 1M tokens for prompts ≤ 200k tokens, which exactly matches the stored value.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "gemini.3_5_flash.price",
+      "stored_value": "$1.50 / $9.00 per 1M tokens",
+      "unit": "price",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "locate": "Find Gemini 3.5 Flash input/output price per 1M tokens",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "$1.50 / $9.00 per 1M tokens",
+      "quote": "Gemini 3.5 Flash: Standard - Input price: $1.50, Output price (including thinking tokens): $9.00 (Paid Tier, per 1M tokens in USD)",
+      "reasoning": "The page explicitly states for Gemini 3.5 Flash Standard pricing that input price is $1.50 per 1M tokens and output price is $9.00 per 1M tokens, exactly matching the stored value.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "bedrock.nova_2_pro.price",
+      "stored_value": "$1.38 / $11.00 per 1M tokens",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Find Amazon Nova 2 Pro input/output price per 1M tokens",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page does not contain any pricing information for Amazon Nova 2 Pro; it only shows Amazon Nova models with pricing for \"Understanding Models\" and other variants, but Amazon Nova 2 Pro is not listed in any pricing table on this page.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "bedrock.nova_premier.eol",
+      "stored_value": "Sep 14, 2026",
+      "unit": "date",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html",
+      "locate": "Find Nova Premier end-of-life / deprecation date",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "September 14, 2026",
+      "quote": "| Amazon | Nova Premier | amazon.nova-premier-v1:0 | us-east-1, us-east-2, us-west-2 | March 13, 2026 | September 14, 2026 | — |",
+      "reasoning": "The page's table shows Nova Premier (amazon.nova-premier-v1:0) has an EOL date of September 14, 2026, which matches the stored value exactly.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "gemini.flash_1_5.eol",
+      "stored_value": "Sep 24, 2025",
+      "unit": "date",
+      "url": "https://ai.google.dev/gemini-api/docs/deprecations",
+      "locate": "Find Gemini Flash 1.5 deprecation/EOL date",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains multiple deprecation tables for various Gemini models, but there is no model called \"Gemini Flash 1.5\" listed in any of the tables; the Flash models shown are 2.0, 2.5, and 3.x versions.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "gemini.1_5_pro.eol",
+      "stored_value": "Sep 24, 2025",
+      "unit": "date",
+      "url": "https://ai.google.dev/gemini-api/docs/deprecations",
+      "locate": "Find Gemini 1.5 Pro deprecation/EOL date",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains deprecation information for Gemini 3, 2.5, 2.0, Live API, Audio, Embedding, Imagen, Veo, Lyria, and Robotics models, but there is no \"Gemini 1.5 Pro\" model listed in any of the deprecation tables.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "bedrock.titan_image_gen_v2.eol",
+      "stored_value": "Jun 30, 2026",
+      "unit": "date",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html",
+      "locate": "Find Titan Image Generator v2 end-of-life date",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains a table of Legacy and EOL models, but \"Titan Image Generator v2\" does not appear in the table or anywhere else in the provided page text.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "bedrock.claude_sonnet_5_pricing",
+      "stored_value": "$2/$10 intro through Aug 31, 2026, then $3/$15 per 1M tokens",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Claude Sonnet 5 on-demand input/output price per 1,000 tokens",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains Claude 3.5 Sonnet and Claude 3.5 Sonnet v2 pricing tables, but does not list \"Claude Sonnet 5\" as a model available on AWS Bedrock; therefore the specific pricing for \"Claude Sonnet 5 on-demand input/output price per 1,000 tokens\" cannot be located.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "bedrock.gpt-5.6_ga_announcement",
+      "stored_value": "OpenAI GPT-5.6 (Sol, Terra, Luna) generally available on Amazon Bedrock",
+      "unit": "status",
+      "url": "https://aws.amazon.com/blogs/machine-learning/openai-gpt-5-6-sol-terra-and-luna-are-now-generally-available-on-amazon-bedrock/",
+      "locate": "Announcement confirming GA status of GPT-5.6 Sol/Terra/Luna on Bedrock",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "OpenAI GPT-5.6 Sol, Terra, and Luna are now generally available on Amazon Bedrock",
+      "quote": "Today, GPT-5.6 Sol, Terra, and Luna from OpenAI are generally available on Amazon Bedrock, bringing the smartest family of models from OpenAI yet to Amazon Bedrock's next-generation inference engine built for high-performance, security and reliability.",
+      "reasoning": "The page explicitly confirms that GPT-5.6 Sol, Terra, and Luna are generally available on Amazon Bedrock, which matches the stored status value in both content and meaning.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "openai.gpt-5.5_pricing",
+      "stored_value": "$5.00 / $30.00 per 1M tokens (in/out)",
+      "unit": "price",
+      "url": "https://openai.com/api/pricing/",
+      "locate": "GPT-5.5 input/output price per 1M tokens",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "error": "HTTP 403",
+      "observed_value": null,
+      "quote": null
+    },
+    {
+      "key": "bedrock.claude_opus_4.6_pricing",
+      "stored_value": "$5.00 / $25.00 per 1M tokens (in/out)",
+      "unit": "price",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Claude Opus 4.6 on-demand input/output price per 1M tokens",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains extensive pricing information for many Anthropic Claude models, but there is no model called \"Claude Opus 4.6\" listed anywhere on the page.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "bedrock.nova_premier_v1_eol",
+      "stored_value": "Sep 14, 2026",
+      "unit": "date",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html",
+      "locate": "Nova Premier v1 EOL / deprecation date",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "September 14, 2026",
+      "quote": "| Amazon | Nova Premier | amazon.nova-premier-v1:0 | us-east-1, us-east-2, us-west-2 | March 13, 2026 | September 14, 2026 | — |",
+      "reasoning": "The page states the EOL date for Nova Premier v1 (amazon.nova-premier-v1:0) is September 14, 2026, which matches the stored value exactly.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "openai.gpt-5.6_model_ids",
+      "stored_value": "openai.gpt-5.6-sol ($5.50/$33.00), openai.gpt-5.6-terra ($2.20/$13.20), openai.gpt-5.6-luna ($0.22/$1.32) per 1M tokens",
+      "unit": "price",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-56-terra.html",
+      "locate": "Model IDs and pricing for GPT-5.6 Sol, Terra, Luna on Bedrock",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "openai.gpt-5.6-terra ($2.20/$13.20) per 1M tokens",
+      "quote": "Short Context Window (272K) | In-Region | $2.20 | $2.75 | $0.22 | $13.20 | and \"All prices are per 1 million tokens.\" and Model ID: openai.gpt-5.6-terra",
+      "reasoning": "The page shows the Terra model pricing at $2.20 input/$13.20 output per 1M tokens in the Short Context Window (In-Region), which matches the stored value for openai.gpt-5.6-terra, though the stored value shows pricing for only one context window tier (Short) while the page contains multiple tiers.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "bedrock.gpt-5.6_mantle_only_constraint",
+      "stored_value": "GPT-5.6 models served exclusively on bedrock-mantle endpoint via OpenAI Responses API path; no bedrock-runtime, Converse API, or Invoke support",
+      "unit": "status",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-56-terra.html",
+      "locate": "Statement about Mantle-only serving and API path support for GPT-5.6 Terra",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page shows that GPT-5.6 Terra supports both bedrock-mantle AND bedrock-runtime endpoints with multiple APIs, contradicting the stored claim of \"exclusive\" bedrock-mantle serving.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "conflicting",
+        "evidence": [
+          {
+            "observed_value": "On bedrock-mantle endpoint, GPT-5.6 Terra is served at /openai/v1/responses path with support for Responses, Chat Completions, Invoke, and Converse APIs; bedrock-runtime endpoint also supported",
+            "quote": "On `bedrock-mantle`, this model is served at `/openai/v1/responses`, not the default `/v1/responses`.",
+            "source_url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-56-terra.html"
+          },
+          {
+            "observed_value": "GPT-5.6 models can be called with the OpenAI Responses API, the OpenAI Chat Completions API, and the Amazon Bedrock Converse API on multiple endpoints",
+            "quote": "You can call them with the OpenAI Responses API, the OpenAI Chat Completions API, and the Amazon Bedrock Converse API.",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/introducing-cross-region-inference-for-openai-gpt-5-6-models-on-amazon-bedrock/"
+          },
+          {
+            "observed_value": "GPT-5.6 models run on bedrock-mantle endpoint with OpenAI-compatible and Anthropic-compatible APIs",
+            "quote": "GPT-5.6 models run on the next-generation inference engine, which has a new Amazon Bedrock console experience optimized for the bedrock-mantle endpoint and its OpenAI-compatible and Anthropic-compatible APIs.",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/get-started-with-openai-gpt-5-6-sol-terra-and-luna-on-amazon-bedrock/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "bedrock.gpt-5.6_region_availability",
+      "stored_value": "us-east-1, us-east-2, us-west-2 at minimum",
+      "unit": "count",
+      "url": "https://aws.amazon.com/bedrock/pricing/",
+      "locate": "Region availability list for GPT-5.6 on Amazon Bedrock (Mantle)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains extensive OpenAI model pricing information including GPT-5.6 variants (Daybreak Red: GPT-5.6 Cyber, Daybreak Blue: GPT-5.6 Sol, GPT-5.6 Sol, GPT-5.6 Terra, GPT-5.6 Luna, GPT-5.5, GPT-5.4), but no specific region availability information is provided for any of these models—only pricing tier categories (Standard, Priority, Flex, Batch) are listed without regional details.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": [],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "lambda.max_execution_timeout",
+      "stored_value": "15 min (900s)",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "locate": "Find the maximum function timeout value listed for AWS Lambda",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "900 seconds (15 minutes)",
+      "quote": "Function timeout | 900 seconds (15 minutes)",
+      "reasoning": "The page states the Lambda function timeout is \"900 seconds (15 minutes)\", which matches exactly the stored value of \"15 min (900s)\" in meaning and both representations of the duration.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "fargate.max_vcpu",
+      "stored_value": "16 vCPU",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-task-storage.html",
+      "locate": "Find the maximum vCPU value supported for an AWS Fargate task",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page discusses ephemeral storage for Fargate tasks but does not contain any information about maximum vCPU values supported for AWS Fargate tasks.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "conflicting",
+        "evidence": [
+          {
+            "observed_value": "16 vCPU",
+            "quote": "Between 32768 (32 GB) and 122880 (120 GB) in increments of 8192 (8 GB) - Available cpu values: 16384 (16 vCPU)",
+            "source_url": "https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ecs.FargateTaskDefinitionProps.html"
+          }
+        ],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "fargate.max_memory_gb",
+      "stored_value": "120 GB",
+      "unit": "quota",
+      "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-task-storage.html",
+      "locate": "Find the maximum memory (GB) value supported for an AWS Fargate task",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "changed",
+      "model_verdict": "changed",
+      "observed_at": null,
+      "observed_value": "200 GB",
+      "quote": "The total amount of ephemeral storage can be increased, up to a maximum of 200 GiB.",
+      "reasoning": "The page states the maximum ephemeral storage for AWS Fargate tasks is 200 GiB (equivalent to 200 GB), which differs from the stored value of 120 GB.",
+      "action": "route_to_human",
+      "error": null,
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "120 GB",
+            "quote": "16 vCPU | Min. 32 GB and Max. 120 GB, in 8 GB increments",
+            "source_url": "https://aws.amazon.com/fargate/pricing/"
+          },
+          {
+            "observed_value": "244 GB",
+            "quote": "32vCPU | 60GB, 120GB, and 244GB",
+            "source_url": "https://aws.amazon.com/fargate/pricing/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "apprunner.closed_to_new_customers_date",
+      "stored_value": "April 30 2026",
+      "unit": "date",
+      "url": "https://aws.amazon.com/apprunner/",
+      "locate": "Find the date App Runner becomes closed to new customers",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "April 30, 2026",
+      "quote": "AWS App Runner will no longer accept new customers starting on April 30, 2026.",
+      "reasoning": "The page explicitly states that AWS App Runner will no longer accept new customers starting on April 30, 2026, which matches the stored value exactly.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "dynamodb.transaction_item_limit",
+      "stored_value": "100",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html",
+      "locate": "Find the maximum number of unique items allowed in a single DynamoDB transaction (TransactWriteItems/TransactGetItems limit)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "100",
+      "quote": "TransactWriteItems is a synchronous and idempotent write operation that groups up to 100 write actions in a single all-or-nothing operation. These actions can target up to 100 distinct items in one or more DynamoDB tables within the same AWS account and in the same Region.",
+      "reasoning": "The page explicitly states that TransactWriteItems can target up to 100 distinct items, and TransactGetItems can also group up to 100 Get actions targeting up to 100 distinct items, matching the stored value of 100.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "rds.dev_instance_class",
+      "stored_value": "db.t4g.micro",
+      "unit": "text",
+      "url": "https://aws.amazon.com/rds/instance-types/",
+      "locate": "Confirm db.t4g.micro is a currently available RDS instance class (Graviton2 burstable)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "db.t4g.micro",
+      "quote": "| db.t4g.micro | 2 | 1 | EBS-optimized only | Up to 2.085 | Up to 5 |",
+      "reasoning": "The page lists db.t4g.micro in the T4g instance table under \"Burstable-performance\" section, confirming it is a currently available RDS instance class powered by AWS Graviton2 processors with burstable performance characteristics.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "aurora.postgresql_engine_version",
+      "stored_value": "PostgreSQL 15",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Updates.html",
+      "locate": "Check whether Aurora PostgreSQL still supports major version 15",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain any specific information about PostgreSQL 15 or its support status in Aurora PostgreSQL; it only discusses general versioning concepts and older versions like 9.6, 10, 12, and 13.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "PostgreSQL 15 is a supported upgrade target for Aurora PostgreSQL",
+            "quote": "We recommend upgrading all instances to PostgreSQL 15 or later.",
+            "source_url": "https://aws.amazon.com/blogs/database/postgresql-11-upgrade-strategies-for-amazon-aurora-postgresql-and-amazon-rds-for-postgresql/"
+          }
+        ],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "strands.open_source_date",
+      "stored_value": "May 2025",
+      "unit": "date",
+      "url": "https://strandsagents.com",
+      "locate": "Find the announcement or changelog stating when Strands Agents was open-sourced",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains no announcement or changelog entry stating when Strands Agents was open-sourced; while the page is the official Strands Agents website describing it as \"Open Source AI Agent SDK,\" no specific open-source release date is mentioned in this text.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "strands.v1_release_date",
+      "stored_value": "July 2025",
+      "unit": "date",
+      "url": "https://strandsagents.com",
+      "locate": "Find the changelog or release notes entry for the 1.0 release date",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is the homepage of strandsagents.com and contains no changelog or release notes entry for the 1.0 release date.",
+      "action": "route_to_human",
+      "error": "field not found in page text"
+    },
+    {
+      "key": "agentcore_runtime.max_session_duration",
+      "stored_value": "8-hour",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html",
+      "locate": "Find the maximum session duration supported by AgentCore Runtime",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text does not contain any information about maximum session duration supported by AgentCore Runtime.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "8 hrs",
+            "quote": "Maximum session duration | 8 hrs | Yes, through the `maxLifetime` API parameter in the `LifecycleConfiguration` data type |",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html"
+          },
+          {
+            "observed_value": "28800 seconds (8 hours)",
+            "quote": "Default: 28800 seconds (8 hours). The session itself can persist beyond this with a new instance provisioned.",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-lifecycle-settings.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore_runtime.isolation_model",
+      "stored_value": "microVM isolation per session",
+      "unit": "status",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html",
+      "locate": "Find description of AgentCore Runtime's isolation model (microVM per session)",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided is empty or only contains the header \"Amazon Bedrock\" with no content describing AgentCore Runtime's isolation model or microVM per session architecture.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "Each user session receives its own dedicated microVM with isolated Compute, memory, and filesystem resources",
+            "quote": "Each user session in AgentCore Runtime receives its own dedicated microVM with isolated Compute, memory, and filesystem resources.",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-sessions.html"
+          },
+          {
+            "observed_value": "After session completion, the entire microVM is terminated and memory is sanitized to remove all session data",
+            "quote": "After session completion, the entire microVM is terminated and memory is sanitized to remove all session data, eliminating cross-session contamination risks.",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-sessions.html"
+          },
+          {
+            "observed_value": "Each session receives its own dedicated virtual machine with isolated compute, memory, and file system resources",
+            "quote": "Each session receives its own dedicated virtual machine with isolated compute, memory, and file system resources, making sure agent state, tool operations, and credential access remain completely compartmentalized.",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/securely-launch-and-scale-your-agents-and-tools-on-amazon-bedrock-agentcore-runtime/"
+          },
+          {
+            "observed_value": "When a session ends, the entire microVM is terminated and memory sanitized",
+            "quote": "When a session ends, the entire microVM is terminated and memory sanitized, minimizing the risk of data persistence or cross-contamination.",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/securely-launch-and-scale-your-agents-and-tools-on-amazon-bedrock-agentcore-runtime/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore_runtime.observability",
+      "stored_value": "OpenTelemetry (traces to CloudWatch, Datadog, etc.)",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html",
+      "locate": "Find description of observability integration (OpenTelemetry, CloudWatch, Datadog) for AgentCore Runtime",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page content provided appears to be empty or truncated; no text describing observability integrations, OpenTelemetry, CloudWatch, or Datadog is visible.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "OpenTelemetry (OTEL)-compatible telemetry enables integration with existing monitoring tools including Arize Phoenix, Amazon CloudWatch, Braintrust, Dynatrace, Datadog, Langfuse, LangSmith, and many more",
+            "quote": "OpenTelemetry (OTEL)-compatible telemetry enables integration with existing monitoring tools including Arize Phoenix, Amazon CloudWatch, Braintrust, Dynatrace, Datadog, Langfuse, LangSmith, and many more.",
+            "source_url": "https://aws.amazon.com/bedrock/agentcore/faqs/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore_harness.session_time_limit",
+      "stored_value": "8 hours",
+      "unit": "duration",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-runtime.html",
+      "locate": "Find the maximum session/task duration limit for AgentCore Harness/Runtime sessions",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The provided page text is empty and contains no information about session duration limits for AgentCore Harness/Runtime sessions.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "8 hrs",
+            "quote": "Maximum session duration | 8 hrs | Yes, through the `maxLifetime` API parameter in the `LifecycleConfiguration` data type |",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/bedrock-agentcore-limits.html"
+          },
+          {
+            "observed_value": "28800 seconds (8 hours)",
+            "quote": "The minimum value is 900 seconds (15 minutes), the maximum value is 28800 seconds (8 hours), and the default value is 3600 seconds (1 hour).",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_SessionConfiguration.html"
+          },
+          {
+            "observed_value": "8-hour maximum duration limit",
+            "quote": "Finally, sessions reach a `Terminated` state when they currently exceed a 15-minute inactivity threshold, hit the 8-hour maximum duration limit, or fail health checks.",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/securely-launch-and-scale-your-agents-and-tools-on-amazon-bedrock-agentcore-runtime/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore_harness.status",
+      "stored_value": "GA in all commercial regions with full platform support",
+      "unit": "status",
+      "url": "https://aws.amazon.com/bedrock/agentcore/",
+      "locate": "Find the general availability status and regional coverage statement for AgentCore Harness",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page contains marketing and overview content about AgentCore but does not include specific general availability status or regional coverage statements for the product.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "GA in all AWS Regions where AgentCore is supported",
+            "quote": "The managed AgentCore harness is now generally available in all AWS Regions where AgentCore is supported.",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/release-notes.html"
+          },
+          {
+            "observed_value": "Available today in all AWS Regions where AgentCore is generally available",
+            "quote": "Amazon Bedrock AgentCore harness is available today in all AWS Regions where AgentCore is generally available.",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/amazon-bedrock-agentcore-harness-is-now-generally-available-go-from-idea-to-production-grade-agent-in-minutes/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "agentcore_harness.regional_fit_default",
+      "stored_value": "available",
+      "unit": "status",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-regions.html",
+      "locate": "Check the list of supported regions for AgentCore Harness/Runtime availability",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain any information about AgentCore Harness/Runtime availability or supported regions - only the \"Amazon Bedrock\" header is shown.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "AgentCore harness available in: US East (N. Virginia), US East (Ohio), US West (Oregon), Europe (Frankfurt), Europe (Ireland), Europe (London), Europe (Paris), Europe (Stockholm), Asia Pacific (Mumbai), Asia Pacific (Singapore), Asia Pacific (Sydney), Asia Pacific (Tokyo), Asia Pacific (Seoul), Canada (Central), South America (São Paulo), AWS GovCloud (US-West)",
+            "quote": "| AgentCore harness | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | No | ✓ Yes | No | ✓ Yes | No | ✓ Yes | ✓ Yes | ✓ Yes | No | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes |",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-regions.html"
+          },
+          {
+            "observed_value": "AgentCore Runtime microVMs available in all 21 regions shown: US East (N. Virginia), US East (Ohio), US West (Oregon), Europe (Frankfurt), Europe (Ireland), Europe (London), Europe (Milan), Europe (Paris), Europe (Spain), Europe (Stockholm), Asia Pacific (Malaysia), Asia Pacific (Mumbai), Asia Pacific (Singapore), Asia Pacific (Sydney), Asia Pacific (Thailand), Asia Pacific (Tokyo), Asia Pacific (Seoul), Canada (Central), South America (São Paulo), AWS GovCloud (US-West), and one additional region",
+            "quote": "| AgentCore Runtime microVMs | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes |",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-regions.html"
+          },
+          {
+            "observed_value": "AgentCore Runtime Instances available in: US East (N. Virginia), US East (Ohio), US West (Oregon), Europe (Frankfurt), Europe (Ireland), Asia Pacific (Mumbai), Asia Pacific (Singapore), Asia Pacific (Sydney), Asia Pacific (Tokyo), Canada (Central), South America (São Paulo), AWS GovCloud (US-West)",
+            "quote": "| AgentCore Runtime Instances | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | ✓ Yes | No | No | No | No | No | No | ✓ Yes | ✓ Yes | ✓ Yes | No | ✓ Yes | No | No | No | No |",
+            "source_url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-regions.html"
+          },
+          {
+            "observed_value": "AgentCore available in fifteen AWS Regions: Asia Pacific (Mumbai), Asia Pacific (Seoul), Asia Pacific (Singapore), Asia Pacific (Sydney), Asia Pacific (Tokyo), Canada (Central), Europe (Frankfurt), Europe (Ireland), Europe (London), Europe (Paris), Europe (Stockholm), South America (São Paulo), US East (N. Virginia), US East (Ohio), US West (Oregon)",
+            "quote": "AgentCore is available in fifteen AWS Regions: Asia Pacific (Mumbai), Asia Pacific (Seoul), Asia Pacific (Singapore), Asia Pacific (Sydney), Asia Pacific (Tokyo), Canada (Central), Europe (Frankfurt), Europe (Ireland), Europe (London), Europe (Paris), Europe (Stockholm), South America (São Paulo), U",
+            "source_url": "https://aws.amazon.com/bedrock/agentcore/faqs/"
+          },
+          {
+            "observed_value": "AgentCore managed agent harness in preview in four regions: US West (Oregon), US East (N. Virginia), Asia Pacific (Sydney), Europe (Frankfurt)",
+            "quote": "The managed agent harness in AgentCore is available in preview today in four AWS Regions: US West (Oregon), US East (N. Virginia), Asia Pacific (Sydney), and Europe (Frankfurt).",
+            "source_url": "https://aws.amazon.com/blogs/machine-learning/get-to-your-first-working-agent-in-minutes-announcing-new-features-in-amazon-bedrock-agentcore/"
+          }
+        ]
+      }
+    },
+    {
+      "key": "eb.base_os",
+      "stored_value": "AL2023",
+      "unit": "text",
+      "url": "https://docs.aws.amazon.com/elasticbeanstalk/latest/platforms/platforms-supported.html",
+      "locate": "Check the current base OS for Elastic Beanstalk supported platforms",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "AL2023",
+      "quote": "Docker AL2023 version 4.13.6 64bit Amazon Linux 2023 v4.13.6 running Docker",
+      "reasoning": "The page lists multiple current Elastic Beanstalk supported platforms with \"AL2023\" as the base OS (Amazon Linux 2023), including Docker, Go, Java SE, Tomcat, .NET Core on Linux, Node.js, PHP, Python, and Ruby platforms.",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "eb.default_port",
+      "stored_value": "5000",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environments-cfg-updatingfeatures.html",
+      "locate": "Find default proxy/application port for AL2023 platforms",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The provided page text about Elastic Beanstalk environment configuration updates does not contain any information about default proxy/application port for AL2023 platforms.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "eb.secrets_namespace_min_platform_date",
+      "stored_value": "March 26, 2025",
+      "unit": "date",
+      "url": "https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environments-cfg-secrets.html",
+      "locate": "Find the minimum platform version release date required for environment secrets support",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain any information about platform version release dates for environment secrets support.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "insufficient",
+        "evidence": []
+      }
+    },
+    {
+      "key": "eb.secrets_jsonkey_min_platform_date",
+      "stored_value": "January 13, 2026",
+      "unit": "date",
+      "url": "https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environments-cfg-secrets.html",
+      "locate": "Find the minimum platform version release date required for JSON-key extraction from Secrets Manager secrets",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page text provided does not contain any information about minimum platform version release dates for JSON-key extraction from Secrets Manager secrets.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "January 13, 2026",
+            "quote": "Platform versions that were released on or after January 13, 2026 support extracting specific fields from JSON-formatted Secrets Manager secrets by appending a colon and the JSON key name to the secret ARN.",
+            "source_url": "https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/AWSHowTo.secrets.env-vars.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "direct_connect.setup_time",
+      "stored_value": "4-12 weeks",
+      "unit": "duration",
+      "url": "https://aws.amazon.com/directconnect/faqs/",
+      "locate": "Find how long it typically takes to provision/set up an AWS Direct Connect dedicated connection",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The FAQ page does not contain any information about how long it typically takes to provision or set up an AWS Direct Connect dedicated connection.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "Several weeks to months",
+            "quote": "Depending on the service provider, location of your site, and other physical factors, the installation of a Direct Connect Dedicated Connection can take from several weeks to a few months.",
+            "source_url": "https://docs.aws.amazon.com/whitepapers/latest/hybrid-connectivity/time-to-deploy.html"
+          }
+        ],
+        "note": "1 evidence record(s) rejected: quote not verbatim in its cited result"
+      }
+    },
+    {
+      "key": "aws_shield.standard_cost",
+      "stored_value": "automatic, no extra cost",
+      "unit": "price",
+      "url": "https://aws.amazon.com/shield/pricing/",
+      "locate": "Confirm AWS Shield Standard is included automatically at no additional cost for all AWS customers",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "agree",
+      "model_verdict": "agree",
+      "observed_at": "2026-08-21",
+      "observed_value": "no additional cost",
+      "quote": "Provides protection for all AWS customers from common, most frequently occurring network and transport layer DDoS events that target your website or application at no additional charge.",
+      "reasoning": "The page explicitly states that AWS Shield Standard is included \"at no additional charge\" for all AWS customers, confirming the stored value of \"automatic, no extra cost.\"",
+      "action": "none",
+      "error": null
+    },
+    {
+      "key": "firewall.blocked_admin_ports",
+      "stored_value": "22, 3389, 5900",
+      "unit": "count",
+      "url": "https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html",
+      "locate": "Check documented list of administrative ports (SSH 22, RDP 3389, VNC 5900) flagged as high-risk when open to 0.0.0.0/0",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page discusses security group rules and mentions port 22 as an example in one context, but does not contain a documented list of administrative ports (SSH 22, RDP 3389, VNC 5900) flagged as high-risk when open to 0.0.0.0/0.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "22, 3389",
+            "quote": "The **AWS-DisablePublicAccessForSecurityGroup** [AWS Systems Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/what-is-systems-manager.html) automation runbook is limited to the following ports: * Default SSH 22 and RDP 3389 ports open to all IP addresses (0.0.0.0/0).",
+            "source_url": "https://repost.aws/knowledge-center/config-ssm-error-invalidpermission"
+          },
+          {
+            "observed_value": "20, 21, 3389, 3306, 4333",
+            "quote": "blockedPorts (Optional) Type: CSV : Comma-separated list of blocked TCP port numbers. For example: 20, 21, 3306, 3389",
+            "source_url": "https://docs.aws.amazon.com/config/latest/developerguide/restricted-common-ports.html"
+          },
+          {
+            "observed_value": "22 (SSH), 3389 (RDP)",
+            "quote": "The security group IDs that are allowed SSH access (port 22) to the nodes. For Windows, the port is 3389.",
+            "source_url": "https://docs.aws.amazon.com/sdk-for-kotlin/api/latest/eks/aws.sdk.kotlin.services.eks.model/-remote-access-config/-builder/source-security-groups.html"
+          }
+        ]
+      }
+    },
+    {
+      "key": "aws_s3.bucket_owner_enforced_acls_disabled_default_date",
+      "stored_value": "ACLs disabled (AWS default since Apr 2023)",
+      "unit": "date",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html",
+      "locate": "Find the date/statement confirming that Object Ownership 'Bucket owner enforced' (ACLs disabled) became the default setting for new S3 buckets since April 2023",
+      "appears_in_count": 0,
+      "pin": null,
+      "expectation": null,
+      "status": "recheck_failed",
+      "model_verdict": "not_found",
+      "observed_at": null,
+      "observed_value": null,
+      "quote": null,
+      "reasoning": "The page confirms that \"Bucket owner enforced (default)\" disables ACLs and is the default for new buckets, but does not specify April 2023 or any date as the start of this default setting.",
+      "action": "route_to_human",
+      "error": "field not found in page text",
+      "second_opinion": {
+        "source": "aws-knowledge-mcp",
+        "state": "found",
+        "evidence": [
+          {
+            "observed_value": "April 2023",
+            "quote": "in April of 2023, we disabled ACLs by default for all new buckets",
+            "source_url": "https://aws.amazon.com/blogs/storage/disabling-acls-for-existing-amazon-s3-workloads/"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "hit": {
+    "id": "https://openai.com/index/introducing-gpt-5-4",
+    "title": "Introducing GPT-5.4",
+    "body": "Introducing GPT-5.4, OpenAI’s most most capable and efficient frontier model for professional work, with state-of-the-art coding, computer use, tool search, and 1M-token context.",
+    "url": "https://openai.com/index/introducing-gpt-5-4",
+    "published_at": "Thu, 05 Mar 2026 10:00:00 GMT",
+    "source": "openai-news",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md"
+    ],
+    "reason": "GPT-5.4 is a new OpenAI frontier model release that may affect model selection mapping and pricing comparison in the OpenAI-to-Bedrock migration guide."
+  },
+  "step1": {
+    "fact_key": "openai.model_lineup.gpt-5.4",
+    "old_value": "GPT-5.4 is described as the current top-tier flagship model line (with GPT-5.5 noted as an even newer, more expensive successor); file's \"Key Insight\" header dated April 2026 lists GPT-5.5 as latest.",
+    "new_value": "OpenAI now announces GPT-5.4 as \"most capable and efficient frontier model\" with 1M-token context, computer use, tool search — but this appears to conflict with the file's existing framing where GPT-5.5 (dated April 23, 2026) is already the newer/latest model superseding GPT-5.4. Need to determine actual release chronology/versioning.",
+    "still_true": "Pricing/comparison tables for GPT-5.4 vs Bedrock likely remain accurate if GPT-5.4 predates GPT-5.5 as the file implies.",
+    "false_positive_files": [],
+    "search_terms": [
+      "GPT-5.4",
+      "GPT-5.5",
+      "frontier model",
+      "1M-token context",
+      "computer use",
+      "tool search",
+      "most capable"
+    ],
+    "reasoning": "The announcement claims GPT-5.4 is OpenAI's newest, most capable frontier model, but the file already documents GPT-5.5 as a later, more expensive model released April 23, 2026 that supersedes GPT-5.4. This is a direct contradiction in version chronology that cannot be resolved without external verification of actual OpenAI release dates/order — insufficient evidence to classify as value_change, schema_change, or no_change confidently.",
+    "verdict": "needs_human",
+    "summary": "Announcement introduces GPT-5.4 as OpenAI's newest frontier model, but the target file already treats GPT-5.5 (dated April 23, 2026) as the newer successor to GPT-5.4, creating a chronology conflict that needs human verification."
+  },
+  "step2": null,
+  "review_issue": {
+    "url": "https://github.com/leon1418/startups/issues/25",
+    "reason": "could not classify",
+    "flipped": 0
+  }
+}

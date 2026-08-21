@@ -18,8 +18,8 @@ skill does not already cover.
 | Review briefs for reversals and unclear cases     | Implemented and verified                     |
 | Decision execution (adopt → PR)                   | Implemented and unit-tested; no live run yet |
 | Auto-edit for re-verified value changes           | Implemented but switched off                 |
-| Weekly schedule                                   | Implemented but disabled                     |
-| Targeting `awslabs/startups` directly             | Proposed                                     |
+| Schedule                                          | Daily on GitHub Actions; the AWS cron stays disabled |
+| Targeting `awslabs/startups`                      | Live — draft PRs and review briefs (Actions deployment) |
 | Remembering rejected briefs                       | Known gap                                    |
 | Pinning a run to one code revision                | Known gap                                    |
 
@@ -288,6 +288,29 @@ Lambda running the same renderer as the local console, its role scoped to exactl
 things (start executions of this one state machine, read execution history, read the archive
 bucket, read/write the state table).
 Idle cost is effectively zero.
+
+---
+
+## Appendix — the GitHub Actions deployment
+
+While the AWS deployment waits for AppSec review, the pipeline also runs on GitHub Actions —
+currently the primary deployment. The workflow holds no cloud credentials.
+
+| Piece                          | Where it lives                                                                                |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| Orchestration                  | one workflow on the maintainer fork; daily at 09:00 UTC, plus a manual run button              |
+| Inference                      | an OpenAI-compatible gateway (repo secret holds the key); same Claude models, same nine calls  |
+| State — registries, seen, pins | one JSON file on the fork's `kb-state` branch, committed back after every run                  |
+| Run archive                    | `runs/<runId>/` on the same branch (newest 30 kept), plus a workflow artifact per run          |
+| Draft PRs and review briefs    | opened on `awslabs/startups` under the maintainer's identity; branches stay on the fork        |
+| Dashboard issue                | stays on the fork                                                                               |
+| Failure alerting               | GitHub Actions failure notifications                                                            |
+
+Two things differ from the AWS deployment. Progress is workflow-step logs, not the console's
+per-hit step list. And there is no hosted console: the registry is edited by changing
+`kb-state.json` on the state branch — a reviewable file change instead of a UI. Everything
+else is the same code: the nine model calls, the code guards, the PR and review-brief
+contracts, and the seen-equals-handled retry rule.
 
 ---
 

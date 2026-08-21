@@ -39,12 +39,16 @@ jobs:
       KB_SCAN_WORKERS: "4"
       KB_MAX_JUDGE_PER_RUN: "3"
       KB_PR_BASE: main
-      KB_PR_REPO: ${{ github.repository }}
+      # PRs and review briefs go UPSTREAM; branches stay on the fork; the dashboard stays
+      # on the fork as operations infrastructure.
+      KB_PR_REPO: awslabs/startups
       KB_DASHBOARD_REPO: ${{ github.repository }}
       KB_SKILLS_ROOT: ${{ github.workspace }}/work/migrate/plugins/migration-to-aws/skills
       KB_STATE_FILE: ${{ github.workspace }}/state/kb-state.json
       KB_RUN_ARCHIVE: ${{ github.workspace }}/state/runs
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # A fine-grained PAT scoped to awslabs/startups (PRs + Issues) — gh needs it for the
+      # upstream writes. Fork-side git pushes use the checkouts' own credentials.
+      GITHUB_TOKEN: ${{ secrets.KB_GITHUB_TOKEN }}
       POC: code/migrate/kb-autoupdate-poc
     steps:
       - name: Check out pipeline code
@@ -119,6 +123,10 @@ jobs:
         run: cd "$POC" && python decisions.py --repo "$GITHUB_WORKSPACE/work" --pr-repo "$KB_PR_REPO" --base "$KB_PR_BASE"
 
       - name: Refresh the dashboard issue
+        env:
+          # The dashboard lives on the fork; the upstream-scoped PAT cannot write it, the
+          # runner token can (and can still read the public upstream for the briefs list).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cd "$POC" && python dashboard_issue.py --repo-for-issue "$KB_DASHBOARD_REPO" --briefs-repo "$KB_PR_REPO"
 
       - name: Archive run and commit state

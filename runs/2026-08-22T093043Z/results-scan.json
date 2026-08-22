@@ -1,0 +1,203 @@
+{
+  "sources": [
+    "aws-whats-new",
+    "aws-news-blog",
+    "openai-news",
+    "openai-api-changelog",
+    "anthropic-release-notes",
+    "temporal-changelog"
+  ],
+  "state_backend": "local:/home/runner/work/startups/startups/state/kb-state.json",
+  "counts": {
+    "fetched": 1333,
+    "in": 13,
+    "already_seen": 1320,
+    "hits": 2,
+    "dropped": 11,
+    "errors": 0
+  },
+  "source_failures": [],
+  "filter_files": [
+    "agentcore.md",
+    "batch.md",
+    "cost-levers.md",
+    "ecs.md",
+    "eks.md",
+    "freshness.md",
+    "lambda-microvms.md",
+    "lambda.md",
+    "managed-alternatives.md",
+    "maturity-readiness.md",
+    "model-selection.md",
+    "poc-shapes.md",
+    "temporal.md",
+    "workload-classes.md",
+    "ai-anthropic-to-bedrock.md",
+    "ai-gemini-to-bedrock.md",
+    "ai-openai-to-bedrock.md",
+    "ai.md",
+    "compute.md",
+    "database.md",
+    "design-ref-agentic-to-agentcore.md",
+    "design-ref-harness.md",
+    "elastic-beanstalk.md",
+    "fast-path.md",
+    "index.md",
+    "messaging.md",
+    "networking.md",
+    "security.md",
+    "storage.md"
+  ],
+  "hits": [
+    {
+      "id": "ded64527b6be471fc88a964ab33f7a2046bb6bad",
+      "title": "Amazon Bedrock announces reduced pricing for OpenAI GPT-5.6 Sol",
+      "body": " Today, OpenAI announced that they are lowering API prices for GPT-5.6 Sol. Following the recent Terra and Luna price reductions, Sol now costs $4 per million input tokens and $20 per million output tokens—20% lower input pricing and 33.3% lower output pricing. This promotional pricing is available at least through November 21, 2026. Whether you're building autonomous coding agents, running complex multi-step analyses, or performing advanced research workflows, the reduced pricing gives you more room to experiment and scale what's already working. GPT-5.6 Sol delivers state-of-the-art results on agentic coding benchmarks, and the lower price point makes it more accessible for sustained, high-volume workloads. For latest Regional availability of GPT-5.6 Sol, check the AWS Regions page. To learn more and view the pricing visit the Amazon Bedrock documentation on GPT-5.6 Sol. ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/bedrock-openai-gpt-56-sol-reduced-pricing/",
+      "published_at": "Fri, 21 Aug 2026 20:11:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md"
+      ],
+      "reason": "The announcement updates OpenAI GPT-5.6 Sol pricing on Bedrock (input $4/M tokens, output $20/M tokens, promotional through Nov 21 2026), which directly affects the pricing tables and competitive analysis in the OpenAI-to-Bedrock model selection guide."
+    },
+    {
+      "id": "e8d9fa41df1ce431325520acc6ae3c0237eb9dfb",
+      "title": "Update · Model: gpt-5.6-sol",
+      "body": "Update · Model: gpt-5.6-sol GPT-5.6 Sol now costs $4 per million input tokens and $20 per million output tokens, representing 20% lower input pricing and 33% lower output pricing. GPT-5.6 Sol’s promotional pricing is available at least through November 21, 2026. See [pricing details](https://developers.openai.com/api/docs/pricing).",
+      "url": "https://platform.openai.com/docs/changelog.md",
+      "published_at": "2026-08-21",
+      "source": "openai-api-changelog",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md"
+      ],
+      "reason": "OpenAI model pricing update affects the competitive analysis and cost comparison tables in the OpenAI → Bedrock migration guide, which uses OpenAI pricing as a baseline for recommending Bedrock alternatives."
+    }
+  ],
+  "dropped": [
+    {
+      "id": "634661242924a7a08a68b0d15805afbd4249e0e1",
+      "title": "Amazon Connect Customer now lets managers chat with their data",
+      "body": " Amazon Connect Customer now lets managers chat with their data in plain language and get back the answer, the evidence behind it, and the fix, in seconds. Managers have always had the data. What they haven’t had is the time to dig through dashboards, find what’s driving performance, and decide what to do next. Now Amazon Connect Customer does that work for them. It searches across more than 150 metrics spanning self-service, agent performance, and queue performance to find what matters, explain why, and recommend the best next step.&nbsp; &nbsp; Managers can start broad and go deep in the same conversation. For example, a manager can ask which queues are the best candidates for automation, and Amazon Connect Customer reviews where handle time and after-contact work run highest, then returns a prioritized list with confidence scores and projected impact. What once required analysts, dashboards, and weeks of investigation now becomes a prioritized action plan in seconds.&nbsp; &nbsp; This feature is available in all AWS Regions where Amazon Connect Customer AI Agents are supported. To learn more, visit our product documentation .&nbsp; ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-connect-customer-ai-data-analytics",
+      "published_at": "Fri, 21 Aug 2026 20:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement describes a chat interface feature for Amazon Connect Customer (a contact center analytics product) that is outside the scope of these migration-advice files, which focus on compute, database, messaging, AI model selection, and agent runtime architecture."
+    },
+    {
+      "id": "2a027bb59aba2a60c35d9ecb88c064ffa83722cd",
+      "title": "AWS Deadline Cloud now tracks automatic download status in the Deadline Cloud Monitor",
+      "body": " The AWS Deadline Cloud monitor now shows the progress, status, and health of your automatic file downlaods from jobs running in the cloud. Deadline Cloud is a fully managed service that helps teams run compute-intensive workloads in the cloud for visual effects, animation, product design, simulation, and gaming. The Deadline Cloud Monitor (DCM) desktop app provides customers with visibility into their render environments, jobs, resources, and costs. Now, customers can also use the monitor to confirm that automatically configured job outputs successfully downloaded to their destination drive. With this update, the monitor app introduces a new Download status column at both the job and task level, showing download progress and confirming when all output files are available on your drive. An indicator displays how current that status is. If files are unavailable for any reason, the app surfaces clear guidance on next steps. This eliminates manual drive verification and helps teams confidently confirm output availability before downstream tasks begin, particularly valuable in large-scale render pipelines where manual file checking is impractical. To learn more about AWS Deadline Cloud",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aws-deadline-cloud-auto-download-status-tracking/",
+      "published_at": "Fri, 21 Aug 2026 18:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "AWS Deadline Cloud is a domain-specific rendering/visual-effects service not addressed by any listed knowledge file; this announcement describes a console/monitoring UI enhancement (download status tracking) that does not change service limits, pricing, capabilities, or availability facts that the migration-advice skill's files reason about."
+    },
+    {
+      "id": "1cb6f865873efeda3d0e456b5ba89b6709e4caec",
+      "title": "Amazon EKS Capability for Argo CD now supports custom configuration",
+      "body": " The Amazon Elastic Kubernetes Service (Amazon EKS) Capability for Argo CD now supports custom configuration through a standard argocd-cm ConfigMap in your cluster. This capability gives you a fully managed GitOps continuous delivery experience, and you can now tune it to fit how your teams work. You can define custom health checks for your Custom Resources, customize the Argo CD UI banner content, adjust how the capability watches and compares the resources it manages, and more. You configure these settings the same way you do in upstream Argo CD, and AWS applies them to your managed capability. With this launch, cluster administrators now have more control over how Argo CD reports application health. By default, Argo CD has no built-in health logic for Custom Resources, so an Application can report as healthy while its resources are still provisioning, and sync waves can advance before those resources are ready. With a custom health check, you define this logic yourself. For example, a health check for a database resource can hold an Application at progressing until the database is ready. The capability also includes built-in health checks for AWS Controllers for Kubernetes (ACK)",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-eks-argo-cd-configuration",
+      "published_at": "Fri, 21 Aug 2026 17:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement describes a feature addition (custom ConfigMap support and health checks) to the EKS Capability for Argo CD, which is a GitOps tooling enhancement that no listed file takes a position on or recommends."
+    },
+    {
+      "id": "8ae3728810107dbf2868c248794e77a6ccfc6d1b",
+      "title": "AWS Glue 6.0 delivers 30% price reduction and Iceberg v3 support",
+      "body": " AWS Glue 6.0 is now generally available, delivering a 30% price reduction and introducing full support for Apache Iceberg v3, newer versions of Apache Hudi and Delta Lake, and new capabilities to improve developer productivity. AWS Glue 6.0 also upgrades runtime to Apache Spark 4.1, Python 3.13, and Scala 2.13. With Apache Iceberg v3, AWS Glue 6.0 adds the VARIANT data type with automatic shredding for faster reads on semi-structured data, deletion vectors for high-performance row-level updates, geometry and geography data types for spatial processing, and flexible schema evolution through UNKNOWN data type and DEFAULT column values. Glue 6.0 also introduces features that boost developer productivity and performance, such as Spark Declarative Pipelines that eliminate repetitive orchestration code, Real-Time Mode streaming for sub-second latencies, and Arrow-native Python UDFs for improved PySpark performance. These capabilities help you implement large-scale ETL, recurring batch workloads, streaming analytics, and AI application development using AWS Glue. AWS Glue 6.0 is available in all AWS Commercial, AWS GovCloud (US), and AWS China regions. To get started, select Glue 6.0 fro",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aws-glue-6-0-price-reduction-iceberg-v3",
+      "published_at": "Fri, 21 Aug 2026 16:42:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "AWS Glue is an ETL/data integration service not referenced in any of the listed knowledge files, which focus on compute runtimes (Lambda, ECS, EKS, Batch), agent platforms (AgentCore, Temporal), AI model selection, and architectural design rubrics for migration scenarios."
+    },
+    {
+      "id": "643f7d95e93b97ef94a2f18632e88535522fa172",
+      "title": "Amazon SES now supports open and click tracking override parameters",
+      "body": " Amazon Simple Email Service (SES) now supports open and click tracking override parameters in the SendEmail and SendBulkEmail APIs. Senders can enable or disable open tracking and click tracking on an individual API call, rather than managing tracking preferences through separate configuration sets. Previously, controlling tracking behavior required maintaining a distinct configuration set for each combination of open- and click-tracking settings. With this new capability, you specify the tracking preference directly in the send request, reducing configuration overhead and simplifying how you honor recipient-level tracking consent. This is useful for senders that must respect per-recipient consent choices to meet data protection requirements such as GDPR and CNIL guidance. The tracking overrides apply per request and take precedence over the tracking behavior defined in the associated configuration set, giving you fine-grained control without changing your existing configuration set structure. There is no additional cost to use this feature. This capability is available in all AWS Regions where Amazon SES is available. To learn more, see the documentation on open and click trackin",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-ses-adds-open-click-tracking-override/",
+      "published_at": "Fri, 21 Aug 2026 07:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns Amazon SES email tracking parameters, a messaging feature not mentioned or reasoned about in any of the listed migration-advice files."
+    },
+    {
+      "id": "5adcb6a483af3c2133d198db1f0df4c76762b233",
+      "title": "Amazon EC2 C8gd, M8gd and R8gd instances are now available in additional AWS Regions",
+      "body": " Amazon Elastic Compute Cloud (Amazon EC2) C8gd, M8gd, and R8gd instances with up to 11.4 TB of local NVMe-based SSD block-level storage are now available in additional regions. C8gd instances are now available in Asia Pacific (Singapore), M8gd instances are available in Mexico (Central) and Asia Pacific (Melbourne), and R8gd instances are available in Europe (Zurich). These instances are powered by AWS Graviton4 processors, delivering up to 30% better performance over Graviton3-based instances. They have up to 40% higher performance for I/O intensive database workloads, and up to 20% faster query results for I/O intensive real-time data analytics than comparable AWS Graviton3-based instances. These instances are built on the AWS Nitro System and are a great fit for applications that need access to high-speed, low latency local storage. Each instance is available in 12 different sizes. They provide up to 50 Gbps of network bandwidth and up to 40 Gbps of bandwidth to the Amazon Elastic Block Store (Amazon EBS). Additionally, customers can now adjust the network and Amazon EBS bandwidth on these instances by 25% using EC2 instance bandwidth weighting conﬁguration, providing greater ﬂ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-ec2-c8gd-m8gd/",
+      "published_at": "Thu, 20 Aug 2026 20:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This is a regional expansion of EC2 instance types; none of the listed knowledge files make region- or availability-dependent claims about EC2 that would require review."
+    },
+    {
+      "id": "5944d428402b2ed5398880da489125e237226820",
+      "title": "Amazon Aurora DSQL now supports Amazon CloudWatch Database Insights",
+      "body": " Amazon Aurora DSQL now features a new Amazon CloudWatch Database Insights metric that delivers per-statement, cluster-level performance monitoring details. Aurora DSQL database insights captures sampled wait states and normalized SQL statements for all active cluster sessions. You can use it to diagnose performance issues with your clusters, and identify the queries consuming the most resources. Aurora DSQL database insights metrics can be used to analyze your cluster performance using Amazon CloudWatch Database Insights, Amazon CloudWatch PromQL, and Aurora DSQL system diagnostics AI skill. The metric, captured at 1-minute interval, is available by default at no additional cost. This feature is available in all AWS Regions where Aurora DSQL is available. To learn more about Aurora DSQL database insights, read the blog and see getting started . To learn more about CloudWatch Database Insights, see pricing and documentation . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aurora-dsql-cloudwatch-database-insights/",
+      "published_at": "Thu, 20 Aug 2026 16:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns Aurora DSQL observability and monitoring features; none of the migration-advice skill's knowledge files take a position on Aurora DSQL's monitoring capabilities, performance diagnostics, or CloudWatch integration specifics."
+    },
+    {
+      "id": "3e7f6047f5812686137b8832bd55b853dd906a34",
+      "title": "AWS Glue 6.0 now available with 30% lower price and full Apache Iceberg v3 support",
+      "body": "AWS Glue 6.0 is built on a fully modernized runtime, Apache Spark 4.1, Python 3.12, and Scala 2.13,&nbsp;delivering 30% lower pricing than previous AWS Glue versions.",
+      "url": "https://aws.amazon.com/blogs/aws/aws-glue-6-0-now-available-with-30-lower-price-and-full-apache-iceberg-v3-support/",
+      "published_at": "Fri, 21 Aug 2026 18:53:26 +0000",
+      "source": "aws-news-blog",
+      "relevant": false,
+      "files": [],
+      "reason": "AWS Glue is not a service addressed in the migration-advice skill's knowledge files; the listed files cover compute (Lambda, ECS, EKS, Batch), AI/ML (model selection, Bedrock), databases, and migration patterns, but not data integration or ETL services."
+    },
+    {
+      "id": "f941bc0e0967f74bbc80cfad82c3389f80cd59ec",
+      "title": "API customers can now select regional processing for an individual request by using a prefixed domain with an API key from a project having Global geography. Ex",
+      "body": "Feature API customers can now select regional processing for an individual request by using a prefixed domain with an API key from a project having Global geography. Existing eligibility, data retention control, endpoint, and model support requirements continue to apply. Learn more in the [data controls guide](https://developers.openai.com/api/docs/guides/your-data#select-a-processing-region-per-request).",
+      "url": "https://platform.openai.com/docs/changelog.md",
+      "published_at": "2026-08-21",
+      "source": "openai-api-changelog",
+      "relevant": false,
+      "files": [],
+      "reason": "This OpenAI API feature announcement about per-request regional processing selection does not change any limits, pricing, capability maturity, or recommendations stated in the listed files; it is a fine-grained routing/UX improvement within OpenAI's service that the migration-advice files do not take a position on."
+    },
+    {
+      "id": "9657c079bfce98fcefe441ff1369b425a5b86893",
+      "title": "We've released v1.0 of the Python SDK. The SDK's HTTP layer moves from `httpx` to httpx2, a maintained, API-compatible fork: build custom `http_client`, `Timeou",
+      "body": "* We've released **v1.0 of the [Python SDK](https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/python)**. The SDK's HTTP layer moves from `httpx` to [httpx2](https://httpx2.pydantic.dev), a maintained, API-compatible fork: build custom `http_client`, `Timeout`, and transport objects from `httpx2` (the `DefaultHttpxClient` helpers are unchanged), and call `httpx2.alias_httpx()` at startup if you rely on tracing or mocking libraries that patch `httpx`. v1.0 requires Python 3.10 or later and removes long-deprecated surface, including the legacy Text Completions API, the `temperature`, `top_p`, and `top_k` parameters on Messages methods, and the tool runner's client-side `compaction_control`. On the async client, `.with_raw_response` results now need `await response.parse()`, and `AnthropicBedrock` now raises an error when no AWS region is configured instead of defaulting to `us-east-1`. See the [v1 migration guide](https://github.com/anthropics/anthropic-sdk-python/blob/main/MIGRATION.md) for every change with before-and-after snippets.",
+      "url": "https://docs.claude.com/en/release-notes/api.md",
+      "published_at": "2026-08-20",
+      "source": "anthropic-release-notes",
+      "relevant": false,
+      "files": [],
+      "reason": "This is a Python SDK v1.0 release with HTTP dependency changes and API housekeeping; none of the knowledge files make claims about SDK implementation details, HTTP layer choice, or Python version requirements that would require updating."
+    },
+    {
+      "id": "0c5b9148221e0fefcf19fc17f5cd7852a35fa5cb",
+      "title": "The computer use tool is out of beta on the Claude API as the `computer_toolset_20260801` toolset: no beta header, batch actions (several actions in one turn), ",
+      "body": "* The [computer use tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool) is out of beta on the Claude API as the `computer_toolset_20260801` toolset: no beta header, batch actions (several actions in one turn), `zoom` enabled by default, and per-member configuration through `configs`. Earlier beta versions remain available. Upgrading an existing integration changes the request shape and tool handling; see [Migrate from `computer_20251124`](https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool#migrate-from-computer-20251124). * We've launched the [browser use tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/browser-use-tool) (`browser_toolset_20260801`), a client toolset for driving a browser that your application hosts. It works inside a browser viewport rather than a whole desktop, reading the page itself (its accessibility tree, elements, forms, and tabs) and adding element references, form input, tab management, download reporting, and opt-in file upload on top of screenshot-and-click control. * Both toolsets are available for Claude Fable 5, Claude Mythos 5, Claude Opus 5, Claude Sonnet 5, and Claude",
+      "url": "https://docs.claude.com/en/release-notes/api.md",
+      "published_at": "2026-08-19",
+      "source": "anthropic-release-notes",
+      "relevant": false,
+      "files": [],
+      "reason": "The announcement covers Anthropic's Claude API toolsets (computer use and browser use tools) — features that belong in an Anthropic-specific design guide, not in the listed migration-advice files which focus on AWS service selection, architecture patterns, cost levers, and maturity readiness for workload migration."
+    }
+  ],
+  "errors": []
+}

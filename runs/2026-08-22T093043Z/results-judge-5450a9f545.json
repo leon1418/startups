@@ -1,0 +1,43 @@
+{
+  "hit": {
+    "id": "e8d9fa41df1ce431325520acc6ae3c0237eb9dfb",
+    "title": "Update · Model: gpt-5.6-sol",
+    "body": "Update · Model: gpt-5.6-sol GPT-5.6 Sol now costs $4 per million input tokens and $20 per million output tokens, representing 20% lower input pricing and 33% lower output pricing. GPT-5.6 Sol’s promotional pricing is available at least through November 21, 2026. See [pricing details](https://developers.openai.com/api/docs/pricing).",
+    "url": "https://platform.openai.com/docs/changelog.md",
+    "published_at": "2026-08-21",
+    "source": "openai-api-changelog",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md"
+    ],
+    "reason": "OpenAI model pricing update affects the competitive analysis and cost comparison tables in the OpenAI → Bedrock migration guide, which uses OpenAI pricing as a baseline for recommending Bedrock alternatives."
+  },
+  "step1": {
+    "fact_key": "ai-openai-to-bedrock.gpt-5.6-sol.pricing",
+    "old_value": "GPT-5.6 Sol Bedrock price (≤272K ctx): $4.00 / $20.00 per 1M in/out (already reflecting Nov 2026 price reduction per line 118/122)",
+    "new_value": "OpenAI direct GPT-5.6 Sol pricing: $4/million input, $20/million output tokens (20% lower input, 33% lower output than prior), promotional through at least Nov 21, 2026",
+    "still_true": "The Bedrock table's $4.00/$20.00 figure for GPT-5.6 Sol already matches this new OpenAI direct price, so the file's numbers are currently accurate and consistent with this announcement.",
+    "false_positive_files": [],
+    "search_terms": [
+      "GPT-5.6 Sol",
+      "$4.00 / $20.00",
+      "openai.gpt-5.6-sol",
+      "Sol price reduction",
+      "November 2026 Sol price reduction",
+      "GPT-5.6 on Bedrock"
+    ],
+    "reasoning": "The file already references a 'November 2026 Sol price reduction' at line 118 with matching $4.00/$20.00 figures in the table, meaning this announcement's price cut is already reflected in the doc as a value the doc anticipated/tracked. This is a value_change confirmation — the underlying fact (Sol pricing) is a number that moved from a prior price to $4/$20, and the doc's shape (single price point per model) is unchanged, just confirming/aligning the value. However, the promotional end-date (Nov 21, 2026) and the exact 20%/33% reduction language is new detail not previously captured with a date, so flag as value_change with the specific promo expiration being new info worth adding.",
+    "verdict": "",
+    "summary": "",
+    "_missing_keys": [
+      "verdict",
+      "summary"
+    ]
+  },
+  "step2": {
+    "affected": [],
+    "notes": "[b1] The announcement's 'still true' clause explicitly states that the Bedrock table's $4.00/$20.00 figures (lines 118, 122, 423, 537, 533) already match the new OpenAI direct pricing and are currently accurate. Therefore none of the grep hits require a value change — all pricing figures already reflect the November 2026 reduction described in the announcement. No 'value', 'derived', or 'flipped' classifications apply; all hits are 'unaffected' since the underlying fact (the numeric price and percentage reductions) was already correctly represented in the files prior to this announcement, and the announcement simply confirms/re-states the same figures rather than changing them. No blast radius change is required.\""
+  },
+  "brief": null,
+  "grep_count": 15
+}

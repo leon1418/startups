@@ -1,0 +1,96 @@
+{
+  "hit": {
+    "id": "ded64527b6be471fc88a964ab33f7a2046bb6bad",
+    "title": "Amazon Bedrock announces reduced pricing for OpenAI GPT-5.6 Sol",
+    "body": " Today, OpenAI announced that they are lowering API prices for GPT-5.6 Sol. Following the recent Terra and Luna price reductions, Sol now costs $4 per million input tokens and $20 per million output tokens—20% lower input pricing and 33.3% lower output pricing. This promotional pricing is available at least through November 21, 2026. Whether you're building autonomous coding agents, running complex multi-step analyses, or performing advanced research workflows, the reduced pricing gives you more room to experiment and scale what's already working. GPT-5.6 Sol delivers state-of-the-art results on agentic coding benchmarks, and the lower price point makes it more accessible for sustained, high-volume workloads. For latest Regional availability of GPT-5.6 Sol, check the AWS Regions page. To learn more and view the pricing visit the Amazon Bedrock documentation on GPT-5.6 Sol. ",
+    "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/bedrock-openai-gpt-56-sol-reduced-pricing/",
+    "published_at": "Fri, 21 Aug 2026 20:11:00 GMT",
+    "source": "aws-whats-new",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md"
+    ],
+    "reason": "The announcement updates OpenAI GPT-5.6 Sol pricing on Bedrock (input $4/M tokens, output $20/M tokens, promotional through Nov 21 2026), which directly affects the pricing tables and competitive analysis in the OpenAI-to-Bedrock model selection guide."
+  },
+  "step1": {
+    "fact_key": "ai-openai-to-bedrock.gpt-5.6-sol.pricing",
+    "old_value": "GPT-5.6 Sol on Bedrock: $5.50 / $33.00 per 1M tokens (in/out, ≤272K ctx) — reflecting a July 30 price reduction",
+    "new_value": "GPT-5.6 Sol pricing lowered again to $4.00 / $20.00 per 1M tokens (20% lower input, 33.3% lower output), promotional through at least Nov 21, 2026",
+    "still_true": "Terra and Luna pricing rows, and the Mantle-only/Responses-API constraints, remain accurate; only the Sol row's price is stale.",
+    "false_positive_files": [],
+    "search_terms": [
+      "GPT-5.6 Sol",
+      "$5.50 / $33.00",
+      "openai.gpt-5.6-sol",
+      "5.50",
+      "33.00",
+      "Sol pricing",
+      "GPT-5.6 on Bedrock",
+      "bedrock-mantle",
+      "July 30 price reduction"
+    ],
+    "reasoning": "The table row for GPT-5.6 Sol lists $5.50/$33.00 as the current Bedrock price, citing a prior July 30 reduction; this new AWS announcement confirms a further price cut to $4/$20 for Sol specifically, making that single cell stale while Terra/Luna rows and surrounding constraints are unaffected — this is a value_change (price update) not a new axis.",
+    "verdict": "value_change",
+    "summary": "OpenAI/Bedrock lowered GPT-5.6 Sol pricing to $4/$20 per 1M tokens (in/out), superseding the $5.50/$33.00 figure in the migration guide's Sol row."
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 118,
+        "kind": "value",
+        "before": "Bedrock in-region pricing is at parity with OpenAI's data-residency tier (a ~10% premium over OpenAI Standard; rates below reflect the July 30 pri",
+        "after": "Bedrock in-region pricing is at parity with OpenAI's data-residency tier (a ~10% premium over OpenAI Standard; rates below reflect the November 2026 Sol price reduction (following the July 30 Terra/Luna reductions)",
+        "why": "Sol's pricing has been reduced again as of the announcement; the note referencing 'the July 30 price reduction' as the basis for the rates is now stale for Sol.",
+        "evidence_quote": "Following the recent Terra and Luna price reductions, Sol now costs $4 per million input tokens and $20 per million output tokens"
+      },
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 122,
+        "kind": "value",
+        "before": "| GPT-5.6 Sol / GPT-5.5 / o3-pro   | GPT-5.6 Sol            | `openai.gpt-5.6-sol`   | $5.50 / $33.00            | Flagship; frontier reasoning + agentic         |",
+        "after": "| GPT-5.6 Sol / GPT-5.5 / o3-pro   | GPT-5.6 Sol            | `openai.gpt-5.6-sol`   | $4.00 / $20.00            | Flagship; frontier reasoning + agentic         |",
+        "why": "Announcement states new pricing of $4/$20 per million tokens for Sol, replacing the old $5.50/$33.00 rates.",
+        "evidence_quote": "Sol now costs $4 per million input tokens and $20 per million output tokens"
+      },
+      {
+        "file": "gcp-to-aws/references/shared/pricing-cache.md",
+        "line": 423,
+        "kind": "value",
+        "before": "| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 5.50       | 33.00       | 1M      | flagship  | active (Mantle/Responses API only)                  |",
+        "after": "| GPT-5.6 Sol                      | openai.gpt-5.6-sol                       | OpenAI    | 4.00       | 20.00       | 1M      | flagship  | active (Mantle/Responses API only)                  |",
+        "why": "Announcement provides the new per-million-token input/output rates for Sol.",
+        "evidence_quote": "Sol now costs $4 per million input tokens and $20 per million output tokens"
+      },
+      {
+        "file": "gcp-to-aws/references/shared/pricing-cache.md",
+        "line": 533,
+        "kind": "value",
+        "before": "In-region rates below reflect the July 30, 2026 price reduction (Luna −80%, Terra −20%) and are at parity with OpenAI's data-residency tier.",
+        "after": "In-region rates below reflect the July 30, 2026 price reduction (Luna −80%, Terra −20%) plus a subsequent Sol price reduction (20% lower input, 33.3% lower output, promotional through at least Nov 21, 2026), and are at parity with OpenAI's data-residency tier.",
+        "why": "The note describing the basis for the rates only mentions the July 30 reduction, but Sol has now had an additional price cut described in the announcement.",
+        "evidence_quote": "20% lower input pricing and 33.3% lower output pricing. This promotional pricing is available at least through November 21, 2026."
+      },
+      {
+        "file": "gcp-to-aws/references/shared/pricing-cache.md",
+        "line": 537,
+        "kind": "value",
+        "before": "| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                   | 5.50               | 33.00               | 11.00              | 49.50               |",
+        "after": "| GPT-5.6 Sol   | US East (N. Virginia / Ohio)                   | 4.00               | 20.00               | 8.00               | 36.00               |",
+        "why": "Announcement states Sol now costs $4 per million input tokens and $20 per million output tokens, replacing the old $5.50/$33.00 pricing (and any derived batch/cached columns should scale accordingly).",
+        "evidence_quote": "Sol now costs $4 per million input tokens and $20 per million output tokens"
+      }
+    ],
+    "notes": "[b1] Only the Sol pricing value and the explanatory notes tied to it are affected. Hits referencing bedrock-mantle constraints, Responses API, model IDs, display names, or Terra/Luna pricing are unaffected since the announcement only changes Sol's price and explicitly states other constraints/rows remain accurate. No derived recommendation or judgment (e.g., which model to pick, same-provider-first guidance) flips or changes as a result of this price change, since Sol's mapping recommendation is independent of exact price magnitude. [b2] Line 224 (capability_source metadata about Converse feature mapping) is unaffected — it discusses capability/architecture provenance, not pricing. Line 165 (design-refs list of Sol/Terra/Luna as frontier tier options) is unaffected — it's about model tier/provider grouping, not price, and remains accurate per 'still true' note. Only the pricing-cache table row with concrete dollar values needs updating."
+  },
+  "brief": null,
+  "grep_count": 33,
+  "pr": {
+    "url": "https://github.com/awslabs/startups/pull/238",
+    "branch": "kb-autoupdate/ai-openai-to-bedrock-gpt-5-6-sol-pricing",
+    "title": "fix(agent-advisor): ai-openai-to-bedrock.gpt-5.6-sol.pricing — value change",
+    "applied": 5,
+    "skipped": 0,
+    "commit": "0d52cde"
+  }
+}

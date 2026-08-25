@@ -422,6 +422,17 @@ def main() -> int:
         print(f"\n(dry run — nothing committed. PR body written to {body_path.name})")
         return 0
 
+    # fmt parity with CI: an edit that changes a Markdown table cell's width leaves the
+    # table unpadded and the upstream fmt:check gate rejects the PR (seen on the GPT-5.6
+    # region-availability PR). The work tree starts fmt-clean (upstream main is gated), so
+    # formatting the whole tree touches only this run's edits. Failure is tolerated —
+    # dprint is fetched via npx (present on the Actions runner); a local run without node
+    # just leaves formatting to the PR's own CI, as before. Line refs in the PR body are
+    # computed pre-format and may drift by a row when a table re-pads; they are advisory.
+    fmt = subprocess.run(["npx", "--yes", "dprint@0.51.0", "fmt"],
+                         cwd=repo, capture_output=True, text=True)
+    print(f"fmt       {'ok' if fmt.returncode == 0 else 'skipped (' + (fmt.stderr or 'no npx').strip().splitlines()[-1][:80] + ')'}")
+
     for rel in [args.skills_rel, *args.mirror_rel]:
         sh(["git", "add", "-A", rel], repo, check=False)
     if not sh(["git", "diff", "--cached", "--name-only"], repo):

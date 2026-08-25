@@ -1,0 +1,226 @@
+{
+  "sources": [
+    "aws-whats-new",
+    "aws-news-blog",
+    "openai-news",
+    "openai-api-changelog",
+    "anthropic-release-notes",
+    "temporal-changelog"
+  ],
+  "state_backend": "local:/home/runner/work/startups/startups/state/kb-state.json",
+  "counts": {
+    "fetched": 1335,
+    "in": 15,
+    "already_seen": 1320,
+    "hits": 2,
+    "dropped": 13,
+    "errors": 0
+  },
+  "source_failures": [],
+  "filter_files": [
+    "agentcore.md",
+    "batch.md",
+    "cost-levers.md",
+    "ecs.md",
+    "eks.md",
+    "freshness.md",
+    "lambda-microvms.md",
+    "lambda.md",
+    "managed-alternatives.md",
+    "maturity-readiness.md",
+    "model-selection.md",
+    "poc-shapes.md",
+    "temporal.md",
+    "workload-classes.md",
+    "ai-anthropic-to-bedrock.md",
+    "ai-gemini-to-bedrock.md",
+    "ai-openai-to-bedrock.md",
+    "ai.md",
+    "compute.md",
+    "database.md",
+    "design-ref-agentic-to-agentcore.md",
+    "design-ref-harness.md",
+    "elastic-beanstalk.md",
+    "fast-path.md",
+    "index.md",
+    "messaging.md",
+    "networking.md",
+    "security.md",
+    "storage.md"
+  ],
+  "hits": [
+    {
+      "id": "4fba62faf9e866417556c6f2c7f71f440a97d1ec",
+      "title": "Amazon ECS now automatically detects and repairs container instances with impaired agent connectivity",
+      "body": " Amazon Elastic Container Service (Amazon ECS) now&nbsp;automatically detects and repairs container instances, enabling customers to reduce undetected workload failures and improve application availability without manual intervention. With this launch, Amazon ECS continuously monitors agent connectivity across container instances. Infrastructure events such as EBS volume degradation, host thermal events, or network connectivity failures can sever the ECS agent's connection to the ECS control plane. Amazon ECS now surfaces a new type of container instance health change event (AGENT_CONNECTIVITY) for all compute options: AWS Fargate, Amazon ECS Managed Instances, and Amazon ECS on EC2. For ECS Managed Instances and AWS Fargate, ECS automatically performs recovery - automatically draining running tasks and launching replacement capacity while deregistering impaired instances. Customers running workloads on Amazon ECS on EC2, can use this health change event to drive instance replacement workflows. This capability is available at no additional cost in all AWS Commercial and AWS GovCloud (US) Regions . To learn more, see Monitor Amazon ECS Container Instance Health . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-ecs-agent-connectivity-health",
+      "published_at": "Mon, 24 Aug 2026 22:42:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": true,
+      "files": [
+        "ecs.md"
+      ],
+      "reason": "ECS now includes automatic agent connectivity detection and repair for Fargate, which affects the operational characteristics and availability guarantees that the ECS service card should document."
+    },
+    {
+      "id": "a760367e79f23a337fd4d3feffc7e1b722d933bc",
+      "title": "OpenAI GPT-5.6 Terra and Luna now available on Amazon Bedrock in AWS GovCloud (US)",
+      "body": " GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East), bringing the smartest family of models from OpenAI yet to Bedrock's next-generation inference engine built for high-performance, security and reliability. GPT-5.6 sets a new standard for intelligence and efficiency, allowing you to solve harder problems in less time and with more intelligence per token. The two models span capability tiers from balanced performance (Terra) to fast, cost-efficient inference (Luna). With GPT-5.6, you can build autonomous coding agents, run long-horizon genomics and biology analyses, and perform advanced cybersecurity research. Terra provides GPT-5.5-level performance at half the cost and Luna brings fast, affordable inference at the lowest price point. GPT-5.6 also supports prompt caching with explicit cache breakpoints, so repeated context across agentic workflows is billed at a 90% discount and doesn't compound cost as you scale.&nbsp; GPT-5.6 Terra and Luna support 1 million token context windows on Amazon Bedrock, enabling you to process full codebases, lengthy documents, and multi-turn agent histories in a single request. M",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/openai-gpt-terra-luna-govcloud/",
+      "published_at": "Mon, 24 Aug 2026 13:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": true,
+      "files": [
+        "ai-openai-to-bedrock.md",
+        "model-selection.md"
+      ],
+      "reason": "New OpenAI GPT-5.6 models (Terra, Luna) are now available on Bedrock with stated pricing, capabilities (1M context, prompt caching), and regional availability (GovCloud) that model-selection and OpenAI-to-Bedrock migration files must reflect."
+    }
+  ],
+  "dropped": [
+    {
+      "id": "0c4ee4baa7dfc4e81038f589cae16c07f6c9ba90",
+      "title": "SageMaker MLflow now supports customer managed keys",
+      "body": " SageMaker MLflow now enables customers to encrypt their data using customer-managed keys (CMK) through AWS Key Management Service (KMS). This enhancement allows organizations with strict security and compliance requirements to manage their own encryption keys. With customer-managed keys, you gain enhanced security control and comprehensive audit capabilities through AWS CloudTrail integration. You can encrypt your data with your own KMS keys, trace all data access for security auditing. Customer-managed keys must be created in the same AWS account and region as your MLflow App, and only symmetric AWS KMS keys are supported. This feature is generally available in all AWS Regions&nbsp; where MLflow App is available . To learn more, visit the&nbsp; SageMaker MLflow detail page . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/sagemaker-mlflow-custom-keys",
+      "published_at": "Mon, 24 Aug 2026 19:26:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "SageMaker MLflow encryption via KMS is a security feature unrelated to the agent migration, compute, AI model selection, or service design decisions the listed knowledge files address."
+    },
+    {
+      "id": "b817b69d14f9b5ec36143e33b9f0c42d14fe7bd5",
+      "title": "Amazon EKS now supports multiple external OIDC identity providers per cluster",
+      "body": " Amazon Elastic Kubernetes Service (Amazon EKS) now supports multiple external OpenID Connect (OIDC) identity providers per cluster. You can associate up to 10 OIDC identity providers with a single cluster, giving you more flexibility in how you authenticate users and workloads to your Kubernetes clusters. Many organizations use different identity providers for different user populations, such as employees, contractors, and CI/CD systems. You can now associate each of these providers directly with your cluster, without consolidating users into a single provider or running an intermediary identity broker. Each provider is configured and managed independently, so each population authenticates through its own provider and identity mapping. Your existing IAM authentication continues to work alongside every configured provider. You add each provider the same way as before, using the AWS Management Console or the AssociateIdentityProviderConfig API through the AWS CLI and AWS SDKs. This capability is available at no additional cost in all AWS Regions where Amazon EKS is available. To learn more, see Grant users access to Kubernetes with an external OIDC provider in the Amazon EKS User Gu",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-eks-multiple-oidc-providers",
+      "published_at": "Mon, 24 Aug 2026 18:29:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This is a console/UX and authentication-workflow enhancement to EKS that no listed file makes a recommendation or availability claim about; none of the knowledge files document OIDC provider limits or authentication patterns as a decision factor."
+    },
+    {
+      "id": "1398e22949c7a91aea00eb635be9b39e3ce1e778",
+      "title": "Amazon Aurora now supports PostgreSQL 18.4, 17.10, 16.14, 15.18, and 14.23",
+      "body": " Amazon Aurora PostgreSQL-Compatible Edition now supports PostgreSQL versions 18.4, 17.10, 16.14, 15.18, and 14.23 which include bug fixes from the PostgreSQL community and Aurora-specific enhancements. We recommend upgrading to the latest minor versions to address known Common Vulnerabilities and Exposures (CVEs) and benefit from these improvements, as detailed in the release notes .&nbsp; You can upgrade your databases during scheduled maintenance windows using automatic minor version upgrades. To simplify operations at scale, enable automatic minor version upgrades and use the AWS Organizations Upgrade Rollout Policy to orchestrate multiple upgrades in phases, validating on lower-priority environments before upgrading your most critical ones. For more information, see Upgrading Amazon Aurora PostgreSQL DB clusters . Amazon Aurora is designed for high performance and availability at global scale with full PostgreSQL compatibility. It provides scale-to-zero serverless compute, Aurora Global Database for multi-Region resilience, Aurora I/O-Optimized for improved price performance on I/O-intensive workloads, and built-in security and continuous backups. To get started, take a look a",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-aurora-postgresql-18-4-17-10-16-14-15-18-14-23/",
+      "published_at": "Mon, 24 Aug 2026 16:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement covers PostgreSQL minor version updates and operational upgrade practices for Aurora; none of the listed knowledge files make version-specific, maturity, availability, or capability claims about PostgreSQL that would require updating."
+    },
+    {
+      "id": "ec4d05316742f9e1f7d643a8eaf14c92d2fd85e3",
+      "title": "Amazon SageMaker HyperPod enhances support for Ray",
+      "body": " Amazon SageMaker HyperPod now enhances support for Ray with built-in observability, resilient training, accelerated inference and managed development environments. Ray is a popular open-source framework for scaling AI workloads on a unified compute layer, from data processing and distributed training to reinforcement learning and model serving. Running Ray on Kubernetes at production scale can be an operational burden: job hangs, low GPU utilization from static team allocations, and multi-step observability setup. Also, lack of interactive development environment means every code change needs another job submission and familiarity with kubectl. HyperPod now brings easier development, resilient training, and accelerated inference to Ray. Data scientists create, edit, monitor, and delete Ray clusters from a web-based interface in Amazon SageMaker Studio, then attach JupyterLab, Code Editor, or a local IDE to a running Ray cluster and iterate interactively against cluster-scale compute. A multi-node Ray cluster behaves like a local development environment, so you test each change immediately, without waiting for a new job to queue and start. For Observability, HyperPod provisions Gra",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-sagemaker-hyperpod-ray",
+      "published_at": "Mon, 24 Aug 2026 15:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns SageMaker HyperPod's Ray support enhancements, which are outside the scope of the migration-advice skill's knowledge files—none of which cover SageMaker HyperPod, Ray orchestration, or interactive development environments for ML workloads."
+    },
+    {
+      "id": "db27339b5818a30440781a9be07b28842d954280",
+      "title": "Amazon Connect Customer now supports information extraction for agent voice and chat conversations",
+      "body": " Amazon Connect Customer now supports information extraction, which automatically captures key data from voice and chat interactions, reducing manual data capture and improving agent and supervisor productivity. Information extraction captures verbatim values like account numbers, reservation IDs, and product names, as well as derived insights inferred from the conversation such as reason for contact, resolution provided, and next steps promised. You define conversational analytics rules for what to extract and when. Extraction operates on raw contact content before redaction, so you can capture specific data points while still redacting sensitive values from recordings and transcripts. Agents see extracted values during After Contact Work, supervisors use them to search and review contacts, and developers access them programmatically through APIs, Kinesis Data Streams, and S3 output files. You can also feed extracted values directly into rule actions like email notifications, task creation, and case creation, turning unstructured conversations into automated experiences. For example, a travel company can automatically extract \"Hotel Name,\" \"Reservation ID,\" and \"Reason for call\" f",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-connect-customer-information/",
+      "published_at": "Mon, 24 Aug 2026 14:46:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "Amazon Connect information extraction is a contact-center analytics feature unrelated to any of the skill's focus areas: agent compute runtimes, batch processing, Kubernetes, Lambda, database/storage/messaging design, or AI model selection."
+    },
+    {
+      "id": "0cda6d3154b638098e81c11694ed9fba3d7009e0",
+      "title": "AWS ParallelCluster 3.16 adds an on-node diagnostics tool",
+      "body": " AWS ParallelCluster 3.16 is now generally available with a new on-node diagnostics tool, cluster stability improvements, and an updated HPC and AI/ML software stack. pcluster-diag is a diagnostics tool built into the ParallelCluster AMIs that lets you run diagnostic checks on any cluster node with a single command, and get a structured report that makes it easier to identify issues. This release also hardens the cluster lifecycle with more resilient cluster creation, updates, and image builds. The software stack is refreshed, with updated NVIDIA driver, CUDA, EFA installer, and Slurm versions. To get started with pcluster-diag, see Troubleshooting with pcluster-diag . For more details, review the AWS ParallelCluster 3.16.0 release notes . AWS ParallelCluster is an open-source cluster management tool that makes it possible for R&amp;D customers and IT administrators to operate high-performance computing (HPC) clusters on AWS. ParallelCluster is designed to automatically and securely provision cloud resources into elastically-scaling HPC clusters capable of running scientific and engineering workloads at scale on AWS. ParallelCluster is available at no additional charge in the AWS R",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aws-parallelcluster/",
+      "published_at": "Mon, 24 Aug 2026 14:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "AWS ParallelCluster is an HPC cluster management tool; none of the listed knowledge files address HPC workloads, ParallelCluster, or its capabilities, and this announcement concerns tooling features and software stack updates with no bearing on migration decisions covered by the skill."
+    },
+    {
+      "id": "e29787ce925cd190fa049c8ab86014bc4751b8d0",
+      "title": "Amazon RDS for MySQL now supports new minor version 8.4.11",
+      "body": " Starting today, Amazon Relational Database Service (Amazon RDS) for MySQL supports MySQL minor version 8.4.11, the latest minor released by community MySQL. In addition to operational improvements, MySQL 8.4.11 introduces support for post-quantum TLS (PQ-TLS) key exchange, providing you with post-quantum cryptography options for encrypting your data in-transit. We recommend upgrading to the newer minor versions to accept fixes for CVEs in prior versions of MySQL and to benefit from bug fixes, performance improvements, and new functionality added by the MySQL community. Learn more about the enhancements in RDS for MySQL 8.4.11 in the Amazon RDS user guide and MySQL 8.4.11 release notes. You can leverage automatic minor version upgrades to automatically upgrade your databases to more recent minor versions during scheduled maintenance windows. You can also use Amazon RDS Managed Blue/Green deployments for safer and simpler updates to your MySQL instances. Learn more about upgrading your database instances, including automatic minor version upgrades and Blue/Green Deployments, in the Amazon RDS User Guide. Amazon RDS for MySQL makes it simple to set up, operate, and scale MySQL deploy",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-rds-mysql-8411-available/",
+      "published_at": "Mon, 24 Aug 2026 08:41:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns a minor version release for RDS MySQL with incremental improvements (PQ-TLS support, CVE fixes, bug fixes); none of the knowledge files make recommendations or state constraints dependent on MySQL minor versions, PQ-TLS capability, or specific RDS version availability."
+    },
+    {
+      "id": "c16400c215106cf6e32289c210535808832a18ff",
+      "title": "AWS Neuron 2.32 introduces expanded NKI programming, MXFP8 training kernels, and variable-size collectives for Trn2 and Trn",
+      "body": " AWS Neuron 2.32.0 is now available, introducing NKI 0.6.0 with an on-device top-K instruction, a variable-length `all-gather `for kernels whose ranks hold differently sized tensors, and new loop constructs for data-dependent iteration. &nbsp; This release also introduces 13 new NKI Library kernels for Mixture of Experts (MoE) training and sparse attention, and a new Neuron Agentic Development skill that ports transformer models to the vLLM Neuron plugin. The NKI Library kernels cover context encoding for DeepSeek-V3.2 sparse multi-head latent attention, MXFP8 attention for the decode step, and a matched MXFP8 forward and backward pass that lets blockwise MoE layers train end to end in MXFP8, with PyTorch reference implementations for 22 additional kernels. &nbsp; The Neuron Runtime adds variable-size all-gather, reduce-scatter, and all-to-all collectives on Trn2 and Trn3, letting each rank contribute or receive a different number of elements. The vLLM Neuron plugin moves to vLLM 0.24.0 and is included in all Neuron Deep Learning AMIs and Deep Learning Containers. The Neuron Compiler adds explicit control over 64-bit integer compilation, and Neuron Explorer adds per-core host CPU u",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aws-announce-neuron-2-32-0",
+      "published_at": "Fri, 21 Aug 2026 21:11:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns AWS Neuron (a specialized ML compiler/runtime for Trainium accelerators), which is not covered by any of the listed knowledge files—none address accelerator programming, NKI kernels, MoE training optimizations, or Neuron-specific development."
+    },
+    {
+      "id": "5200b14753bef5a954c0ceb7246007d4cfd3d88c",
+      "title": "Amazon Redshift now supports concurrency scaling of streaming ingestion workloads from Amazon Kinesis data streams",
+      "body": " Amazon Redshift , starting with patch P203 , supports concurrency scaling for refreshes of Amazon Kinesis Data Streams (KDS)-connected streaming materialized views (MVs). Amazon Web Services (AWS) Redshift Streaming Ingestion enables low-latency, high-speed data ingestion from Amazon KDS to Amazon Redshift data warehouses. The data lands in a Redshift streaming materialized view, providing fast access to external data, lowering data-access time, and reducing storage costs. Users can configure streaming ingestion for their Amazon Redshift cluster or Redshift Serverless workgroup using SQL commands. Once set up, each streaming materialized-view refresh can ingest hundreds of megabytes of data per second. If you have concurrency scaling enabled, your streaming workloads will now automatically scale by freeing-up your main Amazon Redshift cluster or workgroup to run other higher priority workloads. You can start using this new capability immediately in all AWS regions where Amazon Redshift is available to scale your workload and build resilient analytics applications with predictable Service Level Agreements. To get started, refer to the Concurrency Scaling , Materialized Views and st",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/redshift-concurrencyscaling-for-kds-streams/",
+      "published_at": "Thu, 20 Aug 2026 20:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns Amazon Redshift streaming ingestion concurrency scaling—a data warehouse analytics capability that none of the listed knowledge files address; the skill focuses on agent runtime, compute, and migration patterns, not data warehouse features."
+    },
+    {
+      "id": "0508a78a427a72e62c001cfac4d137649257bccf",
+      "title": "Amazon Bedrock AgentCore Memory now supports extracting memories from non-conversational JSON payloads",
+      "body": " Amazon Bedrock AgentCore memory now accepts a JSON payload type on the CreateEvent API, so agents can extract and consolidate long-term memories from structured data as well as from multi-turn conversations. Developers can pass behavioral events, activity logs, system events, and other JSON data (up to 100 KB per payload) straight into the extraction pipeline. There is no need to reshape it into synthetic conversation messages first. The extraction pipeline treats a JSON payload the same way it treats a conversation, generating long-term memories across all four extraction strategies: semantic, user preference, summarization, and episodic. Non-conversational JSON payload ingestion is available today in all regions where AgentCore Memory is supported. It is fully compatible with existing features. To get started, just add json payloads to your events . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/agentcore-memory-json-payloads",
+      "published_at": "Thu, 20 Aug 2026 20:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement describes a new capability (JSON payload ingestion) within AgentCore Memory, but no listed file makes a recommendation or constraint that depends on the format of event payloads accepted by the memory extraction API; the files address runtime selection and design patterns, not the internal payload schema evolution of AgentCore's memory subsystem."
+    },
+    {
+      "id": "2c1999b3f40dcbf5fbc95e907da3c6141bbc8c45",
+      "title": "AWS Weekly Roundup: Student Rewards on AWS Builder Center, Local Zone in Las Vegas, and more (August 24, 2026)",
+      "body": "During my time at AWS, I have always looked for opportunities to work with students. I have delivered over 50 talks at universities across the region, and watching the potential in the room is always a strong motivator. It reminds me of why I do this work, and that the students I meet today may […]",
+      "url": "https://aws.amazon.com/blogs/aws/aws-weekly-roundup-student-rewards-on-aws-builder-center-local-zone-in-las-vegas-and-more-august-24-2026/",
+      "published_at": "Mon, 24 Aug 2026 16:20:15 +0000",
+      "source": "aws-news-blog",
+      "relevant": false,
+      "files": [],
+      "reason": "The announcement covers AWS Builder Center student rewards and regional Local Zone expansion — neither represents a service capability, limit, price, maturity, or recommendation change that any listed file takes a position on."
+    },
+    {
+      "id": "https://openai.com/index/disrupting-malicious-uses-of-ai-influence-campaign-russia",
+      "title": "Disrupting a new covert influence campaign from Russia",
+      "body": "OpenAI banned Russia-origin accounts using AI to promote a fake Israel-based think tank and a “sovereignty” index praising Russia and criticizing the West.",
+      "url": "https://openai.com/index/disrupting-malicious-uses-of-ai-influence-campaign-russia",
+      "published_at": "Tue, 25 Aug 2026 00:00:00 GMT",
+      "source": "openai-news",
+      "relevant": false,
+      "files": [],
+      "reason": "This is a security incident report about account abuse, not a change to OpenAI's services, pricing, capabilities, or availability that would affect migration advice."
+    },
+    {
+      "id": "https://openai.com/index/gpt-5-6-in-kiro",
+      "title": "Advancing price-performance for developers with GPT‑5.6 in Kiro",
+      "body": "GPT‑5.6 is now available in Kiro, helping developers plan, build, review, and test software with better price-performance.",
+      "url": "https://openai.com/index/gpt-5-6-in-kiro",
+      "published_at": "Mon, 24 Aug 2026 12:00:00 GMT",
+      "source": "openai-news",
+      "relevant": false,
+      "files": [],
+      "reason": "OpenAI's GPT-5.6 launch in Kiro is an OpenAI-native product announcement; the knowledge files contain only AWS Bedrock model mappings for OpenAI alternatives (ai-openai-to-bedrock.md), not guidance on using OpenAI services directly, and the skill's recommendations do not depend on which OpenAI models exist outside AWS."
+    }
+  ],
+  "errors": []
+}

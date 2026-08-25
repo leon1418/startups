@@ -1,0 +1,93 @@
+{
+  "hit": {
+    "id": "a760367e79f23a337fd4d3feffc7e1b722d933bc",
+    "title": "OpenAI GPT-5.6 Terra and Luna now available on Amazon Bedrock in AWS GovCloud (US)",
+    "body": " GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East), bringing the smartest family of models from OpenAI yet to Bedrock's next-generation inference engine built for high-performance, security and reliability. GPT-5.6 sets a new standard for intelligence and efficiency, allowing you to solve harder problems in less time and with more intelligence per token. The two models span capability tiers from balanced performance (Terra) to fast, cost-efficient inference (Luna). With GPT-5.6, you can build autonomous coding agents, run long-horizon genomics and biology analyses, and perform advanced cybersecurity research. Terra provides GPT-5.5-level performance at half the cost and Luna brings fast, affordable inference at the lowest price point. GPT-5.6 also supports prompt caching with explicit cache breakpoints, so repeated context across agentic workflows is billed at a 90% discount and doesn't compound cost as you scale.&nbsp; GPT-5.6 Terra and Luna support 1 million token context windows on Amazon Bedrock, enabling you to process full codebases, lengthy documents, and multi-turn agent histories in a single request. M",
+    "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/openai-gpt-terra-luna-govcloud/",
+    "published_at": "Mon, 24 Aug 2026 13:00:00 GMT",
+    "source": "aws-whats-new",
+    "relevant": true,
+    "files": [
+      "ai-openai-to-bedrock.md",
+      "model-selection.md"
+    ],
+    "reason": "New OpenAI GPT-5.6 models (Terra, Luna) are now available on Bedrock with stated pricing, capabilities (1M context, prompt caching), and regional availability (GovCloud) that model-selection and OpenAI-to-Bedrock migration files must reflect."
+  },
+  "step1": {
+    "fact_key": "bedrock.openai_gpt56_region_availability",
+    "verdict": "schema_change",
+    "summary": "GPT-5.6 Terra and Luna availability now splits by a new dimension: commercial regions (us-east-1, us-east-2, us-west-2) versus AWS GovCloud (US-West/US-East), which is a new, separate partition with its own compliance implications.",
+    "old_value": "Region availability: us-east-1, us-east-2, us-west-2 at minimum (commercial regions only)",
+    "new_value": "Region availability now spans two partitions: commercial regions (us-east-1, us-east-2, us-west-2, check pricing page) AND AWS GovCloud (US-West, US-East) for Terra and Luna specifically — Sol's GovCloud availability is not stated in this announcement.",
+    "still_true": "Commercial-region availability (us-east-1, us-east-2, us-west-2) for GPT-5.6 Sol/Terra/Luna remains correct as stated.",
+    "false_positive_files": [
+      "agent-advisor/references/decision-refs/model-selection.md"
+    ],
+    "search_terms": [
+      "GPT-5.6",
+      "Terra",
+      "Luna",
+      "Sol",
+      "GovCloud",
+      "Mantle-only",
+      "bedrock-mantle",
+      "Region availability",
+      "openai.gpt-5.6-terra",
+      "openai.gpt-5.6-luna",
+      "us-east-1",
+      "us-west-2"
+    ],
+    "reasoning": "The ai-openai-to-bedrock.md file explicitly documents GPT-5.6 region availability constraints ('confirm the target region serves GPT-5.6 on Mantle... us-east-1, us-east-2, us-west-2 at minimum') which was scoped only to commercial regions; this announcement adds a new GovCloud partition, a new axis (commercial vs. GovCloud/US-only) not previously present. The model-selection.md file is a false positive since it only references model selection dispatch logic, not region/partition availability.</reasoning>\n</invoke>\n"
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "gcp-to-aws/references/design-refs/ai-openai-to-bedrock.md",
+        "line": 133,
+        "kind": "value",
+        "before": "- **Region availability.** Confirm the target region serves GPT-5.6 on Mantle (us-east-1, us-east-2, us-west-2 at minimum; check the pricing page for current list).",
+        "after": "- **Region availability.** Confirm the target region serves GPT-5.6 on Mantle (us-east-1, us-east-2, us-west-2 at minimum for commercial regions; Terra and Luna are now also available in AWS GovCloud (US-West, US-East); check the pricing page for current list).",
+        "why": "Announcement states GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East), adding a new partition not reflected in this region-availability guidance.",
+        "evidence_quote": "GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East)"
+      },
+      {
+        "file": "gcp-to-aws/references/shared/pricing-cache.md",
+        "line": 538,
+        "kind": "value",
+        "before": "| GPT-5.6 Terra | US East (N. Virginia / Ohio), US West (Oregon) | 2.20               | 13.20               | 4.40               | 19.80               |",
+        "after": "| GPT-5.6 Terra | US East (N. Virginia / Ohio), US West (Oregon), AWS GovCloud (US-West), AWS GovCloud (US-East) | 2.20               | 13.20               | 4.40               | 19.80               |",
+        "why": "Announcement states Terra is now GA on Bedrock in AWS GovCloud (US-West) and (US-East) in addition to commercial regions.",
+        "evidence_quote": "GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East)"
+      },
+      {
+        "file": "gcp-to-aws/references/shared/pricing-cache.md",
+        "line": 539,
+        "kind": "value",
+        "before": "| GPT-5.6 Luna  | US East (N. Virginia / Ohio), US West (Oregon) | 0.22               | 1.32                | 0.44               | 1.98                |",
+        "after": "| GPT-5.6 Luna  | US East (N. Virginia / Ohio), US West (Oregon), AWS GovCloud (US-West), AWS GovCloud (US-East) | 0.22               | 1.32                | 0.44               | 1.98                |",
+        "why": "Announcement states Luna is now GA on Bedrock in AWS GovCloud (US-West) and (US-East) in addition to commercial regions.",
+        "evidence_quote": "GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East)"
+      },
+      {
+        "file": "agent-advisor/references/models/openai-bedrock-2026-07-21.json",
+        "line": 136,
+        "kind": "value",
+        "before": "\"openai_gpt_5_6_luna\": {",
+        "after": "\"openai_gpt_5_6_luna\": { // region_availability should be updated to include AWS GovCloud (US-West, US-East) in addition to commercial regions (us-east-1, us-east-2, us-west-2)",
+        "why": "The announcement states Luna is now generally available in AWS GovCloud (US-West) and (US-East) in addition to commercial regions, so the region_availability field for this model entry must be updated to reflect the new GovCloud partitions.",
+        "evidence_quote": "GPT-5.6 Terra and Luna are now generally available on Amazon Bedrock in AWS GovCloud (US-West) and AWS GovCloud (US-East)"
+      }
+    ],
+    "notes": "terms too short to discriminate, skipped: ['Sol'] term 'us-east-1' hit its 40-location cap — probably too generic term 'Terra' hit its 40-location cap — probably too generic [b1] Most hits in this batch are unaffected: model ID references, pricing table entries, bedrock-mantle endpoint/API mechanics, and unrelated 'region availability' mentions (AgentCore, Heroku, Ramp case study, start-building skill doc) do not concern GPT-5.6 region/partition availability. The one directly affected line (ai-openai-to-bedrock.md:133) states the old commercial-only region list, now outdated because Terra and Luna are available in a second partition (AWS GovCloud). The related line at :211 discusses a different scope (13 commercial Mantle regions for general recommendation logic) not tied specifically to GPT-5.6 Terra/Luna GovCloud fact, so left unaffected pending further review in later batches if it explicitly ties to GPT-5.6 region list.\"} [b2] None of the 30 grep hits in this batch actually reference the GPT-5.6 region-availability fact being changed. The hits fall into a few categories: (1) generic us-east-1 usage in unrelated AWS design references (CloudFront, IAM, networking, storage, compute, elastic-beanstalk, agent-advisor phases) that have nothing to do with OpenAI GPT-5.6 Bedrock availability; (2) bedrock-mantle endpoint documentation references (generate-artifacts-ai.md, ai-migration-guardrails.md) that describe the Mantle endpoint mechanism, not region availability; (3) pricing-cache.md:533 which mentions GPT-5.6 Sol/Terra/Luna GA and pricing but does not state the specific region-availability fact (us-east-1, us-east-2, us-west-2 only) being changed — it doesn't claim commercial-only or exclude GovCloud, so it's not contradicted by the new GovCloud fact; (4) openai-bedrock-2026-07-21.json:7 and ai-openai-to-bedrock.md:19 which describe GA status and Mantle/Responses-only architecture but don't state the specific region list that is being corrected. None of these lines contain the actual old value string 'us-east-1, us-east-2, us-west-2' tied to a commercial-only claim, nor a derived recommendation resting on that specific region-limitation fact. Since the change is narrowly about adding GovCloud regions for Terra/Luna, and no hit in this batch states or depends on the commercial-only region list, I found no genuinely affected hits in this batch. Marked one representative unaffected hit; the rest are equally unaffected for the same class of reasons (generic us-east-1 defaults unrelated to OpenAI GPT-5.6, or Mantle endpoint mechanics unrelated to region list).\"} [b3] All 30 hits in this batch reference us-east-1/us-west-2/us-east-2 in generic, unrelated contexts (region defaults, HIPAA guidance, example templates, GCP-to-AWS mapping tables, AgentCore availability tables, prompt-library examples, etc.). None of them mention GPT-5.6, Terra, Luna, Sol, or Bedrock model region availability for these specific OpenAI models. The announcement only changes facts about GPT-5.6 Terra/Luna GovCloud availability — it does not alter any general AWS region conventions, HIPAA guidance, or other services' regional availability tables. Therefore none of these hits are genuinely affected by the change; they are all unaffected mentions of region strings that happen to match the grep term but have no connection to the specific fact being updated (bedrock.openai_gpt56_region_availability).\" [b4] All 30 grep hits in this batch are unrelated to the specific fact change about GPT-5.6 Terra/Luna GovCloud region availability. The hits fall into these categories: (1) generic us-west-2/region references in prompt-library templates and multi-region-assessment docs that are not about GPT-5.6 or OpenAI models at all — they're generic AWS region placeholders/examples; (2) GovCloud references in agent-advisor, gcp-to-aws, and heroku-to-aws docs that discuss GovCloud in the context of FedRAMP compliance, ECS/EKS fallback, or general AWS GovCloud service availability — none of these mention GPT-5.6, Bedrock OpenAI models, or the specific region list being changed; (3) GovCloud references in knowledge-base-for-startups docs (Ramp case study, PTC/Onshape offer) that are about unrelated customer stories/offers; (4) the openai-bedrock-2026-07-21.json line about Chat Completions API support for gpt-5.6-sol, which is a different fact (API compatibility, not region availability). None of these lines assert the old region-availability fact for GPT-5.6 Terra/Luna, make a judgment/recommendation based on that old fact, or reference GovCloud specifically in connection with GPT-5.6/Bedrock OpenAI models. Therefore no lines in this batch require edits.\"} [b5] Most hits in this batch are unaffected: they involve either the Terraform IaC tool (unrelated homonym to GPT-5.6 \"Terra\"), display names/model IDs, or Converse-tier capability mappings that have nothing to do with region availability. The two genuinely affected hits are the pricing-cache.md region-availability table rows for Terra and Luna, which list only commercial regions (US East/West) and must be updated to add AWS GovCommercial (US-West)/(US-East) availability per the announcement. Sol's row (line 537) is explicitly left unaffected per the \"still true\" clause, since the announcement does not state Sol's GovCloud availability status. [b6] All 30 grep hits in this batch match the search term \"Terra\" purely as a substring of the word \"Terraform\" (Infrastructure-as-Code tooling), not the GPT-5.6 \"Terra\" model. None of these lines relate to Bedrock region availability for GPT-5.6 Terra/Luna/Sol models. They are unaffected by the region-availability fact change. [b7] Batch 7 of 7 contains no genuine hits on the fact bedrock.openai_gpt56_region_availability except the JSON model reference file, which lists model entries likely containing region_availability metadata that should be updated to add GovCloud partitions for Terra and Luna. All other hits are false positives caused by substring matches ('Terraform' matching 'Terra', or unrelated companies/products named 'Luna').\""
+  },
+  "brief": null,
+  "grep_count": 187,
+  "pr": {
+    "url": "https://github.com/awslabs/startups/pull/246",
+    "branch": "kb-autoupdate/bedrock-openai_gpt56_region_availability",
+    "title": "fix(agent-advisor): bedrock.openai_gpt56_region_availability — schema change",
+    "applied": 4,
+    "skipped": 0,
+    "commit": "a9d0214"
+  }
+}

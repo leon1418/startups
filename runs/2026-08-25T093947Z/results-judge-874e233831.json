@@ -1,0 +1,44 @@
+{
+  "hit": {
+    "id": "4fba62faf9e866417556c6f2c7f71f440a97d1ec",
+    "title": "Amazon ECS now automatically detects and repairs container instances with impaired agent connectivity",
+    "body": " Amazon Elastic Container Service (Amazon ECS) now&nbsp;automatically detects and repairs container instances, enabling customers to reduce undetected workload failures and improve application availability without manual intervention. With this launch, Amazon ECS continuously monitors agent connectivity across container instances. Infrastructure events such as EBS volume degradation, host thermal events, or network connectivity failures can sever the ECS agent's connection to the ECS control plane. Amazon ECS now surfaces a new type of container instance health change event (AGENT_CONNECTIVITY) for all compute options: AWS Fargate, Amazon ECS Managed Instances, and Amazon ECS on EC2. For ECS Managed Instances and AWS Fargate, ECS automatically performs recovery - automatically draining running tasks and launching replacement capacity while deregistering impaired instances. Customers running workloads on Amazon ECS on EC2, can use this health change event to drive instance replacement workflows. This capability is available at no additional cost in all AWS Commercial and AWS GovCloud (US) Regions . To learn more, see Monitor Amazon ECS Container Instance Health . ",
+    "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-ecs-agent-connectivity-health",
+    "published_at": "Mon, 24 Aug 2026 22:42:00 GMT",
+    "source": "aws-whats-new",
+    "relevant": true,
+    "files": [
+      "ecs.md"
+    ],
+    "reason": "ECS now includes automatic agent connectivity detection and repair for Fargate, which affects the operational characteristics and availability guarantees that the ECS service card should document."
+  },
+  "step1": {
+    "verdict": "new_knowledge",
+    "fact_key": "ecs.agent_connectivity_health",
+    "old_value": "N/A - no mention of ECS agent connectivity monitoring/auto-repair in ecs.md",
+    "new_value": "ECS now auto-detects and repairs container instances with impaired agent connectivity (AGENT_CONNECTIVITY health event) across Fargate, ECS Managed Instances, and ECS on EC2, at no additional cost, in all AWS Commercial and GovCloud (US) regions.",
+    "still_true": "All existing cost/architecture guidance in ecs.md (Fargate vs EC2 tradeoffs, cost traps, stage recommendations) remains valid; this is an additive reliability feature, not a pricing or architecture change.",
+    "false_positive_files": [],
+    "search_terms": [
+      "ECS agent connectivity",
+      "AGENT_CONNECTIVITY",
+      "container instance health",
+      "ECS Managed Instances",
+      "ECS on EC2 reliability",
+      "auto-repair container instances",
+      "ECS agent",
+      "ECS availability"
+    ],
+    "reasoning": "The startup ECS guidance file has no mention of agent connectivity monitoring, health events, or auto-repair — this is a new operational capability not previously tracked. It doesn't change any existing cost/architecture facts, so it should be added as new knowledge rather than modifying existing content.",
+    "summary": "",
+    "_missing_keys": [
+      "summary"
+    ]
+  },
+  "step2": {
+    "affected": [],
+    "notes": ""
+  },
+  "brief": null,
+  "grep_count": 0
+}

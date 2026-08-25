@@ -433,6 +433,19 @@ def main() -> int:
                          cwd=repo, capture_output=True, text=True)
     print(f"fmt       {'ok' if fmt.returncode == 0 else 'skipped (' + (fmt.stderr or 'no npx').strip().splitlines()[-1][:80] + ')'}")
 
+    # Parse gate: an LLM edit can leave a .json unparseable (a // comment inside a key
+    # line broke the whole model catalog on the GPT-5.6 region PR — awslabs/startups#246,
+    # CHANGES_REQUESTED). A knowledge edit that corrupts a data file must never ship:
+    # fail the run loudly rather than open a broken PR.
+    import json as _json
+    changed = sh(["git", "diff", "--name-only"], repo, check=False).splitlines()
+    for name in changed:
+        if name.endswith(".json"):
+            try:
+                _json.loads((repo / name).read_text(encoding="utf-8"))
+            except _json.JSONDecodeError as e:
+                raise RuntimeError(f"edit corrupted JSON: {name}: {e}")
+
     for rel in [args.skills_rel, *args.mirror_rel]:
         sh(["git", "add", "-A", rel], repo, check=False)
     if not sh(["git", "diff", "--cached", "--name-only"], repo):

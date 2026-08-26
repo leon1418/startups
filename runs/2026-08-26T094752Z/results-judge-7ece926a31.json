@@ -1,0 +1,151 @@
+{
+  "hit": {
+    "id": "77f1f7ea00c68f9f2fdb34fc182220ab2ac99a75",
+    "title": "AWS Batch now supports Amazon ECS Managed Instances",
+    "body": " AWS Batch now supports Amazon ECS Managed Instances (ECS MI) as a new compute option, enabling you to run GPU-accelerated and compute-intensive batch workloads on AWS-managed infrastructure. With AWS Batch on ECS MI you can now access GPU-accelerated instances while AWS handles AMI updates, security patching,&nbsp;and instance lifecycle automatically, eliminating the operational overhead of customer-managed Amazon EC2 infrastructure. To get started, create an AWS Batch on ECS MI compute environment using the AWS Batch CreateComputeEnvironment API or the AWS Batch Management Console. You can specify your allowed instance types and networking configuration in the managedInstancesProvider block, associate the compute environment with a job queue, and submit jobs using On-Demand, Spot, or reserved capacity. AWS Batch on ECS Managed Instances is supported in all AWS Regions where AWS Batch is available. For more information, see the AWS Batch User Guide . ",
+    "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aws-batch-on-ecs-managed-instances/",
+    "published_at": "Tue, 25 Aug 2026 19:36:00 GMT",
+    "source": "aws-whats-new",
+    "relevant": true,
+    "files": [
+      "batch.md"
+    ],
+    "reason": "AWS Batch now supports ECS Managed Instances as a new compute option with GPU acceleration and automated infrastructure management, which expands the capabilities and compute options described in the batch.md service card."
+  },
+  "step1": {
+    "fact_key": "batch.compute_environment_type",
+    "verdict": "schema_change",
+    "summary": "AWS Batch now supports a new compute environment type, Amazon ECS Managed Instances (ECS MI), in addition to Fargate and EC2. The service card currently documents only Fargate as the compute model.",
+    "old_value": "AWS Batch compute environment = Fargate (scale-to-zero, no always-on compute, no customer-managed EC2 infra)",
+    "new_value": "AWS Batch compute environment now splits by type: Fargate (serverless, scale-to-zero) vs ECS Managed Instances (GPU-accelerated/compute-intensive workloads on AWS-managed infrastructure with On-Demand/Spot/reserved capacity, AWS handles AMI updates/patching/lifecycle) vs standard EC2-managed (customer-managed)",
+    "still_true": "Fargate remains valid and correctly described for scale-to-zero, no always-on compute, no customer-managed EC2 infra — for non-GPU, standard batch workloads.",
+    "false_positive_files": [],
+    "search_terms": [
+      "AWS Batch (Fargate)",
+      "Fargate",
+      "scale-to-zero",
+      "compute environment",
+      "ECS Managed Instances",
+      "GPU",
+      "GPU-accelerated",
+      "EC2 infrastructure",
+      "customer-managed"
+    ],
+    "reasoning": "The service card's title and one-liner assume Fargate is THE compute backend for AWS Batch, but this announcement adds a new managed-infrastructure option (ECS MI) specifically for GPU/compute-intensive workloads that Fargate cannot serve — this is a new axis (compute environment type) rather than a value change to an existing number."
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "agent-advisor/references/decision-refs/batch.md",
+        "line": 1,
+        "kind": "value",
+        "before": "[AWS Batch (Fargate)]  # AWS Batch (Fargate) — Service Card",
+        "after": "# AWS Batch (Fargate / ECS Managed Instances) — Service Card",
+        "why": "AWS Batch now supports ECS Managed Instances as a new compute option alongside Fargate, so a service card titled solely 'AWS Batch (Fargate)' is no longer accurate as the sole compute type.",
+        "evidence_quote": "AWS Batch now supports Amazon ECS Managed Instances (ECS MI) as a new compute option"
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/batch.md",
+        "line": 5,
+        "kind": "derived",
+        "before": "Managed batch job execution, scale-to-zero between runs, no always-on compute.",
+        "after": "Managed batch job execution; Fargate scales to zero between runs with no always-on compute, while ECS Managed Instances provides GPU-accelerated/compute-intensive capacity on AWS-managed infrastructure (On-Demand/Spot/reserved), which is not scale-to-zero in the same sense.",
+        "why": "The 'still true' note confirms scale-to-zero only applies to Fargate; the new ECS Managed Instances option runs on always-on managed infrastructure for GPU/compute-intensive workloads, so a blanket claim of scale-to-zero for 'AWS Batch' compute environments is no longer universally true.",
+        "evidence_quote": "enabling you to run GPU-accelerated and compute-intensive batch workloads on AWS-managed infrastructure"
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/batch.md",
+        "line": 28,
+        "kind": "derived",
+        "before": "- Scaling: managed compute environment scales to zero between jobs; pay per job-second",
+        "after": "- Scaling: Fargate-based managed compute environments scale to zero between jobs (pay per job-second); ECS Managed Instances compute environments run GPU-accelerated/compute-intensive workloads on AWS-managed infrastructure with On-Demand, Spot, or reserved capacity, and are not scale-to-zero.",
+        "why": "The announcement introduces a compute environment type (ECS Managed Instances) that does not scale to zero the same way Fargate does, invalidating a blanket 'managed compute environment scales to zero' statement.",
+        "evidence_quote": "You can specify your allowed instance types and networking configuration in the managedInstancesProvider block, associate the compute environment with a job queue, and submit jobs using On-Demand, Spot, or reserved capacity."
+      },
+      {
+        "file": "agent-advisor/references/phases/estimate/estimate.md",
+        "line": 73,
+        "kind": "derived",
+        "before": "not as scale-to-zero AWS Batch. In a split run `effective_runtime == verdict`, so nothing changes.",
+        "after": "not as scale-to-zero AWS Batch (Fargate). If the workload uses ECS Managed Instances instead, treat it as always-on managed infrastructure, not scale-to-zero. In a split run `effective_runtime == verdict`, so nothing changes.",
+        "why": "The assumption that 'AWS Batch' is inherently scale-to-zero only holds for the Fargate compute type; ECS Managed Instances runs GPU/compute-intensive workloads on AWS-managed infrastructure that is not scale-to-zero.",
+        "evidence_quote": "AWS Batch now supports Amazon ECS Managed Instances (ECS MI) as a new compute option, enabling you to run GPU-accelerated and compute-intensive batch workloads on AWS-managed infrastructure"
+      },
+      {
+        "file": "agent-advisor/references/phases/estimate/estimate.md",
+        "line": 215,
+        "kind": "derived",
+        "before": "right-sizing levers, NOT \"Scale-to-zero runtimes\" (AWS Batch is already scale-to-zero).",
+        "after": "right-sizing levers, NOT \"Scale-to-zero runtimes\" (AWS Batch on Fargate is already scale-to-zero; AWS Batch on ECS Managed Instances is not, since it runs on AWS-managed always-on infrastructure for GPU-accelerated/compute-intensive workloads).",
+        "why": "The blanket parenthetical claim that 'AWS Batch is already scale-to-zero' is now only true for the Fargate compute type, not for the new ECS Managed Instances option.",
+        "evidence_quote": "AWS handles AMI updates, security patching,&nbsp;and instance lifecycle automatically, eliminating the operational overhead of customer-managed Amazon EC2 infrastructure"
+      },
+      {
+        "file": "agent-advisor/references/decision-refs/workload-classes.md",
+        "line": 11,
+        "kind": "derived",
+        "before": "| **W2** | `batch` with runs > 15 min or GPU/large memory                                    | `batch` — AWS Batch (Fargate compute env; EC2 only if GPU) |",
+        "after": "| **W2** | `batch` with runs > 15 min or GPU/large memory                                    | `batch` — AWS Batch (Fargate compute env; ECS Managed Instances or EC2 for GPU) |",
+        "why": "The announcement introduces ECS Managed Instances as the AWS-managed option for GPU-accelerated/compute-intensive batch workloads, so the recommendation of 'EC2 only if GPU' is now outdated since ECS MI is a better-fit AWS-managed alternative for GPU workloads.",
+        "evidence_quote": "enabling you to run GPU-accelerated and compute-intensive batch workloads on AWS-managed infrastructure"
+      },
+      {
+        "file": "agent-advisor/references/phases/estimate/estimate.md",
+        "line": 98,
+        "kind": "flipped",
+        "before": "- **batch units** (verdict from workload-classes.md: AWS Batch → Fargate compute; scheduled Lambda):",
+        "after": "- **batch units** (verdict from workload-classes.md: AWS Batch → Fargate compute for standard workloads, or ECS Managed Instances for GPU-accelerated/compute-intensive workloads; scheduled Lambda):",
+        "why": "AWS Batch is no longer exclusively Fargate-backed; ECS Managed Instances is now a valid compute option for GPU-accelerated and compute-intensive batch workloads, so the blanket 'AWS Batch → Fargate compute' rule is no longer universally true.",
+        "evidence_quote": "AWS Batch now supports Amazon ECS Managed Instances (ECS MI) as a new compute option, enabling you to run GPU-accelerated and compute-intensive batch workloads on AWS-managed infrastructure."
+      },
+      {
+        "file": "agent-advisor/references/phases/estimate/estimate.md",
+        "line": 101,
+        "kind": "flipped",
+        "before": "- AWS Batch (long runs, GPU, large memory): Fargate vCPU-hour + GB-hour × run count/month. State",
+        "after": "- AWS Batch (long runs, GPU, large memory): for GPU/compute-intensive workloads, price using ECS Managed Instances (On-Demand/Spot/reserved capacity); otherwise use Fargate vCPU-hour + GB-hour × run count/month. State",
+        "why": "The announcement explicitly calls out GPU-accelerated and compute-intensive workloads as the target use case for ECS Managed Instances, which directly matches the 'long runs, GPU, large memory' case previously priced only as Fargate.",
+        "evidence_quote": "enabling you to run GPU-accelerated and compute-intensive batch workloads on AWS-managed infrastructure"
+      }
+    ],
+    "notes": "terms too short to discriminate, skipped: ['GPU'] term 'Fargate' hit its 40-location cap — probably too generic [b1] The announcement adds a new AWS Batch compute environment type, ECS Managed Instances (ECS MI), for GPU-accelerated/compute-intensive workloads, running on AWS-managed infrastructure with On-Demand/Spot/reserved capacity — distinct from the existing Fargate (scale-to-zero, serverless) and standard EC2-managed compute types. This only affects statements that treat 'AWS Batch' as universally synonymous with Fargate's scale-to-zero, no-always-on-compute, no-customer-managed-EC2 behavior. Most grep hits (KMS customer-managed keys, GPU quota assistant, Lambda scale-to-zero references, EC2 infra for DB replication, poc-shapes.md Terraform resource mentions, etc.) are unrelated to AWS Batch's compute environment types and are unaffected. Only agent-advisor's batch.md service card and estimate.md's assumptions baked into cost/scaling logic are genuinely affected, since they generalize 'AWS Batch' behavior in ways that no longer hold once ECS Managed Instances is considered. No hit rises to 'flipped' since Fargate's behavior remains correctly described — the change is additive (new option) rather than a reversal of the old fact for Fargate itself. Poc-shapes.md hits are Terraform resource names (aws_batch_compute_environment) unrelated to the type of compute environment and are unaffected. [b2] Most hits in this batch are about generic Fargate/scale-to-zero usage unrelated to AWS Batch (Lambda, Cloud Run, ECS service, EKS, POC shapes for services, design.md runtime routing for fargate/ecs/lambda/eks verdicts) and are unaffected by the AWS Batch + ECS Managed Instances change, since they don't describe AWS Batch's compute environment type options. Only workload-classes.md line 11 explicitly encodes a judgment about AWS Batch compute environment selection tied to GPU workloads, which is directly impacted by the new ECS MI option per the announcement. poc-shapes.md:152 mentions AWS Batch + Fargate but in a Terraform POC-scope context unrelated to the compute-environment-type recommendation, so left unaffected pending clearer evidence one way or the other.\" [b3] Other Fargate hits in design.md (lines 349-354) and estimate.md (50,64,72,79,83,85,91,106,109) reference Fargate in contexts unrelated to AWS Batch specifically (general runtime classification, EKS-on-Fargate, Lambda-behind-ALB, generic rate tables) and are unaffected by this change since Fargate itself remains valid and correctly described for its existing use cases; only the two AWS Batch-specific compute-assumption lines are affected."
+  },
+  "brief": {
+    "what_changed": "AWS Batch now offers a third compute-environment type, ECS Managed Instances (ECS MI), alongside Fargate and standard customer-managed EC2. ECS MI targets GPU-accelerated and compute-intensive workloads, letting AWS handle AMI patching and instance lifecycle while still billing On-Demand/Spot/reserved EC2 instance rates rather than Fargate's serverless pricing. This means the old blanket guidance \"AWS Batch → Fargate\" is wrong specifically for GPU/large-memory/long-run jobs, which Fargate never supported well (no GPU, task-size/time limits) and were previously pushed to self-managed EC2 as the only option.",
+    "decision_space": [
+      {
+        "option": "Keep Fargate as default recommendation for standard (non-GPU, bounded-size, short-to-medium run) Batch workloads",
+        "depends_on": "workload has no GPU requirement and fits Fargate vCPU/memory task limits and scale-to-zero is desired"
+      },
+      {
+        "option": "Recommend ECS Managed Instances for GPU-accelerated or compute-intensive/large-memory/long-running Batch jobs that previously required customer-managed EC2",
+        "depends_on": "GA maturity confirmed, GPU instance types available in target region, cost model validated against Spot/On-Demand/reserved rates vs self-managed EC2"
+      },
+      {
+        "option": "Retain standard customer-managed EC2 compute environment as an option for workloads needing custom AMIs, non-standard networking, or fine-grained instance control not exposed via managedInstancesProvider",
+        "depends_on": "workload requires customizations ECS MI does not yet support"
+      },
+      {
+        "option": "Do not yet default GPU/heavy workloads to ECS MI; flag as emerging option pending real-world cost/patching-cadence validation",
+        "depends_on": "maintainer risk tolerance for a newly-GA capability without pricing/patch-SLA track record"
+      }
+    ],
+    "proposed_position": "Update estimate.md batch-units guidance to branch by workload type: (1) standard, non-GPU Batch workloads → keep Fargate vCPU-hour + GB-hour × run count/month; (2) GPU-accelerated, large-memory, or long-running Batch workloads → use ECS Managed Instances (On-Demand/Spot/reserved EC2 instance-hour pricing for the selected instance type × run count/month), noting AWS manages AMI/patching/lifecycle; (3) workloads needing custom AMIs or infrastructure control not yet exposed by ECS MI → customer-managed EC2 compute environment, priced as before. Mark ECS MI as newly GA and flag it for re-verification in 2-3 months once real cost and patch-cadence data are available.",
+    "assumptions": [
+      "ECS Managed Instances is truly GA (not preview) at the time this brief is adopted — verify current AWS documentation status.",
+      "ECS MI pricing follows standard EC2 On-Demand/Spot/reserved instance rates with no additional managed-service premium; verify AWS Batch pricing page.",
+      "GPU instance types needed by target workloads are available under ECS MI in the customer's operating regions — regional GPU capacity varies.",
+      "AWS-managed AMI/patch cadence for ECS MI meets the workload's compliance and update-window requirements (unproven at GA, no long-term track record).",
+      "Fargate's task-level vCPU/memory limits and lack of GPU support are still accurate constraints excluding it from GPU/large-memory jobs.",
+      "managedInstancesProvider configuration (instance types, networking) is stable enough for production use and not subject to near-term breaking changes.",
+      "Cost comparison between ECS MI and self-managed EC2 (labor savings vs instance-hour pricing) has not yet been independently validated by the maintainer.",
+      "'Compute-intensive' workload classification threshold (what qualifies for ECS MI vs Fargate) still needs maintainer-defined criteria, not assumed from vendor marketing language."
+    ]
+  },
+  "grep_count": 76,
+  "review_issue": {
+    "url": "https://github.com/awslabs/startups/issues/248",
+    "reason": "2 conclusions reversed",
+    "flipped": 2
+  }
+}

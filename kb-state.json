@@ -31,6 +31,7 @@
     "9d4eab2e362cccbc3af2ac38bcc43b002fbcaa01"
   ],
   "seen:aws-news-blog": [
+    "0d62c0134c150af14fc409516cdf59aff26dc9e1",
     "13572f01241ca7108f49e50344decc868ddde5d7",
     "23fc16a0c48a8aaf8de130ae8e5719b50ba6f960",
     "25f64a6bf2f8d46827f51c3f9dcc34b99f7955fd",
@@ -39,7 +40,6 @@
     "2c1999b3f40dcbf5fbc95e907da3c6141bbc8c45",
     "3e7f6047f5812686137b8832bd55b853dd906a34",
     "4208480ff12de823b05e88106fa2cdbe89cd4c2e",
-    "48f31f6fe142a62eba1b6ad460759328491f8672",
     "5bd92664f8ba6ec61ac2d68e8b4b52a7f2988613",
     "5f1578e8308028213ee25d84f88e1be66f65bc77",
     "77c18d2b47b8dea484a97205ea56792640d7b37a",
@@ -51,6 +51,7 @@
     "e0eaa8dc02bf3dada9e373bdf284e82bd4d4e86c",
     "e1fe2965259df670bd55dc1185e2f5c257298d4c",
     "eecd301bc56dd721583bbbd8024097ca3ad82fd6",
+    "48f31f6fe142a62eba1b6ad460759328491f8672",
     "9c5d4385212a06a322e30ee7f64a694ffd756b6d",
     "abebfba02b3b7c0c3c3ed08a23aeb25f8830da3f"
   ],
@@ -161,8 +162,10 @@
     "00425cd52a03e797eaa95185152a0c11d5358f04",
     "00f3afa813421938a031f5e9bb8922fbcbd18652",
     "02440e498cce6157dc22a4330671d01f26153993",
+    "04408dbbdacb7d86ed3d4c3aa5aa5412d02b71c1",
     "0508a78a427a72e62c001cfac4d137649257bccf",
     "052a621d0069ccc2237b38c54c8d2724a7aeb9c6",
+    "07782dba5be68ae8460cae3ce043e5503d5413c4",
     "08196b206570ef3c02dadfee7da9f37640213de5",
     "082c22527d27b8cb0174d683ef734e17822de296",
     "08df5e95eb0b5cc86c1f08b36632b1332a8ad390",
@@ -202,8 +205,10 @@
     "2a6137ab9f36ae8935dba10b98561867d208d838",
     "2c49e2b718eee422d5171e1197736f6200c4acdd",
     "2dd38f1c2d974e70306ee5a6a97373977a655bea",
+    "307077c7c45c71a4500e44806920aa553d84b8e1",
     "30bc04c96ca2655b259ac396fb6926f0e4d49efa",
     "31a62fb354db6e23283dc74a5399d77dcf4b141a",
+    "32853b00be588abb62d535b1a2b4ed19e194d4c8",
     "33ffba8ac113df489cc24f59e7eb164e7bbfc2cb",
     "3437b1185e3b2e560d50ad78f944563f7daf4d9b",
     "35620bc7908fca89113103e3338acb29b9e75c04",
@@ -212,6 +217,7 @@
     "35f315fe6f25e3d9acb8fbd293721c3caa233103",
     "37ed8d584f7ac4c9cd8a3a09c2bfaa32d0638ba2",
     "3819b0a300155cc958087e4087fc80c751c39d0d",
+    "397af8e5e8004c316b8c4a0b28a05017286e093f",
     "3dafe436f690f09d1100ce42cbc4e3add27db399",
     "3e6b1e7c44eb77caea0bb28219df17e56638a5b3",
     "3fa61a785426c948bc7175f52ef3d9c33cc780c3",
@@ -246,6 +252,7 @@
     "5fb2e9574387f59c7c100fa33f9d653ea51d4d72",
     "613c99088d1172d10f5faa18da1a5beee41d5428",
     "627dce9ca6dcdfa4d9af687ed57b629ea6c443ad",
+    "62c7204de59d9baa4287495607c1e7b3feac2d46",
     "634661242924a7a08a68b0d15805afbd4249e0e1",
     "6431cfb35c5a0c9380c6b6daef631601c8d1d428",
     "643f7d95e93b97ef94a2f18632e88535522fa172",
@@ -258,13 +265,16 @@
     "6de57e7d7ced973499b9160772f6a985bce21c7a",
     "6e255cf3a1f3ce9c16ba51db56180ec83ea6f346",
     "6e57af50ce7353b6bb6915b9b67ec00dd9f91e8a",
+    "6fa9794c5fcca1eb90e2c8aedf2a20b67fb45057",
     "6feb33ac51fa5392a09d8158e1d25395ecdc38d1",
     "71926e719272cd4643e37186af305d8b3fb9c30a",
+    "737f5cfc7b3c68ac089103839c6642fc5a42eb9b",
     "740a610986cdb33e29272d8391308f70d4f34018",
     "769808c3594d07b168ee8c565c24f08eeb15be92",
     "76ab175aa0e4c90687df0c1972aadfbc68ec691e",
     "77118f10791fca146de10049e205ca07a0c87e6d",
     "771383b8005dc41b6e606dac26e0fe9e00ae2a51",
+    "77f1f7ea00c68f9f2fdb34fc182220ab2ac99a75",
     "7abd6fb7c1447d6ef6cbffce28784fae487c4d71",
     "7f4896d6de03c545c26921b53157097e54eeb251",
     "7ff1d5bf2513e56dd645d33c4d14c1049f305192",
@@ -286,6 +296,7 @@
     "9b9ac3837cd24109ffee2c16edea014b02ef7ae5",
     "9dc6c2adb9f63ab7d177df88f9fa07e79a11931d",
     "a21095f2289f0f7296f9530668428301412d38c4",
+    "a265786c29fe8d054434e44518fa346e5fb027f7",
     "a37e508a47bb8fd08074f1cbdabef568f9d3a78a",
     "a43eb6593c4bc2e5b4abf0032d7cb1bbd638f72c",
     "a4e2950520e4c3af8ed94b53e06f94e6f63fc82c",
@@ -296,6 +307,7 @@
     "a8d3fb3b9188bf448c45c7f1b454c94f4f5e60ec",
     "aa864724d755a63d6a52f019c4a5a861bd069310",
     "aa9e9facf41b719992d954abcd7972cb0f75274f",
+    "ac0739540b21dbfe950082d970b9b85de9ac9f88",
     "ad09acc0fa8e328e076fc5df9fdbdb6ba26e86ab",
     "ad60ddd0a22833f9ccc56174fc2d0a5f0266fe2b",
     "ae96c9f566b3e1bbf318a6581cb3aa8b31ca9265",
@@ -357,16 +369,20 @@
     "e5eb82d23f2dd35dadcfc29d16de040330e26d78",
     "ea1108df34df79275b0866b5ee3247952e79f565",
     "ea1af5410de09c929fbad22621e79ec32f0cc1e1",
+    "eb1caf9e41b2c6fd9b0e0d145e0af0a088ad015f",
     "eb8f498772831965374c98d21de5aa98b7fcea0b",
     "ec4d05316742f9e1f7d643a8eaf14c92d2fd85e3",
     "ecc036fe67108218fa9e94a886f5de33ba2bc7d3",
+    "ecf8f2a5fc83b152d4f36c44d7e89f461137fd82",
     "efdd809a0dbe6a9e7b207e01db704735eb8f82fe",
+    "f3419585aae6bb78c94fcc3f50809412c66c18d4",
     "f412e06626d3cf48626826fcee7e2decca0209aa",
     "f4a6fb98b6bde181652412d3b6d4ca76073b7707",
     "f648329a0eceebac7ab8c4efdf72213184675abe",
     "f6936440abd634b69a722a50238dd761154e11fc",
     "f801554869ca1e5308938c3fffb2a5a498536f3e",
     "f9931b96faabd057247791599baf988be09ae25c",
+    "fcbbabd96b0d98ed3a5565d9eb98fc0c1857bb2b",
     "fd2c74664c81a56787d4c04da22cb08eb25df5cb",
     "fd2d7745352a48a2c45aa11ab39f03169945d970"
   ],
@@ -2530,6 +2546,7 @@
     "https://openai.com/index/introducing-4o-image-generation",
     "https://openai.com/index/introducing-aardvark",
     "https://openai.com/index/introducing-activation-atlases",
+    "https://openai.com/index/introducing-admin-plugin",
     "https://openai.com/index/introducing-agentkit",
     "https://openai.com/index/introducing-ai-futures",
     "https://openai.com/index/introducing-apps-in-chatgpt",
@@ -2621,6 +2638,7 @@
     "https://openai.com/index/inworld-ai-DO-NOT-PUBLISH",
     "https://openai.com/index/ironclad",
     "https://openai.com/index/jakub-pachocki-announced-as-chief-scientist",
+    "https://openai.com/index/jalapeno-first-results",
     "https://openai.com/index/japan-economic-blueprint",
     "https://openai.com/index/japan-teen-safety-blueprint",
     "https://openai.com/index/jetbrains",
@@ -3038,6 +3056,7 @@
     "https://openai.com/index/text-and-code-embeddings-by-contrastive-pre-training",
     "https://openai.com/index/the-defenders-window",
     "https://openai.com/index/the-five-ai-value-models-driving-business-reinvention",
+    "https://openai.com/index/the-full-stack-behind-abundant-intelligence",
     "https://openai.com/index/the-instruction-hierarchy",
     "https://openai.com/index/the-international-2018-results",
     "https://openai.com/index/the-met-museum",
@@ -3130,18 +3149,18 @@
     "https://openai.com/signals/research/2026q1-update"
   ],
   "last_run": {
-    "at": "2026-08-25 09:41 UTC",
+    "at": "2026-08-26 09:49 UTC",
     "recheck": {
       "agree": 30,
-      "recheck_failed": 61,
-      "changed": 3,
-      "needs_human": 5
+      "recheck_failed": 60,
+      "changed": 5,
+      "needs_human": 4
     },
     "scan": {
-      "fetched": 1335,
-      "new": 15,
+      "fetched": 1338,
+      "new": 19,
       "hits": 2,
-      "dropped": 13
+      "dropped": 17
     }
   },
   "run_history": [
@@ -3445,6 +3464,30 @@
         "new": 15,
         "hits": 2,
         "dropped": 13
+      }
+    },
+    {
+      "at": "2026-08-26 09:49 UTC",
+      "recheck": {
+        "agree": 30,
+        "recheck_failed": 60,
+        "changed": 5,
+        "needs_human": 4
+      }
+    },
+    {
+      "at": "2026-08-26 09:49 UTC",
+      "recheck": {
+        "agree": 30,
+        "recheck_failed": 60,
+        "changed": 5,
+        "needs_human": 4
+      },
+      "scan": {
+        "fetched": 1338,
+        "new": 19,
+        "hits": 2,
+        "dropped": 17
       }
     }
   ]

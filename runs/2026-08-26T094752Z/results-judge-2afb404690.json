@@ -1,0 +1,57 @@
+{
+  "hit": {
+    "id": "07782dba5be68ae8460cae3ce043e5503d5413c4",
+    "title": "AWS Lambda MicroVMs now supports AWS PrivateLink",
+    "body": " AWS Lambda MicroVMs now supports AWS PrivateLink, enabling private connectivity to Lambda MicroVMs directly from Amazon Virtual Private Cloud (VPC) resources without exposing traffic to the public internet. This launch helps regulated workloads in financial services, healthcare, and government meet strict network isolation requirements when building with Lambda MicroVMs.&nbsp; PrivateLink VPC Endpoints deliver private connectivity to AWS services from your VPC, ensuring that your traffic does not travel over the public internet when communicating with AWS services. Today's launch extends this capability to Lambda MicroVMs. Developers and IT teams needing private connectivity to Lambda MicroVMs can now create PrivateLink VPC Endpoints in their VPC to call MicroVM APIs (for example, to create MicroVM images or launch MicroVMs) and to connect to each MicroVM’s HTTP endpoint. PrivateLink VPC Endpoints for Lambda MicroVMs can be created using the AWS Management Console, AWS CLI, AWS CloudFormation, or the AWS SDKs. This feature is supported in all Regions where Lambda MicroVMs is available. Visit the AWS Capabilities by Region page for the latest region availability.&nbsp;&nbsp; To lea",
+    "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/lambda-microvms-supports-privatelink",
+    "published_at": "Tue, 25 Aug 2026 16:34:00 GMT",
+    "source": "aws-whats-new",
+    "relevant": true,
+    "files": [
+      "lambda-microvms.md"
+    ],
+    "reason": "PrivateLink support is a new networking capability for Lambda MicroVMs that affects its suitability for regulated workloads with network isolation requirements, which the service card should reflect for migration decision-making."
+  },
+  "step1": {
+    "fact_key": "lambda-microvms.networking",
+    "old_value": "Networking: per-MicroVM URL over TLS; public service endpoints; VPC endpoints only if policy demands.",
+    "new_value": "Networking: per-MicroVM URL over TLS; public service endpoints OR private connectivity via AWS PrivateLink VPC Endpoints (for MicroVM control-plane API calls and per-MicroVM HTTP endpoint connections), available in all regions where Lambda MicroVMs is available.",
+    "still_true": "Public service endpoints and per-MicroVM URL over TLS remain valid for non-regulated/default use cases.",
+    "false_positive_files": [],
+    "search_terms": [
+      "VPC endpoints",
+      "PrivateLink",
+      "public service endpoints",
+      "Networking:",
+      "per-MicroVM URL",
+      "network isolation"
+    ],
+    "verdict": "schema_change",
+    "summary": "Lambda MicroVMs networking now has a private-connectivity option (AWS PrivateLink VPC Endpoints) in addition to public endpoints, changing the \"VPC endpoints only if policy demands\" caveat into a fully supported first-class option for MicroVM API calls and per-MicroVM HTTP endpoints.",
+    "reasoning": "The doc's networking note treats VPC endpoints as an edge-case fallback (\"only if policy demands\"), but the announcement establishes PrivateLink as a generally available, first-class private connectivity mechanism for both control-plane API calls and per-MicroVM endpoints — this is a new dimension (private vs public path) rather than a simple value update."
+  },
+  "step2": {
+    "affected": [
+      {
+        "file": "agent-advisor/references/decision-refs/lambda-microvms.md",
+        "line": 44,
+        "kind": "value",
+        "before": "Networking: per-MicroVM URL over TLS; public service endpoints; VPC endpoints only if policy demands.",
+        "after": "Networking: per-MicroVM URL over TLS; public service endpoints OR private connectivity via AWS PrivateLink VPC Endpoints (for MicroVM control-plane API calls and per-MicroVM HTTP endpoint connections), available in all regions where Lambda MicroVMs is available.",
+        "why": "This is the exact old fact string for lambda-microvms.networking being replaced by the announcement of PrivateLink support for Lambda MicroVMs.",
+        "evidence_quote": "AWS Lambda MicroVMs now supports AWS PrivateLink, enabling private connectivity to Lambda MicroVMs directly from Amazon Virtual Private Cloud (VPC) resources without exposing traffic to the public internet."
+      }
+    ],
+    "notes": "[b1] Only the lambda-microvms.md:44 hit matches the specific fact (lambda-microvms.networking) targeted by the change. The similarly-worded lines in agentcore.md:72, lambda.md:31, batch.md:45, and ecs.md:34 describe VPC endpoints/networking for other compute services (AgentCore, Lambda, Batch, ECS) — the announcement is specific to \\\"AWS Lambda MicroVMs\\\" and does not state or imply these other services now support PrivateLink, so they are unaffected. All other hits (cost/architecture docs about VPC endpoints, NAT Gateway economics, MVSP checklist items, etc.) are unrelated general AWS networking guidance not tied to the Lambda MicroVMs PrivateLink fact, so they are unaffected.\" [b2] All 15 hits in this batch are unrelated to the Lambda MicroVMs networking fact. The hits about VPC endpoints and PrivateLink refer to different products/services (general AWS security baseline guidance, Temporal Cloud, GCP-to-AWS migration guidance, case studies about Astronomer/turbopuffer using PrivateLink for unrelated products, and generic 'Networking:' section headers in unrelated docs like batch jobs, POC shapes, and security baseline evaluation). None of these state or depend on the specific old fact about Lambda MicroVMs' networking options (public endpoints vs VPC endpoints only if policy demands), so none require rewriting per the announcement about AWS Lambda MicroVMs PrivateLink support."
+  },
+  "brief": null,
+  "grep_count": 45,
+  "pr": {
+    "url": "https://github.com/awslabs/startups/pull/249",
+    "branch": "kb-autoupdate/lambda-microvms-networking",
+    "title": "fix(agent-advisor): lambda-microvms.networking — schema change",
+    "applied": 1,
+    "skipped": 0,
+    "commit": "d98ab97"
+  }
+}

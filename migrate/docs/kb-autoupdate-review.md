@@ -299,7 +299,7 @@ currently the primary deployment. The workflow holds no cloud credentials.
 | Piece                          | Where it lives                                                                                |
 | ------------------------------ | --------------------------------------------------------------------------------------------- |
 | Orchestration                  | one workflow on the maintainer fork; daily at 09:00 UTC, plus a manual run button              |
-| Inference                      | an OpenAI-compatible gateway (repo secret holds the key); same Claude models, same nine calls  |
+| Inference                      | Amazon Bedrock directly, via GitHub→AWS OIDC federation (a Bedrock-invoke-only role; no long-lived secret) |
 | State — registries, seen, pins | one JSON file on the fork's `kb-state` branch, committed back after every run                  |
 | Run archive                    | `runs/<runId>/` on the same branch (newest 30 kept), plus a workflow artifact per run          |
 | Draft PRs and review briefs    | opened on `awslabs/startups` under the maintainer's identity; branches stay on the fork        |

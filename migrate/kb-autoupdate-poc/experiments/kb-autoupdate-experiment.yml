@@ -87,7 +87,9 @@ jobs:
           echo "KB_RUN_ID=$(date -u +%Y-%m-%dT%H%M%SZ)" >> "$GITHUB_ENV"
 
       - name: Install dependencies
-        run: pip install --quiet boto3 httpx beautifulsoup4 lxml defusedxml
+        # --upgrade matters: the runner image preinstalls an old boto3 without the Converse
+        # API, and a plain install skips it as already satisfied.
+        run: pip install --quiet --upgrade boto3 httpx beautifulsoup4 lxml defusedxml
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v6

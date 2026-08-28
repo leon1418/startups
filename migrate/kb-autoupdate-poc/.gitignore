@@ -1,3 +1,13 @@
+# local state (the deployed pipelines use DynamoDB or the kb-state branch)
 .kb-state.json
-__pycache__/
+# generated at run time
+results-*.json
+*.pr-body.md
+*.issue-body.md
+decision-*.json
+dashboard.html
 dashboard-issue-body.md
+attention.json
+hits.txt
+*.log
+__pycache__/

@@ -74,11 +74,11 @@ def ask_json(model: str, system: str, user: str, schema: dict, max_tokens: int =
     temperature=0 is requested for reproducibility, but the newest models reject it
     ("`temperature` is deprecated for this model"), so fall back to omitting it.
 
-    KB_INFERENCE=github|openai routes every call to an OpenAI-compatible endpoint instead
-    of the Bedrock SDK — the no-AWS-credentials experiment. Same contract, same guards;
+    KB_INFERENCE=openai routes every call to an OpenAI-compatible endpoint instead of the
+    Bedrock SDK, for environments without AWS credentials. Same contract, same guards;
     only the transport differs.
     """
-    if _os.environ.get("KB_INFERENCE") in ("github", "openai"):
+    if _os.environ.get("KB_INFERENCE") == "openai":
         return _ask_json_openai_compat(model, system, user, schema, max_tokens)
     kwargs = dict(
         modelId=model,
@@ -121,34 +121,24 @@ def ask_json(model: str, system: str, user: str, schema: dict, max_tokens: int =
     raise RuntimeError(f"model did not call the tool: {json.dumps(resp)[:500]}")
 
 
-GITHUB_MODELS_URL = "https://models.github.ai/inference/chat/completions"
-
-
 def _ask_json_openai_compat(model: str, system: str, user: str, schema: dict, max_tokens: int) -> dict:
     """OpenAI-compatible chat-completions backend with a forced tool call.
 
     KB_INFERENCE=openai talks to KB_INFERENCE_URL (a /chat/completions endpoint) with
     KB_INFERENCE_TOKEN as the bearer — any OpenAI-compatible gateway works, including a
-    Bedrock access gateway, so the workflow itself needs no cloud credentials.
-    KB_INFERENCE=github keeps the (retiring) GitHub Models defaults: the Actions
-    GITHUB_TOKEN and a tight output clamp for its free tier. 429s wait and retry instead
-    of failing the run.
+    Bedrock access gateway, so the caller needs no cloud credentials. 429s wait and retry
+    instead of failing the run.
     """
     import time
 
-    github = _os.environ.get("KB_INFERENCE") == "github"
-    url = _os.environ.get("KB_INFERENCE_URL") or GITHUB_MODELS_URL
-    # The GITHUB_TOKEN fallback is for GitHub Models ONLY. A custom gateway must get its
-    # own token — falling back would send the repo token to a third-party URL and fail
-    # with a misleading 401 when the secret is simply unset.
-    token = _os.environ.get("KB_INFERENCE_TOKEN") or (
-        (_os.environ.get("KB_GH_MODELS_TOKEN") or _os.environ.get("GITHUB_TOKEN")) if github else None)
-    if not token:
-        raise RuntimeError("KB_INFERENCE_TOKEN is not set (is the repo secret configured?)")
+    url = _os.environ.get("KB_INFERENCE_URL")
+    token = _os.environ.get("KB_INFERENCE_TOKEN")
+    if not url or not token:
+        raise RuntimeError("KB_INFERENCE=openai needs KB_INFERENCE_URL and KB_INFERENCE_TOKEN")
     body = {
         "model": model,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        "max_tokens": min(max_tokens, 4000) if github else max_tokens,
+        "max_tokens": max_tokens,
         "tools": [{"type": "function",
                    "function": {"name": "answer", "description": "Return the answer.", "parameters": schema}}],
         "tool_choice": {"type": "function", "function": {"name": "answer"}},

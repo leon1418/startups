@@ -8,8 +8,8 @@
 # the judge results behind review-brief markers. PRs, review briefs, and the dashboard
 # issue all land in this repo via the runner's own GITHUB_TOKEN.
 #
-# This file lives at .github/workflows/kb-autoupdate-experiment.yml on the default branch;
-# the copy under experiments/ is the reviewed source.
+# This file lives at .github/workflows/kb-autoupdate.yml on the default branch;
+# the copy under workflow/ is the reviewed source.
 name: kb-autoupdate
 
 on:

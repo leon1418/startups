@@ -1,0 +1,35 @@
+{
+  "hit": {
+    "id": "8941598cc287e755d586080bb5701a4af10035bb",
+    "title": "Amazon Bedrock AgentCore expands to two new regions",
+    "body": " Amazon Bedrock AgentCore is now available in two additional AWS Regions: US West (N. California) and Asia Pacific (Hyderabad). Amazon Bedrock AgentCore is the platform to build, connect, and optimize agents. It helps engineers ship agents fast with any framework and any model, connect them to enterprise systems and tools, and optimize them continuously, with security enforced at the infrastructure layer that agents can't bypass. With this expansion, customers in these regions can build and run agents closer to their end users with lower latency. AgentCore capabilities including agent runtime, identity and access control, policy management, session persistence, tool connectivity, evaluations and observability are available in these regions at launch. For more information on AgentCore, visit the AgentCore product page or the AgentCore Developer Guide . To learn about pricing, visit AgentCore pricing . For region availability, visit Supported AWS Regions . ",
+    "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/bedrock-agentcore-two-new-regions/",
+    "published_at": "Thu, 27 Aug 2026 18:00:00 GMT",
+    "source": "aws-whats-new",
+    "relevant": true,
+    "files": [
+      "agentcore.md"
+    ],
+    "reason": "AgentCore region availability expanded; agentcore.md must be reviewed to update supported regions list if it documents regional availability."
+  },
+  "step1": {
+    "fact_key": "agentcore.region_availability",
+    "verdict": "no_change",
+    "summary": "The announcement only expands AgentCore's regional availability to two new AWS regions; it does not change any cost, architecture, or capability guidance in the referenced file.",
+    "old_value": "AgentCore available in a set of AWS regions (not enumerated in this file)",
+    "new_value": "AgentCore now also available in US West (N. California) and Asia Pacific (Hyderabad)",
+    "still_true": "All existing cost, architecture, and adoption guidance in agentcore.md remains valid regardless of region.",
+    "false_positive_files": [
+      "architect-for-startups/references/agentcore.md"
+    ],
+    "search_terms": [
+      "AgentCore region",
+      "Supported AWS Regions",
+      "AgentCore availability",
+      "N. California",
+      "Hyderabad"
+    ],
+    "reasoning": "This file is a decision guide about when/how to use AgentCore for startups — it contains no region-specific content, so the region expansion announcement doesn't touch any fact stated here. It's a false positive match (file discusses AgentCore generally, not regions)."
+  },
+  "step2": null
+}

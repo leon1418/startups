@@ -1,0 +1,223 @@
+{
+  "sources": [
+    "aws-whats-new",
+    "aws-news-blog",
+    "openai-news",
+    "openai-api-changelog",
+    "anthropic-release-notes",
+    "temporal-changelog"
+  ],
+  "state_backend": "local:/home/runner/work/startups/startups/state/kb-state.json",
+  "counts": {
+    "fetched": 1346,
+    "in": 15,
+    "already_seen": 1331,
+    "hits": 1,
+    "dropped": 14,
+    "errors": 0
+  },
+  "source_failures": [],
+  "filter_files": [
+    "agentcore.md",
+    "batch.md",
+    "cost-levers.md",
+    "ecs.md",
+    "eks.md",
+    "freshness.md",
+    "lambda-microvms.md",
+    "lambda.md",
+    "managed-alternatives.md",
+    "maturity-readiness.md",
+    "model-selection.md",
+    "poc-shapes.md",
+    "temporal.md",
+    "workload-classes.md",
+    "ai-anthropic-to-bedrock.md",
+    "ai-gemini-to-bedrock.md",
+    "ai-openai-to-bedrock.md",
+    "ai.md",
+    "compute.md",
+    "database.md",
+    "design-ref-agentic-to-agentcore.md",
+    "design-ref-harness.md",
+    "elastic-beanstalk.md",
+    "fast-path.md",
+    "index.md",
+    "messaging.md",
+    "networking.md",
+    "security.md",
+    "storage.md"
+  ],
+  "hits": [
+    {
+      "id": "8941598cc287e755d586080bb5701a4af10035bb",
+      "title": "Amazon Bedrock AgentCore expands to two new regions",
+      "body": " Amazon Bedrock AgentCore is now available in two additional AWS Regions: US West (N. California) and Asia Pacific (Hyderabad). Amazon Bedrock AgentCore is the platform to build, connect, and optimize agents. It helps engineers ship agents fast with any framework and any model, connect them to enterprise systems and tools, and optimize them continuously, with security enforced at the infrastructure layer that agents can't bypass. With this expansion, customers in these regions can build and run agents closer to their end users with lower latency. AgentCore capabilities including agent runtime, identity and access control, policy management, session persistence, tool connectivity, evaluations and observability are available in these regions at launch. For more information on AgentCore, visit the AgentCore product page or the AgentCore Developer Guide . To learn about pricing, visit AgentCore pricing . For region availability, visit Supported AWS Regions . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/bedrock-agentcore-two-new-regions/",
+      "published_at": "Thu, 27 Aug 2026 18:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": true,
+      "files": [
+        "agentcore.md"
+      ],
+      "reason": "AgentCore region availability expanded; agentcore.md must be reviewed to update supported regions list if it documents regional availability."
+    }
+  ],
+  "dropped": [
+    {
+      "id": "bef13a0437360745c86de1cabe2f62d2cc5783da",
+      "title": "Cosmos3-Edge, Cosmos3-Nano, and Cosmos3-Super models now available on Amazon SageMaker JumpStart",
+      "body": " NVIDIA's Cosmos3-Edge, Cosmos3-Nano, and Cosmos3-Super models are now available on Amazon SageMaker JumpStart, expanding the portfolio of foundation models available to AWS customers. These three models form the Cosmos 3 family of open, frontier omnimodal world models for physical AI, enabling customers to build robots, autonomous vehicles, and vision AI that perceive, reason, plan, and act in the physical world. These models address different physical AI challenges with specialized capabilities: Cosmos3-Edge is engineered for on-device robot control and real-time visual reasoning on edge hardware. This 4B-parameter omni-model (with a 2B Nemotron-based reasoner) operates at robot-control resolution (640×360), delivering real-time reasoning and generating 32 actions per inference at 15 Hz on NVIDIA Jetson Thor. It supports 256p and 480p video at 12–30 FPS, bringing frontier physical AI capabilities directly to embedded systems. Cosmos3-Nano excels in physics-aware world generation and physical reasoning as a compact 16B-parameter omnimodal model. It processes combinations of text, image, video, audio, and action trajectories to produce corresponding outputs, enabling robots and vis",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/01/cosmos3-edge-cosmos3-nano-cosmos3-super-on-sagemaker-jumpstart/",
+      "published_at": "Thu, 27 Aug 2026 22:41:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns NVIDIA Cosmos3 models on SageMaker JumpStart (a model hub/discovery service), which is not a service the listed knowledge files reason about or make recommendations on."
+    },
+    {
+      "id": "18b94616957927074386db829296fa00d7e17e94",
+      "title": "Muse-Glimmer-30B and Qwen 3.8-27B models now available on Amazon SageMaker JumpStart",
+      "body": " Meta's Muse-Glimmer-30B and Alibaba's Qwen 3.8-27B models are now available on Amazon SageMaker JumpStart, expanding the portfolio of foundation models available to AWS customers. These two models bring specialized capabilities spanning autonomous local agentic workflows and multimodal long-horizon reasoning, enabling customers to deploy high-performance, scalable AI solutions on AWS infrastructure. These models address different enterprise AI challenges with specialized capabilities: Muse-Glimmer-30B is engineered for autonomous agentic tasks with multi-step reasoning, tool use, and failure recovery . This 30B-parameter dense model from Meta Superintelligence Lab combines a dedicated ~1.8B ViT-G/14 perception encoder with interleaved text and image inputs, a 131K+ context window, and selectable reasoning strength (low through extra-high). Released under Apache 2.0, it handles sequential tool calls, recovers from failures, and operates entirely without cloud infrastructure which is ideal for always-on enterprise agents. Qwen 3.8-27B excels in coding, multi-step agentic tasks, and multimodal understanding across text, images, and video . A dense 27B-parameter native vision-language",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/01/muse-glimmer-30b-qwen-3.8-27b-on-sagemaker-jumpstart/",
+      "published_at": "Thu, 27 Aug 2026 22:39:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement adds two new foundation models to SageMaker JumpStart, but the knowledge files do not make availability or capability claims about specific models in SageMaker JumpStart that would require updating."
+    },
+    {
+      "id": "6d5bb4d1a8c2af042b2dfea1872493f0623fbf58",
+      "title": "Amazon Redshift streaming can now ingest 10MiB records from Amazon Kinesis Data Streams",
+      "body": " Amazon Redshift &nbsp;now supports Amazon Kinesis Data Streams (KDS) record sizes up to 10 MiB—a 10x increase from the previous 1 MiB limit—fully matching the expanded maximum record size in Amazon KDS. This means you can stream significantly larger payloads directly into Amazon Redshift without splitting records, simplifying your ingestion pipelines and unlocking new use cases for high-volume, large-record workloads. Amazon Redshift support for 10MiB record size in Amazon KDS streams is now available in all commercial AWS regions where Amazon Redshift is available. For more information on direct streaming ingestion into Amazon Redshift, see the Amazon Redshift streaming documentation . For more information on 10MiB record support in Amazon KDS, see the Amazon KDS documentation . &nbsp; ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/redshift-streaming-supports-kds-10mib-records",
+      "published_at": "Thu, 27 Aug 2026 21:41:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns Redshift streaming ingestion limits from Kinesis, which is not a service or capability that any of the listed migration-advice files reason about or make recommendations on."
+    },
+    {
+      "id": "89a40c47ad478cc4d2ed42b9ddb3d053bc2f3fad",
+      "title": "Amazon Redshift integrates with Agent Toolkit for AWS for AI-assisted data warehouse management",
+      "body": " Amazon Redshift now integrates with the Agent Toolkit for AWS , enabling you to build, query, troubleshoot, and migrate to Amazon Redshift data warehouses and date lakes directly from AI agents such as Claude Code, Kiro, and Cursor. The integration pairs the AWS MCP (Model Context Protocol) server , which provides authenticated AWS API execution on your behalf — with Redshift skills : curated packages of tested procedures and reference material that help AI agents complete Redshift tasks more effectively. The Redshift skills cover SQL syntax references to reduce query generation errors, metadata discovery to explore schemas and data without writing SQL by hand, data loading patterns, materialized view best practices, function and data type guidance, and extensions such as Qualify, Pivot, and Super. It also guides end-to-end data warehouse migrations to Amazon Redshift, including discovery, schema and SQL conversion, data movement, validation, and performance comparison. We will continue to expand these skills with additional capabilities over time. The skills work with provisioned clusters and Serverless workgroups, require no changes to existing infrastructure, and are available ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/redshift-agenttoolkit-for-ai-assisted-datawarehouse-mgmt",
+      "published_at": "Thu, 27 Aug 2026 20:07:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns Redshift data warehouse management tooling via MCP and AI agent skills, which is outside the scope of a migration-advice skill focused on agent runtime, compute, database, and AI model selection for agent workloads."
+    },
+    {
+      "id": "d032336abc9eb6c660a1ca3ac05d32ca610c36ec",
+      "title": "Amazon EC2 X8i instances are now available in additional regions",
+      "body": " Starting today, Amazon Elastic Compute Cloud (Amazon EC2) X8i instances are available in the Europe (Milan) and Europe (Spain) regions. These instances are powered by custom Intel Xeon 6 processors available only on AWS. X8i instances are SAP-certified and deliver the highest performance and fastest memory bandwidth among comparable Intel processors in the cloud. They deliver up to 43% higher performance, 1.5x more memory capacity (up to 6TB), and 3.3x more memory bandwidth compared to previous generation X2i instances.&nbsp; &nbsp; X8i instances are designed for memory-intensive workloads like SAP HANA, large databases, data analytics, and Electronic Design Automation (EDA). Compared to X2i instances, X8i instances offer up to 50% higher SAPS performance, up to 47% faster PostgreSQL performance, 88% faster Memcached performance, and 46% faster AI inference performance. X8i instances come in 14 sizes, from large to 96xlarge, including two bare metal options.&nbsp; &nbsp; To get started, visit the AWS Management Console . X8i instances can be purchased via Savings Plans, On-Demand instances, and Spot instances. For more information visit X8i instances page . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-ec2-x8i-europe-milan-spain/",
+      "published_at": "Thu, 27 Aug 2026 18:40:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This is a regional expansion of EC2 X8i instances (memory-intensive, SAP/database workloads) to Milan and Spain; none of the listed files make region-dependent claims about EC2 instance types or availability that would require updating."
+    },
+    {
+      "id": "53b37d2099f9d4b5a1621f93c1d26105814afc82",
+      "title": "Amazon Connect Customer expands conversational analytics capabilities in the Africa (Cape Town) Region",
+      "body": " Amazon Connect Customer now supports generative AI-powered summaries, real-time call analytics, and real-time rules in the Africa (Cape Town) Region. These capabilities extend the post-contact conversational analytics already available in the Region, giving companies access to AI-powered insights that help them improve customer experience, agent performance, and operational efficiency. With generative AI-powered summaries, supervisors and human-agents receive concise, AI-generated summaries of customer interactions immediately after a contact ends, eliminating the need for manual note-taking and reducing after-contact work. Real-time call analytics provide live transcription enabling supervisors to monitor interactions as they happen and intervene when needed to improve outcomes. Real-time rules automatically categorize contacts and alert supervisors based on keywords, sentiment, and other criteria detected during a live interaction, enabling immediate action such as sending notifications or generating tasks. To learn more about Connect Customer conversational analytics capabilities, refer to the Amazon Connect Customer Administrator Guide or visit the Amazon Connect Customer webs",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/connect-customer-analytics-cape-town/",
+      "published_at": "Thu, 27 Aug 2026 18:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns Amazon Connect Customer (a contact center service) regional expansion and feature availability in Africa (Cape Town), which is not addressed by any of the listed knowledge files focused on agent runtimes, compute, databases, AI model selection, and migration patterns."
+    },
+    {
+      "id": "a67f9fb920a629d897c463e44d4c6123522a8e9b",
+      "title": "Amazon Connect Customer now automatically refreshes scheduling metrics",
+      "body": " Amazon Connect Customer now automatically refreshes schedule metrics on the scheduling page, giving managers immediate visibility into the impact of schedule updates. For example, when a new team meeting is added for 10 agents from 10 AM – 11 AM, metrics such as net available headcount and projected service level are automatically updated. This gives workforce managers up-to-date visibility into how schedule changes affect staffing coverage, so they can make faster, more informed decisions throughout the day. This feature is available in all &nbsp; AWS Regions&nbsp; where Amazon Connect Customer agent scheduling is available. To learn more about Amazon Connect Customer agent scheduling, click &nbsp; here&nbsp; . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-connect-customer-scheduling-metrics/",
+      "published_at": "Thu, 27 Aug 2026 17:59:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "Amazon Connect Customer agent scheduling is a contact-center workforce management feature unrelated to the agent-migration skill's scope (compute runtimes, AI model selection, workload classification, and infrastructure design)."
+    },
+    {
+      "id": "b358c625f3cdb4c7331935bfb48fdca8d02f8724",
+      "title": "Amazon FSx for NetApp ONTAP now supports copying backups across AWS Regions and accounts",
+      "body": " Amazon FSx for NetApp ONTAP, a fully managed shared storage service built on NetApp's popular ONTAP file system, now supports copying backups within and across AWS Regions, and across trusted accounts in your AWS organization. You can now provide an additional layer of protection for your data by storing secondary backup copies in a different Region or account than your primary copies, making it easier to meet your business continuity, data protection, and compliance requirements. Amazon FSx offers secure, highly durable, and incremental backups designed to support your data retention, archival, and compliance needs. Backups are point-in-time offline copies of your volumes, stored redundantly across multiple Availability Zones in the same Region as your file system. Previously, you could create and restore backups in the same Region and account as your file system.&nbsp;Starting today, you can copy backup data to multiple Regions and accounts for enhanced resilience, data isolation, and operational flexibility. You can copy new and existing backups in all AWS Regions where Amazon FSx for NetApp ONTAP is available. To learn more, visit the FSx for NetApp ONTAP user guide and the Am",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/fsx-ontap-cross-region-backup-copy/",
+      "published_at": "Thu, 27 Aug 2026 17:37:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "FSx for NetApp ONTAP backup cross-region/cross-account copying is a storage feature that none of the listed files take a position on; the skill's storage guidance (storage.md) is deterministic 1:1 mapping and does not reason about backup replication capabilities or regional resilience strategies."
+    },
+    {
+      "id": "1de2efd2edec2a0835b230e86826b14dca0cebe5",
+      "title": "AWS Backup adds cross-Region and cross-account backup support for Amazon FSx for NetApp ONTAP",
+      "body": " AWS Backup now supports copying Amazon FSx for NetApp ONTAP backups across AWS Regions and accounts. You can copy your FSx for NetApp ONTAP backups to another AWS Region, another AWS account, or both, using policy-based backup plans or on-demand copy jobs. Copying backups to a separate Region helps you meet cross-Region disaster recovery and business continuity goals, while copying to a separate account helps protect your backups from accidental deletion, operational error, or account compromise. AWS Backup manages these copies centrally, and you can automate them across your organization using AWS Organizations. This capability is available in all commercial AWS Regions where both Amazon FSx for NetApp ONTAP and AWS Backup are available. To get started, visit the AWS Backup console, AWS Command Line Interface (CLI), or AWS SDKs. For a complete list of supported Regions and features, visit the AWS Backup documentation . To learn more, visit the product page and pricing page . ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aws-backup-amazon-fsx-netapp-cross-account-region/",
+      "published_at": "Thu, 27 Aug 2026 17:25:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement concerns AWS Backup's cross-region/cross-account copy capability for FSx for NetApp ONTAP, a storage service not covered by any of the listed knowledge files, which focus on compute runtimes, agent frameworks, AI model selection, and design rubrics for migration decisions."
+    },
+    {
+      "id": "916ada68dd6072ae86717c1afaa5b99802725143",
+      "title": "Amazon EVS now supports i7i.metal-48xl Amazon EC2 instance type",
+      "body": " Today, we're announcing that Amazon Elastic VMware Service (Amazon EVS) now supports the i7i.metal-48xl Amazon Elastic Cloud Compute (Amazon EC2) bare-metal instance type, offering a higher core-count option with a newer generation processor to help you realize cost-performance benefits for your VMware-based workloads on AWS. With this release, you now have more options for running your virtual machines (VMs) on Amazon EVS environments and growing your cloud presence at your own pace, as your business demands. Powered by 5th generation Intel Xeon Scalable processors, i7i instances offer the best compute and storage performance for x86-based storage optimized instances in Amazon EC2, delivering up to 23% better compute performance and more than 10% better price performance over i4i instances. The i7i.metal-48xl's larger&nbsp;memory and storage footprint allows you to run more VMs to vertically scale your operation with less EVS hosts - and take further advantage of the latest VMware Cloud Foundation (VCF) 9.x features such as memory tiering &nbsp;and new automations such as the Amazon EVS Deployment Orchestrator to simplify onboarding. This latest release is available in AWS Region",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-evs-i7i-48xl",
+      "published_at": "Thu, 27 Aug 2026 16:35:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "Amazon EVS (Elastic VMware Service) is a VMware-specific service for on-premises datacenter migration; none of the listed knowledge files address EVS, VMware workloads, or bare-metal EC2 instance types as part of their decision space."
+    },
+    {
+      "id": "18688c900aa7e8e0fed26665dcc45fab0eca0463",
+      "title": "Amazon Aurora DSQL now supports foreign key constraints",
+      "body": " Amazon Aurora DSQL now lets you add foreign key constraints to new and existing tables. Aurora DSQL is a serverless, distributed SQL database with PostgreSQL compatibility and active-active multi-Region availability. You can now express your application's rules about how tables reference each other as FOREIGN KEY constraints in your Aurora DSQL cluster. Declare, for example, that a customer's primary address must reference an existing row in your address table. Aurora DSQL then refuses any write that would leave that customer pointing at an address that no longer exists.&nbsp;You choose what happens when a referenced row is deleted or updated, with the options NO ACTION, RESTRICT, CASCADE, SET NULL, and SET DEFAULT. This feature is available in all AWS Regions where Aurora DSQL is available. To learn more, see working with foreign key constraints and the CREATE TABLE foreign key syntax in the Aurora DSQL User Guide. ",
+      "url": "https://aws.amazon.com/about-aws/whats-new/2026/08/aurora-dsql-foreign-key-constraints/",
+      "published_at": "Thu, 27 Aug 2026 07:00:00 GMT",
+      "source": "aws-whats-new",
+      "relevant": false,
+      "files": [],
+      "reason": "Aurora DSQL foreign key constraint support is a database feature addition that no listed file makes a recommendation or availability claim about; the skill's database guidance (database.md) covers service selection rubrics, not feature-level capabilities within a chosen service."
+    },
+    {
+      "id": "https://openai.com/index/supporting-next-generation-ai-startups-thailand",
+      "title": "Supporting Thailand’s next generation of AI startups",
+      "body": "OpenAI and Thailand’s MHESI launch an eight-week accelerator helping 10 health, wellness, and education startups turn AI prototypes into trusted products.",
+      "url": "https://openai.com/index/supporting-next-generation-ai-startups-thailand",
+      "published_at": "Fri, 28 Aug 2026 02:00:00 GMT",
+      "source": "openai-news",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement describes an accelerator program for startups in Thailand; it does not change any service capability, pricing, limit, availability, or maturity status that the listed files reason about."
+    },
+    {
+      "id": "757d16cab6731095a6c02e7c1b4bd82ec400f555",
+      "title": "Feature · Model: gpt-5.6-cyber · Model: gpt-daybreak-red-latest · Model: gpt-daybreak-blue-latest · API: v1/responses",
+      "body": "Feature · Model: gpt-5.6-cyber · Model: gpt-daybreak-red-latest · Model: gpt-daybreak-blue-latest · API: v1/responses Daybreak now offers two access tiers for approved defenders: Daybreak Blue and Daybreak Red. Use them to move from security findings to validated fixes in explicitly authorized engagements. Start with Daybreak Blue for most defensive security work. It provides access to general-purpose models such as GPT-5.6 Sol for vulnerability discovery, secure code review, detection engineering, incident response, malware analysis, and patch validation. Read more [here](https://developers.openai.com/api/docs/models/gpt-daybreak-blue-latest). Daybreak Red provides separately approved access to purpose-trained models such as [GPT-5.6 Cyber](https://developers.openai.com/api/docs/models/gpt-5.6-cyber) for authorized vulnerability reproduction, exploit validation, penetration testing, red teaming, and complex system analysis. These models require separate approval and provisioning. You can apply to join the Daybreak program [here](https://openai.com/daybreak/). More details on pricing [here](https://developers.openai.com/api/docs/pricing).",
+      "url": "https://platform.openai.com/docs/changelog.md",
+      "published_at": "2026-08-07",
+      "source": "openai-api-changelog",
+      "relevant": false,
+      "files": [],
+      "reason": "This announcement introduces new OpenAI models (GPT-5.6-Cyber, Daybreak Blue/Red) for specialized security use cases, but none of the listed knowledge files make recommendations or state facts about OpenAI model availability, pricing, or capabilities that would require updating."
+    },
+    {
+      "id": "966f2c9d77c73f678cb3c9e303668a7305819a27",
+      "title": "In Python SDK 1.2.0, TypeScript SDK 0.122.0, Go SDK 1.68.0, Java SDK 2.59.0, Ruby SDK 1.67.0, and C# SDK 12.44.0, `client.beta.files` and `client.beta.skills` n",
+      "body": "* In Python SDK 1.2.0, TypeScript SDK 0.122.0, Go SDK 1.68.0, Java SDK 2.59.0, Ruby SDK 1.67.0, and C# SDK 12.44.0, `client.beta.files` and `client.beta.skills` no longer send the `files-api-2025-04-14` and `skills-2025-10-02` beta headers and return the same shapes as `client.files` and `client.skills`. With this change, `client.beta.skills.delete()` deletes a Skill together with all of its versions, and the beta Messages type `BetaSkill` (the container Skill reference) is renamed `BetaContainerSkill`. Requests that still send the beta headers keep receiving the beta shapes. See [Migrate from `files-api-2025-04-14`](https://platform.claude.com/docs/en/build-with-claude/files#migrate-from-files-api-2025-04-14) and [Migrate from `skills-2025-10-02`](https://platform.claude.com/docs/en/build-with-claude/skills-guide#migrate-from-skills-2025-10-02). - You can now create **personal keys** and **service account keys** in the Claude Console. They act as you or as a [service account](https://platform.claude.com/docs/en/manage-claude/workload-identity-federation#service-accounts), with the same permissions, and stop working when the linked account is removed from an organization. This lets",
+      "url": "https://docs.claude.com/en/release-notes/api.md",
+      "published_at": "2026-08-27",
+      "source": "anthropic-release-notes",
+      "relevant": false,
+      "files": [],
+      "reason": "This is an Anthropic SDK release announcement covering API shape changes, beta header deprecation, and console key management—none of which affect the migration-advice skill's guidance on AWS service selection, compute runtimes, cost levers, or architectural decisions."
+    }
+  ],
+  "errors": []
+}

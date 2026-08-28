@@ -1,8 +1,8 @@
 # Knowledge auto-update pipeline on GitHub Actions — the fork deployment.
 #
 # Runs the full pipeline with no cloud credentials while the AWS deployment awaits AppSec
-# review. Inference goes through an OpenAI-compatible gateway (KB_INFERENCE_URL + the
-# KB_INFERENCE_TOKEN secret). Durable state (fact/source registries, seen sets, pins) lives
+# review. Inference calls Amazon Bedrock directly, with short-lived credentials from
+# GitHub→AWS OIDC federation (a Bedrock-invoke-only role; no long-lived secret). Durable state (fact/source registries, seen sets, pins) lives
 # on the kb-state branch and is committed back after every run; each run's raw results are
 # archived under runs/<runId>/ on the same branch, which is also where decisions.py finds
 # the judge results behind review-brief markers. PRs, review briefs, and the dashboard
@@ -21,6 +21,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  id-token: write   # OIDC federation to AWS for Bedrock inference
 
 concurrency: kb-autoupdate
 
@@ -29,9 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      KB_INFERENCE: openai
-      KB_INFERENCE_URL: https://bedrock.genli.people.aws.dev/api/v1/chat/completions
-      KB_INFERENCE_TOKEN: ${{ secrets.KB_INFERENCE_TOKEN }}
+      # Inference goes straight to Bedrock; credentials come from OIDC federation (the
+      # configure-aws-credentials step below), so no inference secret exists at all.
+      KB_REGION: us-east-1
       KB_CHEAP_MODEL: global.anthropic.claude-haiku-4-5-20251001-v1:0
       KB_STRONG_MODEL: global.anthropic.claude-sonnet-5
       KB_SCAN_WORKERS: "4"
@@ -87,6 +88,12 @@ jobs:
 
       - name: Install dependencies
         run: pip install --quiet boto3 httpx beautifulsoup4 lxml defusedxml
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::767582656617:role/kb-autoupdate-gha
+          aws-region: us-east-1
 
       - name: Recheck every registered fact
         run: cd "$POC" && python recheck.py --out results-recheck.json

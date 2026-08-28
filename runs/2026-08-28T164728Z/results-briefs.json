@@ -1,0 +1,16 @@
+{
+  "briefs": [
+    {
+      "createdAt": "2026-08-26T09:50:32Z",
+      "number": 248,
+      "title": "RFC: batch.compute_environment_type \u2014 recommendation reversed",
+      "url": "https://github.com/awslabs/startups/issues/248"
+    },
+    {
+      "createdAt": "2026-08-21T04:48:14Z",
+      "number": 235,
+      "title": "RFC: ai.openai_to_bedrock.migration_framing \u2014 recommendation reversed",
+      "url": "https://github.com/awslabs/startups/issues/235"
+    }
+  ]
+}

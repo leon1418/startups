@@ -294,7 +294,8 @@ Idle cost is effectively zero.
 ## Appendix — the GitHub Actions deployment
 
 While the AWS deployment waits for AppSec review, the pipeline also runs on GitHub Actions —
-currently the primary deployment. The workflow holds no cloud credentials.
+currently the primary deployment. The workflow stores no long-lived credentials: AWS access
+is short-lived OIDC federation into a Bedrock-invoke-only role.
 
 | Piece                          | Where it lives                                                                                |
 | ------------------------------ | --------------------------------------------------------------------------------------------- |

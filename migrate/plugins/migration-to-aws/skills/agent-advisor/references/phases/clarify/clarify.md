@@ -15,7 +15,7 @@ _assemble:
 _produces:
   - answers.json
   - scoring-result.json
-_advances_to: confirm
+_advances_to: model-recommend
 _preconditions:
   - _check_phase_completed: discover
     _on_failure: _halt_and_inform
@@ -286,9 +286,9 @@ from answers.json — no dependency on context-signals.json, which may not exist
 Non-agent units are NOT scored — Design resolves them from
 `references/decision-refs/workload-classes.md`.
 
-## Step 6 — Write state and continue to Confirm
+## Step 6 — Write state and continue to Model Recommend
 
-Set `phases.clarify` = completed (leave `phases.confirm` = pending). Do NOT jump to Design.
-The state machine now routes to **Confirm** (`references/phases/confirm/confirm.md`), which
-confirms the deployment model / services / co_recommend pick and writes `confirm.json` — Design and
-the diagram require it.
+Set `phases.clarify` = completed (leave `phases["model-recommend"]` and `phases.confirm` =
+pending). Do NOT jump to Confirm or Design. The state machine now routes to **Model Recommend**
+(`references/phases/model-recommend/model-recommend.md`), which creates the per-workload
+Bedrock model/path contract before Confirm asks the user to accept runtime and model together.
